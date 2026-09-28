@@ -48,6 +48,26 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Class1.cs" />
+    <Compile Include="AdicionalReserva_GV42.cs" />
+    <Compile Include="Aerolinea_GV42.cs" />
+    <Compile Include="Aeropuerto_GV42.cs" />
+    <Compile Include="Asiento_GV42.cs" />
+    <Compile Include="Boleto_GV42.cs" />
+    <Compile Include="CargoExcesoEquipaje_GV42.cs" />
+    <Compile Include="CheckIn_GV42.cs" />
+    <Compile Include="Cliente_GV42.cs" />
+    <Compile Include="CriterioBusquedaVuelo_GV42.cs" />
+    <Compile Include="Enumeraciones_GV42.cs" />
+    <Compile Include="Equipaje_GV42.cs" />
+    <Compile Include="NegocioException_GV42.cs" />
+    <Compile Include="Pago_GV42.cs" />
+    <Compile Include="Pasajero_GV42.cs" />
+    <Compile Include="Persona_GV42.cs" />
+    <Compile Include="Reserva_GV42.cs" />
+    <Compile Include="TarjetaEmbarque_GV42.cs" />
+    <Compile Include="TipoAdicional_GV42.cs" />
+    <Compile Include="VueloClase_GV42.cs" />
+    <Compile Include="Vuelo_GV42.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
