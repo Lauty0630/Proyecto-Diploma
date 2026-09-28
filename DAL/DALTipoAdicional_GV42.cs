@@ -1,0 +1,33 @@
+﻿using BE;
+using System.Collections.Generic;
+using System.Data;
+
+namespace DAL
+{
+    public class DALTipoAdicional_GV42
+    {
+        private readonly Acceso _acceso;
+
+        public DALTipoAdicional_GV42()
+        {
+            _acceso = Acceso.Instancia;
+        }
+
+        public List<TipoAdicional_GV42> ListarActivos()
+        {
+            string query = "SELECT Id, Nombre FROM TipoAdicional WHERE Activo = 1 ORDER BY Nombre";
+            DataTable dt = _acceso.leer(query, null);
+
+            var lista = new List<TipoAdicional_GV42>();
+            foreach (DataRow r in dt.Rows)
+            {
+                lista.Add(new TipoAdicional_GV42
+                {
+                    Id = DALUtil_GV42.Int(r, "Id"),
+                    Nombre = DALUtil_GV42.Str(r, "Nombre")
+                });
+            }
+            return lista;
+        }
+    }
+}

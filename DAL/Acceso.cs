@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Data.SqlClient;
@@ -201,6 +201,77 @@ namespace DAL
                 desconectar();
             }
             return resultado;
+        }
+
+      
+        // Soporte para operaciones de negocio que escriben en varias tablas.
+        
+
+        // Ejecuta 'trabajo' dentro de una única transacción. Si algo falla hace rollback
+        // y relanza la excepción; si termina bien hace commit.
+        public T EjecutarEnTransaccion<T>(Func<SqlTransaction, T> trabajo)
+        {
+            SqlTransaction tx = null;
+            try
+            {
+                tx = IniciarTransaccion();
+                T resultado = trabajo(tx);
+                tx.Commit();
+                return resultado;
+            }
+            catch
+            {
+                if (tx != null)
+                {
+                    try { tx.Rollback(); } catch { }
+                }
+                throw;
+            }
+            finally
+            {
+                desconectar();
+            }
+        }
+
+        // Las tres sobrecargas siguientes usan la transacción recibida y NO cierran la conexión.
+        public int escribir(SqlTransaction tx, string query, SqlParameter[] parametro)
+        {
+            using (SqlCommand comando = CrearComando(tx, query, parametro))
+            {
+                return comando.ExecuteNonQuery();
+            }
+        }
+
+        public object leerEscalar(SqlTransaction tx, string query, SqlParameter[] parametro)
+        {
+            using (SqlCommand comando = CrearComando(tx, query, parametro))
+            {
+                return comando.ExecuteScalar();
+            }
+        }
+
+        public DataTable leer(SqlTransaction tx, string query, SqlParameter[] parametro)
+        {
+            DataTable dt = new DataTable();
+            using (SqlCommand comando = CrearComando(tx, query, parametro))
+            using (SqlDataAdapter adaptador = new SqlDataAdapter(comando))
+            {
+                adaptador.Fill(dt);
+            }
+            return dt;
+        }
+
+        private SqlCommand CrearComando(SqlTransaction tx, string query, SqlParameter[] parametro)
+        {
+            SqlCommand comando = new SqlCommand(query, tx.Connection, tx);
+            if (parametro != null)
+            {
+                foreach (SqlParameter param in parametro)
+                {
+                    comando.Parameters.AddWithValue(param.ParameterName, param.Value ?? DBNull.Value);
+                }
+            }
+            return comando;
         }
     }
 }
