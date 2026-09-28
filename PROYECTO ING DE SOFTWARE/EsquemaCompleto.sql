@@ -1,6 +1,6 @@
 USE [master]
 GO
-/****** Object:  Database [Gestion Usuario]    Script Date: 7/6/2026 6:45:25 PM ******/
+/****** Object:  Database [Gestion Usuario]    Script Date: 7/7/2026 7:40:53 PM ******/
 CREATE DATABASE [Gestion Usuario]
 GO
 IF (1 = FULLTEXTSERVICEPROPERTY('IsFullTextInstalled'))
@@ -68,7 +68,7 @@ ALTER DATABASE [Gestion Usuario] SET DELAYED_DURABILITY = DISABLED
 GO
 USE [Gestion Usuario]
 GO
-/****** Object:  Table [dbo].[EVENTOS]    Script Date: 7/6/2026 6:45:25 PM ******/
+/****** Object:  Table [dbo].[EVENTOS]    Script Date: 7/7/2026 7:40:53 PM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -87,7 +87,7 @@ PRIMARY KEY CLUSTERED
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
 ) ON [PRIMARY]
 GO
-/****** Object:  Table [dbo].[Familia]    Script Date: 7/6/2026 6:45:25 PM ******/
+/****** Object:  Table [dbo].[Familia]    Script Date: 7/7/2026 7:40:53 PM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -101,7 +101,7 @@ PRIMARY KEY CLUSTERED
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
 ) ON [PRIMARY]
 GO
-/****** Object:  Table [dbo].[FamiliaIntegrada]    Script Date: 7/6/2026 6:45:25 PM ******/
+/****** Object:  Table [dbo].[FamiliaIntegrada]    Script Date: 7/7/2026 7:40:53 PM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -116,7 +116,7 @@ CREATE TABLE [dbo].[FamiliaIntegrada](
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
 ) ON [PRIMARY]
 GO
-/****** Object:  Table [dbo].[FamiliaPatente]    Script Date: 7/6/2026 6:45:25 PM ******/
+/****** Object:  Table [dbo].[FamiliaPatente]    Script Date: 7/7/2026 7:40:53 PM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -131,7 +131,7 @@ CREATE TABLE [dbo].[FamiliaPatente](
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
 ) ON [PRIMARY]
 GO
-/****** Object:  Table [dbo].[IntegridadDVH]    Script Date: 7/6/2026 6:45:25 PM ******/
+/****** Object:  Table [dbo].[IntegridadDVH]    Script Date: 7/7/2026 7:40:53 PM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -148,7 +148,7 @@ CREATE TABLE [dbo].[IntegridadDVH](
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
 ) ON [PRIMARY]
 GO
-/****** Object:  Table [dbo].[IntegridadDVV]    Script Date: 7/6/2026 6:45:25 PM ******/
+/****** Object:  Table [dbo].[IntegridadDVV]    Script Date: 7/7/2026 7:40:53 PM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -163,7 +163,7 @@ PRIMARY KEY CLUSTERED
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
 ) ON [PRIMARY]
 GO
-/****** Object:  Table [dbo].[Modulo]    Script Date: 7/6/2026 6:45:25 PM ******/
+/****** Object:  Table [dbo].[Modulo]    Script Date: 7/7/2026 7:40:53 PM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -177,7 +177,7 @@ PRIMARY KEY CLUSTERED
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
 ) ON [PRIMARY]
 GO
-/****** Object:  Table [dbo].[Patente]    Script Date: 7/6/2026 6:45:25 PM ******/
+/****** Object:  Table [dbo].[Patente]    Script Date: 7/7/2026 7:40:53 PM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -192,7 +192,7 @@ PRIMARY KEY CLUSTERED
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
 ) ON [PRIMARY]
 GO
-/****** Object:  Table [dbo].[Roles]    Script Date: 7/6/2026 6:45:25 PM ******/
+/****** Object:  Table [dbo].[Roles]    Script Date: 7/7/2026 7:40:53 PM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -206,7 +206,7 @@ PRIMARY KEY CLUSTERED
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
 ) ON [PRIMARY]
 GO
-/****** Object:  Table [dbo].[RolFamilia]    Script Date: 7/6/2026 6:45:25 PM ******/
+/****** Object:  Table [dbo].[RolFamilia]    Script Date: 7/7/2026 7:40:53 PM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -221,7 +221,7 @@ CREATE TABLE [dbo].[RolFamilia](
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
 ) ON [PRIMARY]
 GO
-/****** Object:  Table [dbo].[RolPatente]    Script Date: 7/6/2026 6:45:25 PM ******/
+/****** Object:  Table [dbo].[RolPatente]    Script Date: 7/7/2026 7:40:53 PM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -236,7 +236,7 @@ CREATE TABLE [dbo].[RolPatente](
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
 ) ON [PRIMARY]
 GO
-/****** Object:  Table [dbo].[TipoEvento]    Script Date: 7/6/2026 6:45:25 PM ******/
+/****** Object:  Table [dbo].[TipoEvento]    Script Date: 7/7/2026 7:40:53 PM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -250,7 +250,7 @@ PRIMARY KEY CLUSTERED
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
 ) ON [PRIMARY]
 GO
-/****** Object:  Table [dbo].[Usuario]    Script Date: 7/6/2026 6:45:25 PM ******/
+/****** Object:  Table [dbo].[Usuario]    Script Date: 7/7/2026 7:40:53 PM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -783,6 +783,36 @@ INSERT [dbo].[EVENTOS] ([Id_Evento], [UserName], [Criticidad], [FechaHora], [IdM
 GO
 INSERT [dbo].[EVENTOS] ([Id_Evento], [UserName], [Criticidad], [FechaHora], [IdModulo], [IdTipoEvento], [Detalle]) VALUES (2649, N'jeremias544', N'Alta', CAST(N'2026-07-06T18:40:01.983' AS DateTime), 5, 17, N'Modulo, TipoEvento')
 INSERT [dbo].[EVENTOS] ([Id_Evento], [UserName], [Criticidad], [FechaHora], [IdModulo], [IdTipoEvento], [Detalle]) VALUES (2650, N'jeremias544', N'Alta', CAST(N'2026-07-06T18:40:07.767' AS DateTime), 5, 18, N'Admin aceptó los cambios externos como válidos.')
+INSERT [dbo].[EVENTOS] ([Id_Evento], [UserName], [Criticidad], [FechaHora], [IdModulo], [IdTipoEvento], [Detalle]) VALUES (2651, N'jeremias544', N'Baja', CAST(N'2026-07-06T18:54:59.307' AS DateTime), 4, 7, N'Login correcto')
+INSERT [dbo].[EVENTOS] ([Id_Evento], [UserName], [Criticidad], [FechaHora], [IdModulo], [IdTipoEvento], [Detalle]) VALUES (2652, N'jeremias544', N'Media', CAST(N'2026-07-06T22:59:25.310' AS DateTime), 4, 5, N'Intento 1/3')
+INSERT [dbo].[EVENTOS] ([Id_Evento], [UserName], [Criticidad], [FechaHora], [IdModulo], [IdTipoEvento], [Detalle]) VALUES (2653, N'jeremias544', N'Baja', CAST(N'2026-07-06T22:59:33.250' AS DateTime), 4, 7, N'Login correcto')
+INSERT [dbo].[EVENTOS] ([Id_Evento], [UserName], [Criticidad], [FechaHora], [IdModulo], [IdTipoEvento], [Detalle]) VALUES (2654, N'jeremias544', N'Alta', CAST(N'2026-07-06T23:42:09.947' AS DateTime), 4, 15, N'LogOut')
+INSERT [dbo].[EVENTOS] ([Id_Evento], [UserName], [Criticidad], [FechaHora], [IdModulo], [IdTipoEvento], [Detalle]) VALUES (2655, N'jeremias544', N'Baja', CAST(N'2026-07-06T23:52:51.137' AS DateTime), 4, 7, N'Login correcto')
+INSERT [dbo].[EVENTOS] ([Id_Evento], [UserName], [Criticidad], [FechaHora], [IdModulo], [IdTipoEvento], [Detalle]) VALUES (2656, N'jeremias544', N'Baja', CAST(N'2026-07-06T23:52:56.990' AS DateTime), 4, 16, N'es -> en')
+INSERT [dbo].[EVENTOS] ([Id_Evento], [UserName], [Criticidad], [FechaHora], [IdModulo], [IdTipoEvento], [Detalle]) VALUES (2657, N'jeremias544', N'Baja', CAST(N'2026-07-06T23:53:35.727' AS DateTime), 4, 16, N'en -> es')
+INSERT [dbo].[EVENTOS] ([Id_Evento], [UserName], [Criticidad], [FechaHora], [IdModulo], [IdTipoEvento], [Detalle]) VALUES (2658, N'jeremias544', N'Alta', CAST(N'2026-07-06T23:53:37.520' AS DateTime), 4, 15, N'LogOut')
+INSERT [dbo].[EVENTOS] ([Id_Evento], [UserName], [Criticidad], [FechaHora], [IdModulo], [IdTipoEvento], [Detalle]) VALUES (2659, N'jeremias544', N'Baja', CAST(N'2026-07-07T19:20:09.690' AS DateTime), 4, 7, N'Login correcto')
+INSERT [dbo].[EVENTOS] ([Id_Evento], [UserName], [Criticidad], [FechaHora], [IdModulo], [IdTipoEvento], [Detalle]) VALUES (2660, N'jeremias544', N'Alta', CAST(N'2026-07-07T19:20:09.707' AS DateTime), 5, 17, N'[Insertado] Patente#18 | [Insertado] Patente#19 | [Insertado] RolPatente#1_18 | [Insertado] RolPatente#1_19 | [Insertado] RolPatente#10_18 | [Insertado] RolPatente#10_19 | [Insertado] RolPatente#19_18 | [Insertado] RolPatente#19_19')
+INSERT [dbo].[EVENTOS] ([Id_Evento], [UserName], [Criticidad], [FechaHora], [IdModulo], [IdTipoEvento], [Detalle]) VALUES (2661, N'jeremias544', N'Alta', CAST(N'2026-07-07T19:20:17.710' AS DateTime), 5, 18, N'Admin aceptó los cambios externos como válidos.')
+INSERT [dbo].[EVENTOS] ([Id_Evento], [UserName], [Criticidad], [FechaHora], [IdModulo], [IdTipoEvento], [Detalle]) VALUES (2663, N'jeremias544', N'Baja', CAST(N'2026-07-07T19:22:38.360' AS DateTime), 4, 7, N'Login correcto')
+INSERT [dbo].[EVENTOS] ([Id_Evento], [UserName], [Criticidad], [FechaHora], [IdModulo], [IdTipoEvento], [Detalle]) VALUES (2664, N'jeremias544', N'Alta', CAST(N'2026-07-07T19:22:38.363' AS DateTime), 5, 17, N'[Insertado] TipoEvento#25')
+INSERT [dbo].[EVENTOS] ([Id_Evento], [UserName], [Criticidad], [FechaHora], [IdModulo], [IdTipoEvento], [Detalle]) VALUES (2665, N'jeremias544', N'Alta', CAST(N'2026-07-07T19:22:41.383' AS DateTime), 5, 18, N'Admin aceptó los cambios externos como válidos.')
+INSERT [dbo].[EVENTOS] ([Id_Evento], [UserName], [Criticidad], [FechaHora], [IdModulo], [IdTipoEvento], [Detalle]) VALUES (2666, N'jeremias544', N'Baja', CAST(N'2026-07-07T19:27:01.163' AS DateTime), 4, 7, N'Login correcto')
+INSERT [dbo].[EVENTOS] ([Id_Evento], [UserName], [Criticidad], [FechaHora], [IdModulo], [IdTipoEvento], [Detalle]) VALUES (2667, N'jeremias544', N'Alta', CAST(N'2026-07-07T19:27:01.170' AS DateTime), 5, 17, N'[Eliminado] Patente#19 | [Eliminado] RolPatente#1_19 | [Eliminado] RolPatente#10_19 | [Eliminado] RolPatente#19_19')
+INSERT [dbo].[EVENTOS] ([Id_Evento], [UserName], [Criticidad], [FechaHora], [IdModulo], [IdTipoEvento], [Detalle]) VALUES (2668, N'jeremias544', N'Alta', CAST(N'2026-07-07T19:27:04.087' AS DateTime), 5, 18, N'Admin aceptó los cambios externos como válidos.')
+INSERT [dbo].[EVENTOS] ([Id_Evento], [UserName], [Criticidad], [FechaHora], [IdModulo], [IdTipoEvento], [Detalle]) VALUES (2669, N'jeremias544', N'Media', CAST(N'2026-07-07T19:28:23.367' AS DateTime), 5, 12, N'IdRol: 23, Nombre: ''jere'', Patentes: 3, Familias: 0')
+INSERT [dbo].[EVENTOS] ([Id_Evento], [UserName], [Criticidad], [FechaHora], [IdModulo], [IdTipoEvento], [Detalle]) VALUES (2670, N'jeremias544', N'Alta', CAST(N'2026-07-07T19:28:30.800' AS DateTime), 4, 15, N'LogOut')
+INSERT [dbo].[EVENTOS] ([Id_Evento], [UserName], [Criticidad], [FechaHora], [IdModulo], [IdTipoEvento], [Detalle]) VALUES (2671, N'jeremias544', N'Baja', CAST(N'2026-07-07T19:28:42.627' AS DateTime), 4, 7, N'Login correcto')
+INSERT [dbo].[EVENTOS] ([Id_Evento], [UserName], [Criticidad], [FechaHora], [IdModulo], [IdTipoEvento], [Detalle]) VALUES (2672, N'jeremias544', N'Alta', CAST(N'2026-07-07T19:28:53.740' AS DateTime), 4, 15, N'LogOut')
+INSERT [dbo].[EVENTOS] ([Id_Evento], [UserName], [Criticidad], [FechaHora], [IdModulo], [IdTipoEvento], [Detalle]) VALUES (2673, N'olivia333', N'Baja', CAST(N'2026-07-07T19:29:05.317' AS DateTime), 4, 7, N'Login correcto')
+INSERT [dbo].[EVENTOS] ([Id_Evento], [UserName], [Criticidad], [FechaHora], [IdModulo], [IdTipoEvento], [Detalle]) VALUES (2674, N'jeremias544', N'Baja', CAST(N'2026-07-07T19:29:31.717' AS DateTime), 4, 7, N'Login correcto')
+INSERT [dbo].[EVENTOS] ([Id_Evento], [UserName], [Criticidad], [FechaHora], [IdModulo], [IdTipoEvento], [Detalle]) VALUES (2675, N'jeremias544', N'Media', CAST(N'2026-07-07T19:29:51.507' AS DateTime), 5, 12, N'IdRol: 23, Nombre: ''jere'', Patentes: 3, Familias: 0')
+INSERT [dbo].[EVENTOS] ([Id_Evento], [UserName], [Criticidad], [FechaHora], [IdModulo], [IdTipoEvento], [Detalle]) VALUES (2676, N'jeremias544', N'Alta', CAST(N'2026-07-07T19:29:55.797' AS DateTime), 4, 15, N'LogOut')
+INSERT [dbo].[EVENTOS] ([Id_Evento], [UserName], [Criticidad], [FechaHora], [IdModulo], [IdTipoEvento], [Detalle]) VALUES (2677, N'olivia333', N'Baja', CAST(N'2026-07-07T19:30:03.917' AS DateTime), 4, 7, N'Login correcto')
+INSERT [dbo].[EVENTOS] ([Id_Evento], [UserName], [Criticidad], [FechaHora], [IdModulo], [IdTipoEvento], [Detalle]) VALUES (2678, N'jeremias544', N'Baja', CAST(N'2026-07-07T19:30:14.967' AS DateTime), 4, 7, N'Login correcto')
+INSERT [dbo].[EVENTOS] ([Id_Evento], [UserName], [Criticidad], [FechaHora], [IdModulo], [IdTipoEvento], [Detalle]) VALUES (2679, N'jeremias544', N'Alta', CAST(N'2026-07-07T19:35:31.057' AS DateTime), 4, 15, N'LogOut')
+INSERT [dbo].[EVENTOS] ([Id_Evento], [UserName], [Criticidad], [FechaHora], [IdModulo], [IdTipoEvento], [Detalle]) VALUES (2680, N'jeremias544', N'Baja', CAST(N'2026-07-07T19:35:39.820' AS DateTime), 4, 7, N'Login correcto')
+INSERT [dbo].[EVENTOS] ([Id_Evento], [UserName], [Criticidad], [FechaHora], [IdModulo], [IdTipoEvento], [Detalle]) VALUES (2681, N'jeremias544', N'Baja', CAST(N'2026-07-07T19:36:22.757' AS DateTime), 4, 16, N'es -> en')
 SET IDENTITY_INSERT [dbo].[EVENTOS] OFF
 GO
 SET IDENTITY_INSERT [dbo].[Familia] ON 
@@ -825,6 +855,7 @@ INSERT [dbo].[Patente] ([Id], [Nombre], [DataKey]) VALUES (14, N'Permisos - Role
 INSERT [dbo].[Patente] ([Id], [Nombre], [DataKey]) VALUES (15, N'Integridad - Recalcular', N'Integridad.Recalcular')
 INSERT [dbo].[Patente] ([Id], [Nombre], [DataKey]) VALUES (16, N'Integridad - Restore', N'Integridad.Restore')
 INSERT [dbo].[Patente] ([Id], [Nombre], [DataKey]) VALUES (17, N'Cambiar Idioma', N'Sesion.CambiarIdioma')
+INSERT [dbo].[Patente] ([Id], [Nombre], [DataKey]) VALUES (18, N'Backup - Crear', N'Backup.Crear')
 SET IDENTITY_INSERT [dbo].[Patente] OFF
 GO
 SET IDENTITY_INSERT [dbo].[Roles] ON 
@@ -859,6 +890,7 @@ INSERT [dbo].[RolPatente] ([IdRol], [IdPatente]) VALUES (1, 14)
 INSERT [dbo].[RolPatente] ([IdRol], [IdPatente]) VALUES (1, 15)
 INSERT [dbo].[RolPatente] ([IdRol], [IdPatente]) VALUES (1, 16)
 INSERT [dbo].[RolPatente] ([IdRol], [IdPatente]) VALUES (1, 17)
+INSERT [dbo].[RolPatente] ([IdRol], [IdPatente]) VALUES (1, 18)
 INSERT [dbo].[RolPatente] ([IdRol], [IdPatente]) VALUES (8, 9)
 INSERT [dbo].[RolPatente] ([IdRol], [IdPatente]) VALUES (8, 10)
 INSERT [dbo].[RolPatente] ([IdRol], [IdPatente]) VALUES (8, 11)
@@ -876,6 +908,7 @@ INSERT [dbo].[RolPatente] ([IdRol], [IdPatente]) VALUES (10, 13)
 INSERT [dbo].[RolPatente] ([IdRol], [IdPatente]) VALUES (10, 15)
 INSERT [dbo].[RolPatente] ([IdRol], [IdPatente]) VALUES (10, 16)
 INSERT [dbo].[RolPatente] ([IdRol], [IdPatente]) VALUES (10, 17)
+INSERT [dbo].[RolPatente] ([IdRol], [IdPatente]) VALUES (10, 18)
 INSERT [dbo].[RolPatente] ([IdRol], [IdPatente]) VALUES (11, 2)
 INSERT [dbo].[RolPatente] ([IdRol], [IdPatente]) VALUES (11, 9)
 INSERT [dbo].[RolPatente] ([IdRol], [IdPatente]) VALUES (11, 10)
@@ -898,17 +931,20 @@ INSERT [dbo].[RolPatente] ([IdRol], [IdPatente]) VALUES (19, 14)
 INSERT [dbo].[RolPatente] ([IdRol], [IdPatente]) VALUES (19, 15)
 INSERT [dbo].[RolPatente] ([IdRol], [IdPatente]) VALUES (19, 16)
 INSERT [dbo].[RolPatente] ([IdRol], [IdPatente]) VALUES (19, 17)
+INSERT [dbo].[RolPatente] ([IdRol], [IdPatente]) VALUES (19, 18)
 INSERT [dbo].[RolPatente] ([IdRol], [IdPatente]) VALUES (21, 9)
 INSERT [dbo].[RolPatente] ([IdRol], [IdPatente]) VALUES (21, 10)
 INSERT [dbo].[RolPatente] ([IdRol], [IdPatente]) VALUES (21, 11)
 INSERT [dbo].[RolPatente] ([IdRol], [IdPatente]) VALUES (21, 17)
 INSERT [dbo].[RolPatente] ([IdRol], [IdPatente]) VALUES (22, 17)
 INSERT [dbo].[RolPatente] ([IdRol], [IdPatente]) VALUES (23, 10)
+INSERT [dbo].[RolPatente] ([IdRol], [IdPatente]) VALUES (23, 16)
 INSERT [dbo].[RolPatente] ([IdRol], [IdPatente]) VALUES (23, 17)
 GO
 SET IDENTITY_INSERT [dbo].[TipoEvento] ON 
 
 INSERT [dbo].[TipoEvento] ([Id], [Nombre]) VALUES (24, N'Backup automatico generado')
+INSERT [dbo].[TipoEvento] ([Id], [Nombre]) VALUES (25, N'Backup manual generado')
 INSERT [dbo].[TipoEvento] ([Id], [Nombre]) VALUES (14, N'Contraseña cambiada exitosamente')
 INSERT [dbo].[TipoEvento] ([Id], [Nombre]) VALUES (5, N'Contraseña incorrecta')
 INSERT [dbo].[TipoEvento] ([Id], [Nombre]) VALUES (11, N'Email modificado')
@@ -946,10 +982,10 @@ INSERT [dbo].[Usuario] ([DNI], [Apellido], [Nombre], [UserName], [Contrasena], [
 INSERT [dbo].[Usuario] ([DNI], [Apellido], [Nombre], [UserName], [Contrasena], [Email], [Bloqueo], [Activo], [IdRol], [IntentosFallidos], [UltimoIntentoFallido], [DebeCambiarContrasena], [Idioma]) VALUES (N'23642736', N'rodriguez', N'rosalia', N'rosalia736', N'861fece367bdd79a8d8436c0c0c03d3bdaadbf0f8b04cf9ed27d4c9800b2ab35', N'ZhRyJpB6yTEvM68su5AGc5/jKCNtUEjy5J314GwKF5E=', 0, 1, 15, 0, NULL, 0, N'es')
 INSERT [dbo].[Usuario] ([DNI], [Apellido], [Nombre], [UserName], [Contrasena], [Email], [Bloqueo], [Activo], [IdRol], [IntentosFallidos], [UltimoIntentoFallido], [DebeCambiarContrasena], [Idioma]) VALUES (N'23642737', N'rodriguez', N'roxana', N'roxana737', N'2f30da4b70ef4dd1ff0c3004ea2fe2ae696a905d5a09dc42beb875e422011753', N'roxana@gmail.com', 0, 1, 1, 0, NULL, 0, N'es')
 INSERT [dbo].[Usuario] ([DNI], [Apellido], [Nombre], [UserName], [Contrasena], [Email], [Bloqueo], [Activo], [IdRol], [IntentosFallidos], [UltimoIntentoFallido], [DebeCambiarContrasena], [Idioma]) VALUES (N'33333333', N'Gomez', N'Olivia', N'olivia333', N'bded47e467ed1d20b249e6b8080bd37492872fe0b5c729fae6fd52f8ef769ee7', N'IKXN9blAl5Zqe5QCofA32VpH9wQ2VwHG3dDW4SSXptI=', 0, 1, 23, 0, NULL, 0, N'es')
-INSERT [dbo].[Usuario] ([DNI], [Apellido], [Nombre], [UserName], [Contrasena], [Email], [Bloqueo], [Activo], [IdRol], [IntentosFallidos], [UltimoIntentoFallido], [DebeCambiarContrasena], [Idioma]) VALUES (N'44444444', N'Pignataro', N'thiago', N'thiago444', N'92966223827b5069660cd0e3ec0cd906f0a32223af26c22ad14e66eec5c80c75', N'f2Z3GIQxJ6cKjnzeW+ujjHz1v1J0eWkWiYhuuRUJmkg=', 0, 1, 10, 0, NULL, 0, N'es')
+INSERT [dbo].[Usuario] ([DNI], [Apellido], [Nombre], [UserName], [Contrasena], [Email], [Bloqueo], [Activo], [IdRol], [IntentosFallidos], [UltimoIntentoFallido], [DebeCambiarContrasena], [Idioma]) VALUES (N'44444444', N'Pignataro', N'1', N'thiago444', N'92966223827b5069660cd0e3ec0cd906f0a32223af26c22ad14e66eec5c80c75', N'f2Z3GIQxJ6cKjnzeW+ujjHz1v1J0eWkWiYhuuRUJmkg=', 0, 1, 10, 0, NULL, 0, N'es')
 INSERT [dbo].[Usuario] ([DNI], [Apellido], [Nombre], [UserName], [Contrasena], [Email], [Bloqueo], [Activo], [IdRol], [IntentosFallidos], [UltimoIntentoFallido], [DebeCambiarContrasena], [Idioma]) VALUES (N'46947540', N'Rico', N'Julian', N'julian540', N'bded47e467ed1d20b249e6b8080bd37492872fe0b5c729fae6fd52f8ef769ee7', N'xBWBO+r7Cx2nlsV1L2YE53gr5Ji/JGWLFb94CpjHWRg=', 0, 1, 1, 0, NULL, 0, N'es')
 INSERT [dbo].[Usuario] ([DNI], [Apellido], [Nombre], [UserName], [Contrasena], [Email], [Bloqueo], [Activo], [IdRol], [IntentosFallidos], [UltimoIntentoFallido], [DebeCambiarContrasena], [Idioma]) VALUES (N'46947542', N'Gomez', N'Dylan', N'dylan542', N'e34b9d2c74e67d52c92d05e86fe33f399e7838d93aba62862b1a889c5f76fe50', N'GIHVR3AySRiFkfZ/uHSVa5sjQsMIIP1clqNp1rsZX3w=', 0, 1, 1, 0, NULL, 0, N'es')
-INSERT [dbo].[Usuario] ([DNI], [Apellido], [Nombre], [UserName], [Contrasena], [Email], [Bloqueo], [Activo], [IdRol], [IntentosFallidos], [UltimoIntentoFallido], [DebeCambiarContrasena], [Idioma]) VALUES (N'46947544', N'Gomez', N'Jeremias', N'jeremias544', N'bded47e467ed1d20b249e6b8080bd37492872fe0b5c729fae6fd52f8ef769ee7', N'facundojeremias@gmail.com', 0, 1, 1, 0, NULL, 0, N'es')
+INSERT [dbo].[Usuario] ([DNI], [Apellido], [Nombre], [UserName], [Contrasena], [Email], [Bloqueo], [Activo], [IdRol], [IntentosFallidos], [UltimoIntentoFallido], [DebeCambiarContrasena], [Idioma]) VALUES (N'46947544', N'Gomez', N'Jeremias', N'jeremias544', N'bded47e467ed1d20b249e6b8080bd37492872fe0b5c729fae6fd52f8ef769ee7', N'facundojeremias@gmail.com', 0, 1, 1, 0, NULL, 0, N'en')
 INSERT [dbo].[Usuario] ([DNI], [Apellido], [Nombre], [UserName], [Contrasena], [Email], [Bloqueo], [Activo], [IdRol], [IntentosFallidos], [UltimoIntentoFallido], [DebeCambiarContrasena], [Idioma]) VALUES (N'47333212', N'Vergara', N'Lautaro111', N'lautaro212', N'914dd5e733e4e6922adb7f4ddd2fcc6612e357cc23454b0b3106145e139436af', N'lautaro@email.com', 0, 1, 1, 0, NULL, 0, N'es')
 INSERT [dbo].[Usuario] ([DNI], [Apellido], [Nombre], [UserName], [Contrasena], [Email], [Bloqueo], [Activo], [IdRol], [IntentosFallidos], [UltimoIntentoFallido], [DebeCambiarContrasena], [Idioma]) VALUES (N'55555555', N'vergara', N'lautaro', N'lautaro555', N'bded47e467ed1d20b249e6b8080bd37492872fe0b5c729fae6fd52f8ef769ee7', N'B1Kfkv6j+9/yWXidUj5So4zGuizGyQfjLKSwOhJqBhU=', 0, 1, 10, 0, NULL, 0, N'es')
 INSERT [dbo].[Usuario] ([DNI], [Apellido], [Nombre], [UserName], [Contrasena], [Email], [Bloqueo], [Activo], [IdRol], [IntentosFallidos], [UltimoIntentoFallido], [DebeCambiarContrasena], [Idioma]) VALUES (N'66666666', N'rodriguez', N'matias', N'matias666', N'bded47e467ed1d20b249e6b8080bd37492872fe0b5c729fae6fd52f8ef769ee7', N'YU/gA00NnsH5fuiuqVIU99/ACvpZrJhHvdA8fA3YYVg=', 0, 1, 8, 0, NULL, 0, N'es')
@@ -958,7 +994,7 @@ INSERT [dbo].[Usuario] ([DNI], [Apellido], [Nombre], [UserName], [Contrasena], [
 GO
 SET ANSI_PADDING ON
 GO
-/****** Object:  Index [UQ__Familia__75E3EFCF8D641F54]    Script Date: 7/6/2026 6:45:25 PM ******/
+/****** Object:  Index [UQ__Familia__75E3EFCFCCD3709D]    Script Date: 7/7/2026 7:40:53 PM ******/
 ALTER TABLE [dbo].[Familia] ADD UNIQUE NONCLUSTERED 
 (
 	[Nombre] ASC
@@ -966,7 +1002,7 @@ ALTER TABLE [dbo].[Familia] ADD UNIQUE NONCLUSTERED
 GO
 SET ANSI_PADDING ON
 GO
-/****** Object:  Index [UQ__Modulo__75E3EFCFFB4F17B8]    Script Date: 7/6/2026 6:45:25 PM ******/
+/****** Object:  Index [UQ__Modulo__75E3EFCFE089E561]    Script Date: 7/7/2026 7:40:53 PM ******/
 ALTER TABLE [dbo].[Modulo] ADD UNIQUE NONCLUSTERED 
 (
 	[Nombre] ASC
@@ -974,7 +1010,7 @@ ALTER TABLE [dbo].[Modulo] ADD UNIQUE NONCLUSTERED
 GO
 SET ANSI_PADDING ON
 GO
-/****** Object:  Index [UQ__Patente__6A1C4B2F6828E7B3]    Script Date: 7/6/2026 6:45:25 PM ******/
+/****** Object:  Index [UQ__Patente__6A1C4B2F111F5458]    Script Date: 7/7/2026 7:40:53 PM ******/
 ALTER TABLE [dbo].[Patente] ADD UNIQUE NONCLUSTERED 
 (
 	[DataKey] ASC
@@ -982,7 +1018,7 @@ ALTER TABLE [dbo].[Patente] ADD UNIQUE NONCLUSTERED
 GO
 SET ANSI_PADDING ON
 GO
-/****** Object:  Index [UQ__Patente__75E3EFCFC1740BC8]    Script Date: 7/6/2026 6:45:25 PM ******/
+/****** Object:  Index [UQ__Patente__75E3EFCF8F29985D]    Script Date: 7/7/2026 7:40:53 PM ******/
 ALTER TABLE [dbo].[Patente] ADD UNIQUE NONCLUSTERED 
 (
 	[Nombre] ASC
@@ -990,7 +1026,7 @@ ALTER TABLE [dbo].[Patente] ADD UNIQUE NONCLUSTERED
 GO
 SET ANSI_PADDING ON
 GO
-/****** Object:  Index [UQ__Roles__75E3EFCF1F205323]    Script Date: 7/6/2026 6:45:25 PM ******/
+/****** Object:  Index [UQ__Roles__75E3EFCF226891CC]    Script Date: 7/7/2026 7:40:53 PM ******/
 ALTER TABLE [dbo].[Roles] ADD UNIQUE NONCLUSTERED 
 (
 	[Nombre] ASC
@@ -998,7 +1034,7 @@ ALTER TABLE [dbo].[Roles] ADD UNIQUE NONCLUSTERED
 GO
 SET ANSI_PADDING ON
 GO
-/****** Object:  Index [UQ__TipoEven__75E3EFCFB3894F75]    Script Date: 7/6/2026 6:45:25 PM ******/
+/****** Object:  Index [UQ__TipoEven__75E3EFCFFE0147AB]    Script Date: 7/7/2026 7:40:53 PM ******/
 ALTER TABLE [dbo].[TipoEvento] ADD UNIQUE NONCLUSTERED 
 (
 	[Nombre] ASC
@@ -1006,7 +1042,7 @@ ALTER TABLE [dbo].[TipoEvento] ADD UNIQUE NONCLUSTERED
 GO
 SET ANSI_PADDING ON
 GO
-/****** Object:  Index [UQ_UserName]    Script Date: 7/6/2026 6:45:25 PM ******/
+/****** Object:  Index [UQ_UserName]    Script Date: 7/7/2026 7:40:53 PM ******/
 ALTER TABLE [dbo].[Usuario] ADD  CONSTRAINT [UQ_UserName] UNIQUE NONCLUSTERED 
 (
 	[UserName] ASC
@@ -1097,6 +1133,412 @@ GO
 ALTER TABLE [dbo].[FamiliaIntegrada]  WITH CHECK ADD  CONSTRAINT [CK_FamiliaIntegrada_NoAutoref] CHECK  (([IdFamiliaPadre]<>[IdFamiliaHija]))
 GO
 ALTER TABLE [dbo].[FamiliaIntegrada] CHECK CONSTRAINT [CK_FamiliaIntegrada_NoAutoref]
+GO
+/* ==========================================================================
+   NEGOCIO: RFN 1 (Reserva de vuelo) y RFN 2 (Check-in)
+   Base: [Gestion Usuario]
+   - Es idempotente: se puede ejecutar más de una vez sin romper nada.
+   - NO toca las tablas protegidas por el módulo de integridad
+     (Usuario, Roles, Patente, Modulo, TipoEvento, etc.).
+   ========================================================================== */
+USE [Gestion Usuario]
+GO
+SET ANSI_NULLS ON
+SET QUOTED_IDENTIFIER ON
+GO
+
+/* ------------------------------ CATÁLOGOS FIJOS ------------------------------
+   Los Id coinciden con los enums de la capa BE (ClaseVuelo_GV42, etc.).       */
+
+IF OBJECT_ID(N'dbo.ClaseVuelo', N'U') IS NULL
+    CREATE TABLE dbo.ClaseVuelo (
+        Id     INT          NOT NULL PRIMARY KEY,
+        Nombre NVARCHAR(30) NOT NULL UNIQUE
+    )
+GO
+IF OBJECT_ID(N'dbo.TipoViaje', N'U') IS NULL
+    CREATE TABLE dbo.TipoViaje (
+        Id     INT          NOT NULL PRIMARY KEY,
+        Nombre NVARCHAR(30) NOT NULL UNIQUE
+    )
+GO
+IF OBJECT_ID(N'dbo.EstadoReserva', N'U') IS NULL
+    CREATE TABLE dbo.EstadoReserva (
+        Id     INT          NOT NULL PRIMARY KEY,
+        Nombre NVARCHAR(30) NOT NULL UNIQUE
+    )
+GO
+IF OBJECT_ID(N'dbo.MedioPago', N'U') IS NULL
+    CREATE TABLE dbo.MedioPago (
+        Id     INT          NOT NULL PRIMARY KEY,
+        Nombre NVARCHAR(30) NOT NULL UNIQUE
+    )
+GO
+IF OBJECT_ID(N'dbo.EstadoCheckIn', N'U') IS NULL
+    CREATE TABLE dbo.EstadoCheckIn (
+        Id     INT          NOT NULL PRIMARY KEY,
+        Nombre NVARCHAR(30) NOT NULL UNIQUE
+    )
+GO
+
+INSERT INTO dbo.ClaseVuelo (Id, Nombre)
+SELECT v.Id, v.Nombre FROM (VALUES (1, N'Económica'), (2, N'Ejecutiva'), (3, N'Primera clase')) v(Id, Nombre)
+WHERE NOT EXISTS (SELECT 1 FROM dbo.ClaseVuelo c WHERE c.Id = v.Id)
+GO
+INSERT INTO dbo.TipoViaje (Id, Nombre)
+SELECT v.Id, v.Nombre FROM (VALUES (1, N'Ida'), (2, N'Ida y Vuelta')) v(Id, Nombre)
+WHERE NOT EXISTS (SELECT 1 FROM dbo.TipoViaje c WHERE c.Id = v.Id)
+GO
+INSERT INTO dbo.EstadoReserva (Id, Nombre)
+SELECT v.Id, v.Nombre FROM (VALUES (1, N'Pendiente de Pago'), (2, N'Confirmada')) v(Id, Nombre)
+WHERE NOT EXISTS (SELECT 1 FROM dbo.EstadoReserva c WHERE c.Id = v.Id)
+GO
+INSERT INTO dbo.MedioPago (Id, Nombre)
+SELECT v.Id, v.Nombre FROM (VALUES (1, N'Tarjeta de débito'), (2, N'Tarjeta de crédito'), (3, N'Transferencia'), (4, N'Efectivo')) v(Id, Nombre)
+WHERE NOT EXISTS (SELECT 1 FROM dbo.MedioPago c WHERE c.Id = v.Id)
+GO
+INSERT INTO dbo.EstadoCheckIn (Id, Nombre)
+SELECT v.Id, v.Nombre FROM (VALUES (1, N'Pendiente'), (2, N'Realizado')) v(Id, Nombre)
+WHERE NOT EXISTS (SELECT 1 FROM dbo.EstadoCheckIn c WHERE c.Id = v.Id)
+GO
+
+/* --------------------------- CATÁLOGOS AMPLIABLES --------------------------- */
+
+IF OBJECT_ID(N'dbo.TipoAdicional', N'U') IS NULL
+    CREATE TABLE dbo.TipoAdicional (
+        Id     INT IDENTITY(1,1) NOT NULL PRIMARY KEY,
+        Nombre NVARCHAR(60)      NOT NULL UNIQUE,
+        Activo BIT               NOT NULL CONSTRAINT DF_TipoAdicional_Activo DEFAULT (1)
+    )
+GO
+INSERT INTO dbo.TipoAdicional (Nombre)
+SELECT v.Nombre FROM (VALUES (N'Equipaje extra'), (N'Asiento preferencial'), (N'Comida especial'),
+                             (N'Asistencia prioritaria'), (N'Otro')) v(Nombre)
+WHERE NOT EXISTS (SELECT 1 FROM dbo.TipoAdicional t WHERE t.Nombre = v.Nombre)
+GO
+
+IF OBJECT_ID(N'dbo.Aeropuerto', N'U') IS NULL
+    CREATE TABLE dbo.Aeropuerto (
+        Id         INT IDENTITY(1,1) NOT NULL PRIMARY KEY,
+        CodigoIata CHAR(3)           NOT NULL UNIQUE,
+        Nombre     NVARCHAR(100)     NOT NULL,
+        Ciudad     NVARCHAR(60)      NOT NULL,
+        Pais       NVARCHAR(60)      NOT NULL
+    )
+GO
+
+IF OBJECT_ID(N'dbo.Aerolinea', N'U') IS NULL
+    CREATE TABLE dbo.Aerolinea (
+        Id     INT IDENTITY(1,1) NOT NULL PRIMARY KEY,
+        Nombre NVARCHAR(80)      NOT NULL UNIQUE
+    )
+GO
+
+/* --------------------------------- VUELOS ---------------------------------- */
+
+IF OBJECT_ID(N'dbo.Vuelo', N'U') IS NULL
+    CREATE TABLE dbo.Vuelo (
+        Id                INT IDENTITY(1,1) NOT NULL PRIMARY KEY,
+        CodigoVuelo       NVARCHAR(10)      NOT NULL UNIQUE,
+        IdAerolinea       INT               NOT NULL CONSTRAINT FK_Vuelo_Aerolinea REFERENCES dbo.Aerolinea (Id),
+        IdOrigen          INT               NOT NULL CONSTRAINT FK_Vuelo_Origen    REFERENCES dbo.Aeropuerto (Id),
+        IdDestino         INT               NOT NULL CONSTRAINT FK_Vuelo_Destino   REFERENCES dbo.Aeropuerto (Id),
+        FechaHoraSalida   DATETIME2(0)      NOT NULL,
+        FechaHoraLlegada  DATETIME2(0)      NOT NULL,
+        PuertaEmbarque    NVARCHAR(10)      NOT NULL,
+        CostoKiloExceso   DECIMAL(10,2)     NOT NULL CONSTRAINT CK_Vuelo_CostoKilo CHECK (CostoKiloExceso >= 0),
+        CONSTRAINT CK_Vuelo_Ruta    CHECK (IdOrigen <> IdDestino),
+        CONSTRAINT CK_Vuelo_Horario CHECK (FechaHoraLlegada > FechaHoraSalida)
+    )
+GO
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'IX_Vuelo_Busqueda' AND object_id = OBJECT_ID(N'dbo.Vuelo'))
+    CREATE INDEX IX_Vuelo_Busqueda ON dbo.Vuelo (IdOrigen, IdDestino, FechaHoraSalida)
+GO
+
+-- Precio, cupo y franquicia de equipaje de cada clase de un vuelo.
+-- AsientosReservados sube al generar una reserva (incluso pendiente de pago).
+IF OBJECT_ID(N'dbo.VueloClase', N'U') IS NULL
+    CREATE TABLE dbo.VueloClase (
+        IdVuelo              INT           NOT NULL CONSTRAINT FK_VueloClase_Vuelo REFERENCES dbo.Vuelo (Id),
+        IdClase              INT           NOT NULL CONSTRAINT FK_VueloClase_Clase REFERENCES dbo.ClaseVuelo (Id),
+        PrecioBase           DECIMAL(12,2) NOT NULL CONSTRAINT CK_VueloClase_Precio CHECK (PrecioBase >= 0),
+        CapacidadAsientos    INT           NOT NULL CONSTRAINT CK_VueloClase_Capacidad CHECK (CapacidadAsientos >= 0),
+        AsientosReservados   INT           NOT NULL CONSTRAINT DF_VueloClase_Reservados DEFAULT (0),
+        FranquiciaEquipajeKg DECIMAL(6,2)  NOT NULL CONSTRAINT CK_VueloClase_Franquicia CHECK (FranquiciaEquipajeKg >= 0),
+        CONSTRAINT PK_VueloClase PRIMARY KEY (IdVuelo, IdClase),
+        CONSTRAINT CK_VueloClase_Cupo CHECK (AsientosReservados >= 0 AND AsientosReservados <= CapacidadAsientos)
+    )
+GO
+
+IF OBJECT_ID(N'dbo.Asiento', N'U') IS NULL
+    CREATE TABLE dbo.Asiento (
+        Id            INT IDENTITY(1,1) NOT NULL PRIMARY KEY,
+        IdVuelo       INT               NOT NULL CONSTRAINT FK_Asiento_Vuelo REFERENCES dbo.Vuelo (Id),
+        Fila          INT               NOT NULL,
+        Letra         CHAR(1)           NOT NULL,
+        NumeroAsiento AS (CAST(Fila AS NVARCHAR(3)) + CAST(Letra AS NVARCHAR(1))) PERSISTED,
+        IdClase       INT               NOT NULL CONSTRAINT FK_Asiento_Clase REFERENCES dbo.ClaseVuelo (Id),
+        Ubicacion     NVARCHAR(10)      NOT NULL CONSTRAINT CK_Asiento_Ubicacion CHECK (Ubicacion IN (N'Ventana', N'Central', N'Pasillo')),
+        CONSTRAINT UQ_Asiento_Vuelo_Numero UNIQUE (IdVuelo, Fila, Letra)
+    )
+GO
+
+/* ------------------------------ PERSONAS (RFN 1) ------------------------------
+   El Email se guarda cifrado desde la capa DAL (igual que en Usuario).          */
+
+IF OBJECT_ID(N'dbo.Cliente', N'U') IS NULL
+    CREATE TABLE dbo.Cliente (
+        DNI       NVARCHAR(20)  NOT NULL PRIMARY KEY,
+        Nombre    NVARCHAR(60)  NOT NULL,
+        Apellido  NVARCHAR(60)  NOT NULL,
+        Email     NVARCHAR(500) NOT NULL,
+        Telefono  NVARCHAR(30)  NOT NULL,
+        FechaAlta DATETIME2(0)  NOT NULL CONSTRAINT DF_Cliente_FechaAlta DEFAULT (GETDATE())
+    )
+GO
+IF OBJECT_ID(N'dbo.Pasajero', N'U') IS NULL
+    CREATE TABLE dbo.Pasajero (
+        DNI      NVARCHAR(20)  NOT NULL PRIMARY KEY,
+        Nombre   NVARCHAR(60)  NOT NULL,
+        Apellido NVARCHAR(60)  NOT NULL,
+        Email    NVARCHAR(500) NOT NULL,
+        Telefono NVARCHAR(30)  NOT NULL
+    )
+GO
+
+/* --------------------------------- RESERVA ---------------------------------- */
+
+IF OBJECT_ID(N'dbo.Reserva', N'U') IS NULL
+    CREATE TABLE dbo.Reserva (
+        Id                  INT IDENTITY(1,1) NOT NULL PRIMARY KEY,
+        NumeroReserva       AS (N'RES-' + RIGHT(N'000000' + CAST(Id AS NVARCHAR(10)), 6)) PERSISTED,
+        DniCliente          NVARCHAR(20)      NOT NULL CONSTRAINT FK_Reserva_Cliente    REFERENCES dbo.Cliente (DNI),
+        IdVuelo             INT               NOT NULL,
+        IdClase             INT               NOT NULL,
+        IdTipoViaje         INT               NOT NULL CONSTRAINT FK_Reserva_TipoViaje  REFERENCES dbo.TipoViaje (Id),
+        FechaRegreso        DATE              NULL,
+        CantidadPasajeros   INT               NOT NULL CONSTRAINT CK_Reserva_Cantidad CHECK (CantidadPasajeros > 0),
+        ImporteBase         DECIMAL(12,2)     NOT NULL,
+        SubtotalAdicionales DECIMAL(12,2)     NOT NULL CONSTRAINT DF_Reserva_Subtotal DEFAULT (0),
+        Impuestos           DECIMAL(12,2)     NOT NULL,
+        ImporteTotal        DECIMAL(12,2)     NOT NULL,
+        IdEstadoReserva     INT               NOT NULL CONSTRAINT DF_Reserva_Estado DEFAULT (1)
+                                              CONSTRAINT FK_Reserva_Estado REFERENCES dbo.EstadoReserva (Id),
+        FechaRealizacion    DATETIME2(0)      NOT NULL CONSTRAINT DF_Reserva_Fecha DEFAULT (GETDATE()),
+        LoginVendedor       NVARCHAR(50)      NOT NULL,
+        CONSTRAINT FK_Reserva_VueloClase FOREIGN KEY (IdVuelo, IdClase) REFERENCES dbo.VueloClase (IdVuelo, IdClase),
+        CONSTRAINT UQ_Reserva_Numero UNIQUE (NumeroReserva),
+        CONSTRAINT CK_Reserva_FechaRegreso CHECK (
+            (IdTipoViaje = 1 AND FechaRegreso IS NULL) OR (IdTipoViaje = 2 AND FechaRegreso IS NOT NULL))
+    )
+GO
+
+IF OBJECT_ID(N'dbo.ReservaPasajero', N'U') IS NULL
+    CREATE TABLE dbo.ReservaPasajero (
+        IdReserva   INT          NOT NULL CONSTRAINT FK_ReservaPasajero_Reserva  REFERENCES dbo.Reserva (Id),
+        DniPasajero NVARCHAR(20) NOT NULL CONSTRAINT FK_ReservaPasajero_Pasajero REFERENCES dbo.Pasajero (DNI),
+        CONSTRAINT PK_ReservaPasajero PRIMARY KEY (IdReserva, DniPasajero)
+    )
+GO
+
+IF OBJECT_ID(N'dbo.ReservaAdicional', N'U') IS NULL
+    CREATE TABLE dbo.ReservaAdicional (
+        Id              INT IDENTITY(1,1) NOT NULL PRIMARY KEY,
+        IdReserva       INT               NOT NULL CONSTRAINT FK_ReservaAdicional_Reserva REFERENCES dbo.Reserva (Id),
+        IdTipoAdicional INT               NOT NULL CONSTRAINT FK_ReservaAdicional_Tipo    REFERENCES dbo.TipoAdicional (Id),
+        Cantidad        INT               NOT NULL CONSTRAINT CK_ReservaAdicional_Cantidad CHECK (Cantidad > 0),
+        CostoUnitario   DECIMAL(12,2)     NOT NULL CONSTRAINT CK_ReservaAdicional_Costo    CHECK (CostoUnitario >= 0),
+        Subtotal        AS (Cantidad * CostoUnitario) PERSISTED
+    )
+GO
+
+IF OBJECT_ID(N'dbo.Pago', N'U') IS NULL
+    CREATE TABLE dbo.Pago (
+        Id                  INT IDENTITY(1,1) NOT NULL PRIMARY KEY,
+        IdReserva         INT               NOT NULL,
+        ImporteTotalAbonado DECIMAL(12,2)     NOT NULL CONSTRAINT CK_Pago_Importe CHECK (ImporteTotalAbonado > 0),
+        IdMedioPago         INT               NOT NULL CONSTRAINT FK_Pago_Medio REFERENCES dbo.MedioPago (Id),
+        NumeroTransaccion   NVARCHAR(40)      NOT NULL CONSTRAINT UQ_Pago_Transaccion UNIQUE,
+        FechaHoraPago       DATETIME2(0)      NOT NULL CONSTRAINT DF_Pago_Fecha DEFAULT (GETDATE()),
+        LoginVendedor       NVARCHAR(50)      NOT NULL,
+        CONSTRAINT UQ_Pago_Reserva UNIQUE (IdReserva),
+        CONSTRAINT FK_Pago_Reserva FOREIGN KEY (IdReserva) REFERENCES dbo.Reserva (Id)
+    )
+GO
+
+-- Un boleto por pasajero, emitido al confirmarse el pago.
+IF OBJECT_ID(N'dbo.Boleto', N'U') IS NULL
+    CREATE TABLE dbo.Boleto (
+        Id            INT IDENTITY(1,1) NOT NULL PRIMARY KEY,
+        NumeroBoleto  AS (N'BOL-' + RIGHT(N'000000' + CAST(Id AS NVARCHAR(10)), 6)) PERSISTED,
+        IdReserva     INT               NOT NULL,
+        DniPasajero   NVARCHAR(20)      NOT NULL,
+        FechaEmision  DATETIME2(0)      NOT NULL CONSTRAINT DF_Boleto_Fecha DEFAULT (GETDATE()),
+        CONSTRAINT UQ_Boleto_Numero UNIQUE (NumeroBoleto),
+        CONSTRAINT UQ_Boleto_Pasajero UNIQUE (IdReserva, DniPasajero),
+        CONSTRAINT FK_Boleto_ReservaPasajero FOREIGN KEY (IdReserva, DniPasajero) REFERENCES dbo.ReservaPasajero (IdReserva, DniPasajero)
+    )
+GO
+
+/* --------------------------------- CHECK-IN --------------------------------- */
+
+-- Se crea (estado Pendiente) para cada pasajero al confirmarse el pago de la reserva.
+IF OBJECT_ID(N'dbo.CheckIn', N'U') IS NULL
+    CREATE TABLE dbo.CheckIn (
+        Id               INT IDENTITY(1,1) NOT NULL PRIMARY KEY,
+        IdReserva        INT               NOT NULL,
+        DniPasajero      NVARCHAR(20)      NOT NULL,
+        IdEstadoCheckIn  INT               NOT NULL CONSTRAINT DF_CheckIn_Estado DEFAULT (1)
+                                           CONSTRAINT FK_CheckIn_Estado REFERENCES dbo.EstadoCheckIn (Id),
+        FechaHoraCheckIn DATETIME2(0)      NULL,
+        IdAsiento        INT               NULL CONSTRAINT FK_CheckIn_Asiento REFERENCES dbo.Asiento (Id),
+        LoginEncargado   NVARCHAR(50)      NULL,
+        CONSTRAINT UQ_CheckIn_Pasajero UNIQUE (IdReserva, DniPasajero),
+        CONSTRAINT FK_CheckIn_ReservaPasajero FOREIGN KEY (IdReserva, DniPasajero) REFERENCES dbo.ReservaPasajero (IdReserva, DniPasajero)
+    )
+GO
+-- Un asiento no puede estar asignado a dos check-ins a la vez.
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'UX_CheckIn_Asiento' AND object_id = OBJECT_ID(N'dbo.CheckIn'))
+    CREATE UNIQUE INDEX UX_CheckIn_Asiento ON dbo.CheckIn (IdAsiento) WHERE IdAsiento IS NOT NULL
+GO
+
+IF OBJECT_ID(N'dbo.Equipaje', N'U') IS NULL
+    CREATE TABLE dbo.Equipaje (
+        Id             INT IDENTITY(1,1) NOT NULL PRIMARY KEY,
+        IdCheckIn         INT               NOT NULL,
+        CantidadBultos INT               NOT NULL CONSTRAINT CK_Equipaje_Bultos CHECK (CantidadBultos > 0),
+        PesoTotalKg    DECIMAL(7,2)      NOT NULL CONSTRAINT CK_Equipaje_Peso   CHECK (PesoTotalKg > 0),
+        FranquiciaKg   DECIMAL(7,2)      NOT NULL,
+        CONSTRAINT UQ_Equipaje_CheckIn UNIQUE (IdCheckIn),
+        CONSTRAINT FK_Equipaje_CheckIn FOREIGN KEY (IdCheckIn) REFERENCES dbo.CheckIn (Id)
+    )
+GO
+
+IF OBJECT_ID(N'dbo.EtiquetaEquipaje', N'U') IS NULL
+    CREATE TABLE dbo.EtiquetaEquipaje (
+        Id             INT IDENTITY(1,1) NOT NULL PRIMARY KEY,
+        IdEquipaje     INT               NOT NULL CONSTRAINT FK_Etiqueta_Equipaje REFERENCES dbo.Equipaje (Id),
+        CodigoEquipaje NVARCHAR(20)      NOT NULL CONSTRAINT UQ_Etiqueta_Codigo UNIQUE
+    )
+GO
+
+-- Solo existe si el peso superó la franquicia; incluye el cobro al pasajero.
+IF OBJECT_ID(N'dbo.CargoExcesoEquipaje', N'U') IS NULL
+    CREATE TABLE dbo.CargoExcesoEquipaje (
+        Id                INT IDENTITY(1,1) NOT NULL PRIMARY KEY,
+        IdEquipaje        INT               NOT NULL,
+        KilosExceso       DECIMAL(7,2)      NOT NULL CONSTRAINT CK_Cargo_Kilos CHECK (KilosExceso > 0),
+        CostoPorKilo      DECIMAL(10,2)     NOT NULL,
+        ImporteCargo      DECIMAL(12,2)     NOT NULL,
+        IdMedioPago       INT               NOT NULL CONSTRAINT FK_Cargo_Medio REFERENCES dbo.MedioPago (Id),
+        NumeroTransaccion NVARCHAR(40)      NULL,
+        FechaHoraCobro    DATETIME2(0)      NOT NULL CONSTRAINT DF_Cargo_Fecha DEFAULT (GETDATE()),
+        CONSTRAINT UQ_Cargo_Equipaje UNIQUE (IdEquipaje),
+        CONSTRAINT FK_Cargo_Equipaje FOREIGN KEY (IdEquipaje) REFERENCES dbo.Equipaje (Id)
+    )
+GO
+
+IF OBJECT_ID(N'dbo.TarjetaEmbarque', N'U') IS NULL
+    CREATE TABLE dbo.TarjetaEmbarque (
+        Id                 INT IDENTITY(1,1) NOT NULL PRIMARY KEY,
+        NumeroTarjeta      AS (N'TE-' + RIGHT(N'000000' + CAST(Id AS NVARCHAR(10)), 6)) PERSISTED,
+        IdCheckIn         INT               NOT NULL,
+        PuertaEmbarque     NVARCHAR(10)      NOT NULL,
+        HoraLimiteEmbarque DATETIME2(0)      NOT NULL,
+        FechaHoraEmision   DATETIME2(0)      NOT NULL CONSTRAINT DF_Tarjeta_Fecha DEFAULT (GETDATE()),
+        CONSTRAINT UQ_Tarjeta_Numero UNIQUE (NumeroTarjeta),
+        CONSTRAINT UQ_Tarjeta_CheckIn UNIQUE (IdCheckIn),
+        CONSTRAINT FK_Tarjeta_CheckIn FOREIGN KEY (IdCheckIn) REFERENCES dbo.CheckIn (Id)
+    )
+GO
+
+/* =====================================================================
+   DATOS DE EJEMPLO (aeropuertos, aerolíneas, vuelos y asientos)
+   Las fechas son relativas a HOY para que siempre haya vuelos futuros.
+   Para probar el check-in usar el vuelo AR1500 (sale mañana, dentro de
+   la ventana de 48 hs).
+   ===================================================================== */
+
+INSERT INTO dbo.Aeropuerto (CodigoIata, Nombre, Ciudad, Pais)
+SELECT v.Iata, v.Nombre, v.Ciudad, v.Pais
+FROM (VALUES
+    ('AEP', N'Aeroparque Jorge Newbery',            N'Buenos Aires', N'Argentina'),
+    ('EZE', N'Aeropuerto Internacional Ezeiza',     N'Buenos Aires', N'Argentina'),
+    ('COR', N'Aeropuerto Internacional Pajas Blancas', N'Córdoba',   N'Argentina'),
+    ('MDZ', N'Aeropuerto Internacional El Plumerillo', N'Mendoza',   N'Argentina'),
+    ('BRC', N'Aeropuerto Internacional Teniente Candelaria', N'Bariloche', N'Argentina'),
+    ('IGR', N'Aeropuerto Internacional Cataratas del Iguazú', N'Puerto Iguazú', N'Argentina')
+) v(Iata, Nombre, Ciudad, Pais)
+WHERE NOT EXISTS (SELECT 1 FROM dbo.Aeropuerto a WHERE a.CodigoIata = v.Iata)
+GO
+
+INSERT INTO dbo.Aerolinea (Nombre)
+SELECT v.Nombre FROM (VALUES (N'Aerolíneas Argentinas'), (N'Flybondi'), (N'JetSMART')) v(Nombre)
+WHERE NOT EXISTS (SELECT 1 FROM dbo.Aerolinea a WHERE a.Nombre = v.Nombre)
+GO
+
+-- Vuelos de ejemplo.
+INSERT INTO dbo.Vuelo (CodigoVuelo, IdAerolinea, IdOrigen, IdDestino, FechaHoraSalida, FechaHoraLlegada, PuertaEmbarque, CostoKiloExceso)
+SELECT v.Codigo, al.Id, o.Id, d.Id,
+       DATEADD(MINUTE, v.MinSalida, CAST(CAST(GETDATE() AS DATE) AS DATETIME2(0))) ,
+       DATEADD(MINUTE, v.MinSalida + v.DuracionMin, CAST(CAST(GETDATE() AS DATE) AS DATETIME2(0))),
+       v.Puerta, v.CostoKilo
+FROM (VALUES
+    -- Código  Aerolínea                  Origen Destino  minutos desde hoy 00:00      Duración Puerta  $/kg
+    (N'AR1500', N'Aerolíneas Argentinas', 'AEP', 'COR',   1 * 1440 + 10 * 60 + 30,      80,      N'A4',  3500.00),
+    (N'AR1502', N'Aerolíneas Argentinas', 'AEP', 'COR',   1 * 1440 + 18 * 60,           80,      N'A6',  3500.00),
+    (N'FB3020', N'Flybondi',              'AEP', 'MDZ',   3 * 1440 +  7 * 60 + 15,      115,     N'B2',  3000.00),
+    (N'JA8110', N'JetSMART',              'AEP', 'BRC',   5 * 1440 +  9 * 60,           140,     N'C1',  3200.00),
+    (N'AR1880', N'Aerolíneas Argentinas', 'EZE', 'IGR',   6 * 1440 + 13 * 60 + 45,      120,     N'D3',  3800.00),
+    (N'AR1501', N'Aerolíneas Argentinas', 'COR', 'AEP',   7 * 1440 + 16 * 60,           80,      N'B5',  3500.00)
+) v(Codigo, Aerolinea, Origen, Destino, MinSalida, DuracionMin, Puerta, CostoKilo)
+INNER JOIN dbo.Aerolinea al ON al.Nombre = v.Aerolinea
+INNER JOIN dbo.Aeropuerto o ON o.CodigoIata = v.Origen
+INNER JOIN dbo.Aeropuerto d ON d.CodigoIata = v.Destino
+WHERE NOT EXISTS (SELECT 1 FROM dbo.Vuelo x WHERE x.CodigoVuelo = v.Codigo)
+GO
+
+-- Asientos de cada vuelo de ejemplo:
+--   Filas 1-2   Primera clase  (12 asientos)
+--   Filas 3-6   Ejecutiva      (24 asientos)
+--   Filas 7-20  Económica      (84 asientos)
+-- Letras A y F = Ventana, B y E = Central, C y D = Pasillo.
+;WITH Filas AS (
+    SELECT TOP (20) ROW_NUMBER() OVER (ORDER BY (SELECT NULL)) AS Fila FROM sys.all_objects
+),
+Letras AS (
+    SELECT l.Letra, l.Ubicacion FROM (VALUES
+        ('A', N'Ventana'), ('B', N'Central'), ('C', N'Pasillo'),
+        ('D', N'Pasillo'), ('E', N'Central'), ('F', N'Ventana')) l(Letra, Ubicacion)
+)
+INSERT INTO dbo.Asiento (IdVuelo, Fila, Letra, IdClase, Ubicacion)
+SELECT v.Id, f.Fila, l.Letra,
+       CASE WHEN f.Fila <= 2 THEN 3 WHEN f.Fila <= 6 THEN 2 ELSE 1 END,
+       l.Ubicacion
+FROM dbo.Vuelo v
+CROSS JOIN Filas f
+CROSS JOIN Letras l
+WHERE NOT EXISTS (SELECT 1 FROM dbo.Asiento a WHERE a.IdVuelo = v.Id)
+GO
+
+-- Cupo, precio y franquicia por clase (el cupo coincide con la cantidad de asientos creados).
+INSERT INTO dbo.VueloClase (IdVuelo, IdClase, PrecioBase, CapacidadAsientos, FranquiciaEquipajeKg)
+SELECT v.Id, c.IdClase,
+       CAST(ROUND(b.PrecioEco * c.Factor, 0) AS DECIMAL(12,2)),
+       c.Capacidad, c.Franquicia
+FROM dbo.Vuelo v
+INNER JOIN (VALUES
+    (N'AR1500', 95000.00), (N'AR1502', 98000.00), (N'FB3020', 72000.00),
+    (N'JA8110', 89000.00), (N'AR1880', 130000.00), (N'AR1501', 95000.00)
+) b(Codigo, PrecioEco) ON b.Codigo = v.CodigoVuelo
+CROSS JOIN (VALUES
+    -- IdClase Factor Capacidad Franquicia (kg)
+    (1, 1.0, 84, 15.0),
+    (2, 2.2, 24, 23.0),
+    (3, 3.5, 12, 32.0)
+) c(IdClase, Factor, Capacidad, Franquicia)
+WHERE NOT EXISTS (SELECT 1 FROM dbo.VueloClase x WHERE x.IdVuelo = v.Id AND x.IdClase = c.IdClase)
+GO
 GO
 USE [master]
 GO
