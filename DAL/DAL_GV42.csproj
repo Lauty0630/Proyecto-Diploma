@@ -56,10 +56,12 @@
     <Compile Include="DALCheckIn_GV42.cs" />
     <Compile Include="DALCliente_GV42.cs" />
     <Compile Include="DALEquipaje_GV42.cs" />
+    <Compile Include="DALIntegridad_GV42.cs" />
     <Compile Include="DALPago_GV42.cs" />
     <Compile Include="DALReserva_GV42.cs" />
     <Compile Include="DALTarjetaEmbarque_GV42.cs" />
     <Compile Include="DALTipoAdicional_GV42.cs" />
+    <Compile Include="DALUsuario_GV42.cs" />
     <Compile Include="DALUtil_GV42.cs" />
     <Compile Include="DALVuelo_GV42.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

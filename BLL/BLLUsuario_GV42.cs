@@ -1,4 +1,4 @@
-using DAL;
+﻿using DAL;
 using Servicios;
 using System;
 using System.Collections.Generic;
@@ -249,6 +249,50 @@ namespace BLL
                 throw new Exception(IdiomaManager_GV42.T("err.insertFallido"));
             Auditar(SessionManager_GV42.Instancia.ObtenerUsuarioActual().Login, "Admin","Usuario creado", $"Login: {login}", "Baja");
             RecalcularUsuario();
+        }
+
+        // Alta de la cuenta de un cliente autogestionado (RFN 1: el cliente se registra y reserva
+        // por sí mismo, sin empleado). El rol "Cliente" debe existir en la tabla Roles (lo crea el
+        // script de negocio). Devuelve el usuario creado, ya con su Rol completo.
+        public Usuario_GV42 CrearUsuarioAutogestionado(string dni, string nombre, string apellido, string email,
+                                                       string login, string contrasenaPlana)
+        {
+            Rol_GV42 rolCliente = _DALUsuario.BuscarPorNombre("Cliente");
+            if (rolCliente == null)
+                throw new Exception("No existe el rol 'Cliente'. Ejecute el script de negocio antes de habilitar el autoregistro.");
+
+            if (!Validaciones_GV42.EsLoginValido(login))
+                throw new Exception(Validaciones_GV42.MENSAJE_LOGIN);
+            if (!Validaciones_GV42.EsContrasenaValida(contrasenaPlana))
+                throw new Exception(Validaciones_GV42.MENSAJE_CONTRASENA);
+
+            if (_DALUsuario.ExisteDNI(dni))
+                throw new Exception(string.Format(IdiomaManager_GV42.T("err.dniDuplicado"), dni));
+            if (_DALUsuario.BuscarPorLogin(login) != null)
+                throw new Exception(string.Format(IdiomaManager_GV42.T("err.usuarioLoginDuplicado"), login));
+
+            string contrasenaCifrada = Encriptador_GV42.Instancia.EncriptarContrasena(contrasenaPlana);
+
+            Usuario_GV42 u = new Usuario_GV42
+            {
+                DNI = dni,
+                Apellido = apellido,
+                Nombre = nombre,
+                Login = login,
+                Contrasena = contrasenaCifrada,
+                Rol = rolCliente,
+                Email = email
+            };
+
+            int filas = _DALUsuario.AgregarUsuarioAutogestionado(u);
+            if (filas == 0)
+                throw new Exception(IdiomaManager_GV42.T("err.insertFallido"));
+
+            Auditar(login, "Reservas", "Cliente autogestionado registrado", "Login: " + login, "Media");
+            RecalcularUsuario();
+
+            u.Rol = rolCliente;
+            return u;
         }
 
         public enum ResultadoCambioContrasena

@@ -51,6 +51,8 @@
     <Compile Include="AdicionalReserva_GV42.cs" />
     <Compile Include="Aerolinea_GV42.cs" />
     <Compile Include="Aeropuerto_GV42.cs" />
+    <Compile Include="AsientoDisponibilidad_GV42.cs" />
+    <Compile Include="AsientoPasajero_GV42.cs" />
     <Compile Include="Asiento_GV42.cs" />
     <Compile Include="Boleto_GV42.cs" />
     <Compile Include="CargoExcesoEquipaje_GV42.cs" />

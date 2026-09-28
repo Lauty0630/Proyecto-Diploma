@@ -1,4 +1,4 @@
-﻿using BE;
+﻿﻿using BE;
 using System;
 using System.Collections.Generic;
 using System.Data;
@@ -20,8 +20,10 @@ namespace DAL
         // FechaRealizacion completados.
         public Reserva_GV42 Crear(Reserva_GV42 r)
         {
-            return _acceso.EjecutarEnTransaccion(tx =>
+            try
             {
+                return _acceso.EjecutarEnTransaccion(tx =>
+                {
                 // 1) Reservar los asientos. La condición evita vender de más si dos vendedores compiten.
                 int filas = _acceso.escribir(tx,
                     "UPDATE VueloClase SET AsientosReservados = AsientosReservados + @Cant " +
@@ -97,6 +99,21 @@ namespace DAL
                         });
                 }
 
+                // 3.5) Asiento elegido por cada pasajero (selección estilo cine). El índice único
+                // filtrado UX_ReservaPasajero_Asiento asegura que dos pasajeros no se queden con el mismo
+                // asiento aunque compitan al mismo tiempo.
+                foreach (AsientoPasajero_GV42 ap in r.AsientosPorPasajero)
+                {
+                    _acceso.escribir(tx,
+                        "UPDATE ReservaPasajero SET IdAsiento = @IdAsiento " +
+                        "WHERE IdReserva = @IdReserva AND DniPasajero = @DNI",
+                        new[] {
+                            new SqlParameter("@IdAsiento", ap.Asiento.Id),
+                            new SqlParameter("@IdReserva", idReserva),
+                            new SqlParameter("@DNI",       ap.DniPasajero)
+                        });
+                }
+
                 // 5) Datos autogenerados por la base.
                 DataTable dt = _acceso.leer(tx,
                     "SELECT NumeroReserva, FechaRealizacion FROM Reserva WHERE Id = @Id",
@@ -105,8 +122,15 @@ namespace DAL
                 r.Id = idReserva;
                 r.NumeroReserva = DALUtil_GV42.Str(dt.Rows[0], "NumeroReserva");
                 r.FechaRealizacion = DALUtil_GV42.Fecha(dt.Rows[0], "FechaRealizacion");
-                return r;
-            });
+                    return r;
+                });
+            }
+            catch (SqlException ex)
+            {
+                if (ex.Number == 2601 || ex.Number == 2627)
+                    throw new NegocioException_GV42("Uno de los asientos elegidos ya fue tomado por otro pasajero. Volvé a elegir el asiento.", ex);
+                throw;
+            }
         }
 
         public Reserva_GV42 BuscarPorNumero(string numeroReserva)
@@ -150,6 +174,7 @@ namespace DAL
             };
 
             reserva.Pasajeros = ListarPasajeros(reserva.Id);
+            reserva.AsientosPorPasajero = ListarAsientosPorPasajero(reserva.Id);
             reserva.Adicionales = ListarAdicionales(reserva.Id);
             reserva.Pago = new DALPago_GV42().BuscarPorReserva(reserva.Id);
             return reserva;
@@ -169,6 +194,30 @@ namespace DAL
                 var p = new Pasajero_GV42();
                 DALUtil_GV42.LlenarPersona(p, r, "");
                 lista.Add(p);
+            }
+            return lista;
+        }
+
+        public List<AsientoPasajero_GV42> ListarAsientosPorPasajero(int idReserva)
+        {
+            string query =
+                "SELECT RP.DniPasajero, A.Id, A.IdVuelo, A.Fila, A.Letra, A.NumeroAsiento, A.IdClase, A.Ubicacion " +
+                "FROM ReservaPasajero RP INNER JOIN Asiento A ON A.Id = RP.IdAsiento " +
+                "WHERE RP.IdReserva = @Id";
+
+            DataTable dt = _acceso.leer(query, new[] { new SqlParameter("@Id", idReserva) });
+            var lista = new List<AsientoPasajero_GV42>();
+            foreach (DataRow r in dt.Rows)
+            {
+                var asiento = new Asiento_GV42
+                {
+                    Id = DALUtil_GV42.Int(r, "Id"),
+                    IdVuelo = DALUtil_GV42.Int(r, "IdVuelo"),
+                    NumeroAsiento = DALUtil_GV42.Str(r, "NumeroAsiento"),
+                    Clase = (ClaseVuelo_GV42)DALUtil_GV42.Int(r, "IdClase"),
+                    Ubicacion = DALUtil_GV42.Str(r, "Ubicacion")
+                };
+                lista.Add(new AsientoPasajero_GV42(DALUtil_GV42.Str(r, "DniPasajero"), asiento));
             }
             return lista;
         }

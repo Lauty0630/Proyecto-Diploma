@@ -1,4 +1,4 @@
-using Servicios;
+﻿using Servicios;
 using System;
 using System.Collections.Generic;
 using System.Data;
@@ -194,6 +194,30 @@ namespace DAL
             string query = "INSERT INTO Usuario " +
                   "(DNI, Apellido, Nombre, UserName, Contrasena, IdRol, Email, Bloqueo, Activo, IntentosFallidos, UltimoIntentoFallido, DebeCambiarContrasena) " +
                   "VALUES (@DNI, @Ape, @Nom, @Login, @Clave, @IdRol, @Email, 0, 1, 0, NULL, 1)";
+            SqlParameter[] p = {
+                new SqlParameter("@DNI",   usuario.DNI),
+                new SqlParameter("@Ape",   usuario.Apellido),
+                new SqlParameter("@Nom",   usuario.Nombre),
+                new SqlParameter("@Login", usuario.Login),
+                new SqlParameter("@Clave", usuario.Contrasena),
+                new SqlParameter("@IdRol", usuario.Rol.Id),
+                new SqlParameter("@Email", EncriptadorReversible_GV42.Instancia.Encriptar(usuario.Email))
+            };
+            int filas = _acceso.escribir(query, p);
+            RecalcularIntegridadUsuario();
+            return filas;
+        }
+
+        // Alta de un usuario que se autogestiona (se registra desde afuera, sin un administrador).
+        // Idéntico a AgregarUsuario salvo que NO fuerza el cambio de contraseña en el primer login,
+        // porque la contraseña ya la eligió la propia persona al registrarse.
+        public int AgregarUsuarioAutogestionado(Usuario_GV42 usuario)
+        {
+            if (usuario.Rol == null)
+                throw new Exception(IdiomaManager_GV42.T("err.usuarioSinRol"));
+            string query = "INSERT INTO Usuario " +
+                  "(DNI, Apellido, Nombre, UserName, Contrasena, IdRol, Email, Bloqueo, Activo, IntentosFallidos, UltimoIntentoFallido, DebeCambiarContrasena) " +
+                  "VALUES (@DNI, @Ape, @Nom, @Login, @Clave, @IdRol, @Email, 0, 1, 0, NULL, 0)";
             SqlParameter[] p = {
                 new SqlParameter("@DNI",   usuario.DNI),
                 new SqlParameter("@Ape",   usuario.Apellido),

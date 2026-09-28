@@ -1,4 +1,4 @@
-using Servicios;
+﻿using Servicios;
 using System;
 using System.Collections.Generic;
 using System.Data;
@@ -15,7 +15,9 @@ namespace DAL
             "Usuario", "Roles", "Familia", "Patente",
             "FamiliaPatente", "FamiliaIntegrada",
             "RolPatente", "RolFamilia",
-            "Modulo", "TipoEvento"
+            "Modulo", "TipoEvento",
+            // Negocio: se protegen los importes de reservas y pagos contra alteración directa en la BD.
+            "Reserva", "Pago"
         };
 
         public static bool IntegridadConocidamenteRota { get; set; }
@@ -39,6 +41,8 @@ namespace DAL
                 case "RolFamilia":       return DVHsRolFamilia();
                 case "Modulo":           return DVHsModulo();
                 case "TipoEvento":       return DVHsTipoEvento();
+                case "Reserva":          return DVHsReserva();
+                case "Pago":             return DVHsPago();
                 default: throw new Exception("Tabla protegida desconocida: " + nombreTabla);
             }
         }
@@ -63,6 +67,39 @@ namespace DAL
             {
                 string id = Convert.ToString(r["Id"]);
                 dict[id] = CalculadorIntegridad_GV42.CalcularDVH(r["Id"], r["Nombre"]);
+            }
+            return dict;
+        }
+
+        // Cubre los importes y el estado de la reserva: si alguno se altera directamente en la
+        // base (sin pasar por la capa de negocio), la verificación de integridad lo detecta.
+        private Dictionary<string, string> DVHsReserva()
+        {
+            string q = "SELECT Id, DniCliente, IdVuelo, IdClase, CantidadPasajeros, " +
+                       "       ImporteBase, SubtotalAdicionales, Impuestos, ImporteTotal, IdEstadoReserva " +
+                       "FROM Reserva";
+            DataTable dt = _acceso.leer(q, null);
+            var dict = new Dictionary<string, string>();
+            foreach (DataRow r in dt.Rows)
+            {
+                string id = Convert.ToString(r["Id"]);
+                dict[id] = CalculadorIntegridad_GV42.CalcularDVH(
+                    r["Id"], r["DniCliente"], r["IdVuelo"], r["IdClase"], r["CantidadPasajeros"],
+                    r["ImporteBase"], r["SubtotalAdicionales"], r["Impuestos"], r["ImporteTotal"], r["IdEstadoReserva"]);
+            }
+            return dict;
+        }
+
+        private Dictionary<string, string> DVHsPago()
+        {
+            string q = "SELECT Id, IdReserva, ImporteTotalAbonado, IdMedioPago, NumeroTransaccion FROM Pago";
+            DataTable dt = _acceso.leer(q, null);
+            var dict = new Dictionary<string, string>();
+            foreach (DataRow r in dt.Rows)
+            {
+                string id = Convert.ToString(r["Id"]);
+                dict[id] = CalculadorIntegridad_GV42.CalcularDVH(
+                    r["Id"], r["IdReserva"], r["ImporteTotalAbonado"], r["IdMedioPago"], r["NumeroTransaccion"]);
             }
             return dict;
         }

@@ -1,4 +1,4 @@
-﻿using System;
+﻿﻿using System;
 using System.Collections.Generic;
 
 namespace BE
@@ -16,6 +16,9 @@ namespace BE
         public DateTime? FechaRegreso { get; set; }
 
         public List<Pasajero_GV42> Pasajeros { get; set; } = new List<Pasajero_GV42>();
+
+        // Un elemento por pasajero, con el asiento que eligió (selección estilo "cine").
+        public List<AsientoPasajero_GV42> AsientosPorPasajero { get; set; } = new List<AsientoPasajero_GV42>();
         public List<AdicionalReserva_GV42> Adicionales { get; set; } = new List<AdicionalReserva_GV42>();
 
         public DateTime FechaRealizacion { get; set; }
@@ -25,6 +28,7 @@ namespace BE
         public decimal ImporteTotal { get; set; }
         public EstadoReserva_GV42 Estado { get; set; } = EstadoReserva_GV42.PendienteDePago;
         public string LoginVendedor { get; set; }
+        public CanalVenta_GV42 CanalVenta { get; set; } = CanalVenta_GV42.Presencial;
 
         // Solo tiene valor una vez registrado el pago.
         public Pago_GV42 Pago { get; set; }

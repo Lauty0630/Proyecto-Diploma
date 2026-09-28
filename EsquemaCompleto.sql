@@ -1134,6 +1134,412 @@ ALTER TABLE [dbo].[FamiliaIntegrada]  WITH CHECK ADD  CONSTRAINT [CK_FamiliaInte
 GO
 ALTER TABLE [dbo].[FamiliaIntegrada] CHECK CONSTRAINT [CK_FamiliaIntegrada_NoAutoref]
 GO
+/* ==========================================================================
+   NEGOCIO: RFN 1 (Reserva de vuelo) y RFN 2 (Check-in)
+   Base: [Gestion Usuario]
+   - Es idempotente: se puede ejecutar más de una vez sin romper nada.
+   - NO toca las tablas protegidas por el módulo de integridad
+     (Usuario, Roles, Patente, Modulo, TipoEvento, etc.).
+   ========================================================================== */
+USE [Gestion Usuario]
+GO
+SET ANSI_NULLS ON
+SET QUOTED_IDENTIFIER ON
+GO
+
+/* ------------------------------ CATÁLOGOS FIJOS ------------------------------
+   Los Id coinciden con los enums de la capa BE (ClaseVuelo_GV42, etc.).       */
+
+IF OBJECT_ID(N'dbo.ClaseVuelo', N'U') IS NULL
+    CREATE TABLE dbo.ClaseVuelo (
+        Id     INT          NOT NULL PRIMARY KEY,
+        Nombre NVARCHAR(30) NOT NULL UNIQUE
+    )
+GO
+IF OBJECT_ID(N'dbo.TipoViaje', N'U') IS NULL
+    CREATE TABLE dbo.TipoViaje (
+        Id     INT          NOT NULL PRIMARY KEY,
+        Nombre NVARCHAR(30) NOT NULL UNIQUE
+    )
+GO
+IF OBJECT_ID(N'dbo.EstadoReserva', N'U') IS NULL
+    CREATE TABLE dbo.EstadoReserva (
+        Id     INT          NOT NULL PRIMARY KEY,
+        Nombre NVARCHAR(30) NOT NULL UNIQUE
+    )
+GO
+IF OBJECT_ID(N'dbo.MedioPago', N'U') IS NULL
+    CREATE TABLE dbo.MedioPago (
+        Id     INT          NOT NULL PRIMARY KEY,
+        Nombre NVARCHAR(30) NOT NULL UNIQUE
+    )
+GO
+IF OBJECT_ID(N'dbo.EstadoCheckIn', N'U') IS NULL
+    CREATE TABLE dbo.EstadoCheckIn (
+        Id     INT          NOT NULL PRIMARY KEY,
+        Nombre NVARCHAR(30) NOT NULL UNIQUE
+    )
+GO
+
+INSERT INTO dbo.ClaseVuelo (Id, Nombre)
+SELECT v.Id, v.Nombre FROM (VALUES (1, N'Económica'), (2, N'Ejecutiva'), (3, N'Primera clase')) v(Id, Nombre)
+WHERE NOT EXISTS (SELECT 1 FROM dbo.ClaseVuelo c WHERE c.Id = v.Id)
+GO
+INSERT INTO dbo.TipoViaje (Id, Nombre)
+SELECT v.Id, v.Nombre FROM (VALUES (1, N'Ida'), (2, N'Ida y Vuelta')) v(Id, Nombre)
+WHERE NOT EXISTS (SELECT 1 FROM dbo.TipoViaje c WHERE c.Id = v.Id)
+GO
+INSERT INTO dbo.EstadoReserva (Id, Nombre)
+SELECT v.Id, v.Nombre FROM (VALUES (1, N'Pendiente de Pago'), (2, N'Confirmada')) v(Id, Nombre)
+WHERE NOT EXISTS (SELECT 1 FROM dbo.EstadoReserva c WHERE c.Id = v.Id)
+GO
+INSERT INTO dbo.MedioPago (Id, Nombre)
+SELECT v.Id, v.Nombre FROM (VALUES (1, N'Tarjeta de débito'), (2, N'Tarjeta de crédito'), (3, N'Transferencia'), (4, N'Efectivo')) v(Id, Nombre)
+WHERE NOT EXISTS (SELECT 1 FROM dbo.MedioPago c WHERE c.Id = v.Id)
+GO
+INSERT INTO dbo.EstadoCheckIn (Id, Nombre)
+SELECT v.Id, v.Nombre FROM (VALUES (1, N'Pendiente'), (2, N'Realizado')) v(Id, Nombre)
+WHERE NOT EXISTS (SELECT 1 FROM dbo.EstadoCheckIn c WHERE c.Id = v.Id)
+GO
+
+/* --------------------------- CATÁLOGOS AMPLIABLES --------------------------- */
+
+IF OBJECT_ID(N'dbo.TipoAdicional', N'U') IS NULL
+    CREATE TABLE dbo.TipoAdicional (
+        Id     INT IDENTITY(1,1) NOT NULL PRIMARY KEY,
+        Nombre NVARCHAR(60)      NOT NULL UNIQUE,
+        Activo BIT               NOT NULL CONSTRAINT DF_TipoAdicional_Activo DEFAULT (1)
+    )
+GO
+INSERT INTO dbo.TipoAdicional (Nombre)
+SELECT v.Nombre FROM (VALUES (N'Equipaje extra'), (N'Asiento preferencial'), (N'Comida especial'),
+                             (N'Asistencia prioritaria'), (N'Otro')) v(Nombre)
+WHERE NOT EXISTS (SELECT 1 FROM dbo.TipoAdicional t WHERE t.Nombre = v.Nombre)
+GO
+
+IF OBJECT_ID(N'dbo.Aeropuerto', N'U') IS NULL
+    CREATE TABLE dbo.Aeropuerto (
+        Id         INT IDENTITY(1,1) NOT NULL PRIMARY KEY,
+        CodigoIata CHAR(3)           NOT NULL UNIQUE,
+        Nombre     NVARCHAR(100)     NOT NULL,
+        Ciudad     NVARCHAR(60)      NOT NULL,
+        Pais       NVARCHAR(60)      NOT NULL
+    )
+GO
+
+IF OBJECT_ID(N'dbo.Aerolinea', N'U') IS NULL
+    CREATE TABLE dbo.Aerolinea (
+        Id     INT IDENTITY(1,1) NOT NULL PRIMARY KEY,
+        Nombre NVARCHAR(80)      NOT NULL UNIQUE
+    )
+GO
+
+/* --------------------------------- VUELOS ---------------------------------- */
+
+IF OBJECT_ID(N'dbo.Vuelo', N'U') IS NULL
+    CREATE TABLE dbo.Vuelo (
+        Id                INT IDENTITY(1,1) NOT NULL PRIMARY KEY,
+        CodigoVuelo       NVARCHAR(10)      NOT NULL UNIQUE,
+        IdAerolinea       INT               NOT NULL CONSTRAINT FK_Vuelo_Aerolinea REFERENCES dbo.Aerolinea (Id),
+        IdOrigen          INT               NOT NULL CONSTRAINT FK_Vuelo_Origen    REFERENCES dbo.Aeropuerto (Id),
+        IdDestino         INT               NOT NULL CONSTRAINT FK_Vuelo_Destino   REFERENCES dbo.Aeropuerto (Id),
+        FechaHoraSalida   DATETIME2(0)      NOT NULL,
+        FechaHoraLlegada  DATETIME2(0)      NOT NULL,
+        PuertaEmbarque    NVARCHAR(10)      NOT NULL,
+        CostoKiloExceso   DECIMAL(10,2)     NOT NULL CONSTRAINT CK_Vuelo_CostoKilo CHECK (CostoKiloExceso >= 0),
+        CONSTRAINT CK_Vuelo_Ruta    CHECK (IdOrigen <> IdDestino),
+        CONSTRAINT CK_Vuelo_Horario CHECK (FechaHoraLlegada > FechaHoraSalida)
+    )
+GO
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'IX_Vuelo_Busqueda' AND object_id = OBJECT_ID(N'dbo.Vuelo'))
+    CREATE INDEX IX_Vuelo_Busqueda ON dbo.Vuelo (IdOrigen, IdDestino, FechaHoraSalida)
+GO
+
+-- Precio, cupo y franquicia de equipaje de cada clase de un vuelo.
+-- AsientosReservados sube al generar una reserva (incluso pendiente de pago).
+IF OBJECT_ID(N'dbo.VueloClase', N'U') IS NULL
+    CREATE TABLE dbo.VueloClase (
+        IdVuelo              INT           NOT NULL CONSTRAINT FK_VueloClase_Vuelo REFERENCES dbo.Vuelo (Id),
+        IdClase              INT           NOT NULL CONSTRAINT FK_VueloClase_Clase REFERENCES dbo.ClaseVuelo (Id),
+        PrecioBase           DECIMAL(12,2) NOT NULL CONSTRAINT CK_VueloClase_Precio CHECK (PrecioBase >= 0),
+        CapacidadAsientos    INT           NOT NULL CONSTRAINT CK_VueloClase_Capacidad CHECK (CapacidadAsientos >= 0),
+        AsientosReservados   INT           NOT NULL CONSTRAINT DF_VueloClase_Reservados DEFAULT (0),
+        FranquiciaEquipajeKg DECIMAL(6,2)  NOT NULL CONSTRAINT CK_VueloClase_Franquicia CHECK (FranquiciaEquipajeKg >= 0),
+        CONSTRAINT PK_VueloClase PRIMARY KEY (IdVuelo, IdClase),
+        CONSTRAINT CK_VueloClase_Cupo CHECK (AsientosReservados >= 0 AND AsientosReservados <= CapacidadAsientos)
+    )
+GO
+
+IF OBJECT_ID(N'dbo.Asiento', N'U') IS NULL
+    CREATE TABLE dbo.Asiento (
+        Id            INT IDENTITY(1,1) NOT NULL PRIMARY KEY,
+        IdVuelo       INT               NOT NULL CONSTRAINT FK_Asiento_Vuelo REFERENCES dbo.Vuelo (Id),
+        Fila          INT               NOT NULL,
+        Letra         CHAR(1)           NOT NULL,
+        NumeroAsiento AS (CAST(Fila AS NVARCHAR(3)) + CAST(Letra AS NVARCHAR(1))) PERSISTED,
+        IdClase       INT               NOT NULL CONSTRAINT FK_Asiento_Clase REFERENCES dbo.ClaseVuelo (Id),
+        Ubicacion     NVARCHAR(10)      NOT NULL CONSTRAINT CK_Asiento_Ubicacion CHECK (Ubicacion IN (N'Ventana', N'Central', N'Pasillo')),
+        CONSTRAINT UQ_Asiento_Vuelo_Numero UNIQUE (IdVuelo, Fila, Letra)
+    )
+GO
+
+/* ------------------------------ PERSONAS (RFN 1) ------------------------------
+   El Email se guarda cifrado desde la capa DAL (igual que en Usuario).          */
+
+IF OBJECT_ID(N'dbo.Cliente', N'U') IS NULL
+    CREATE TABLE dbo.Cliente (
+        DNI       NVARCHAR(20)  NOT NULL PRIMARY KEY,
+        Nombre    NVARCHAR(60)  NOT NULL,
+        Apellido  NVARCHAR(60)  NOT NULL,
+        Email     NVARCHAR(500) NOT NULL,
+        Telefono  NVARCHAR(30)  NOT NULL,
+        FechaAlta DATETIME2(0)  NOT NULL CONSTRAINT DF_Cliente_FechaAlta DEFAULT (GETDATE())
+    )
+GO
+IF OBJECT_ID(N'dbo.Pasajero', N'U') IS NULL
+    CREATE TABLE dbo.Pasajero (
+        DNI      NVARCHAR(20)  NOT NULL PRIMARY KEY,
+        Nombre   NVARCHAR(60)  NOT NULL,
+        Apellido NVARCHAR(60)  NOT NULL,
+        Email    NVARCHAR(500) NOT NULL,
+        Telefono NVARCHAR(30)  NOT NULL
+    )
+GO
+
+/* --------------------------------- RESERVA ---------------------------------- */
+
+IF OBJECT_ID(N'dbo.Reserva', N'U') IS NULL
+    CREATE TABLE dbo.Reserva (
+        Id                  INT IDENTITY(1,1) NOT NULL PRIMARY KEY,
+        NumeroReserva       AS (N'RES-' + RIGHT(N'000000' + CAST(Id AS NVARCHAR(10)), 6)) PERSISTED,
+        DniCliente          NVARCHAR(20)      NOT NULL CONSTRAINT FK_Reserva_Cliente    REFERENCES dbo.Cliente (DNI),
+        IdVuelo             INT               NOT NULL,
+        IdClase             INT               NOT NULL,
+        IdTipoViaje         INT               NOT NULL CONSTRAINT FK_Reserva_TipoViaje  REFERENCES dbo.TipoViaje (Id),
+        FechaRegreso        DATE              NULL,
+        CantidadPasajeros   INT               NOT NULL CONSTRAINT CK_Reserva_Cantidad CHECK (CantidadPasajeros > 0),
+        ImporteBase         DECIMAL(12,2)     NOT NULL,
+        SubtotalAdicionales DECIMAL(12,2)     NOT NULL CONSTRAINT DF_Reserva_Subtotal DEFAULT (0),
+        Impuestos           DECIMAL(12,2)     NOT NULL,
+        ImporteTotal        DECIMAL(12,2)     NOT NULL,
+        IdEstadoReserva     INT               NOT NULL CONSTRAINT DF_Reserva_Estado DEFAULT (1)
+                                              CONSTRAINT FK_Reserva_Estado REFERENCES dbo.EstadoReserva (Id),
+        FechaRealizacion    DATETIME2(0)      NOT NULL CONSTRAINT DF_Reserva_Fecha DEFAULT (GETDATE()),
+        LoginVendedor       NVARCHAR(50)      NOT NULL,
+        CONSTRAINT FK_Reserva_VueloClase FOREIGN KEY (IdVuelo, IdClase) REFERENCES dbo.VueloClase (IdVuelo, IdClase),
+        CONSTRAINT UQ_Reserva_Numero UNIQUE (NumeroReserva),
+        CONSTRAINT CK_Reserva_FechaRegreso CHECK (
+            (IdTipoViaje = 1 AND FechaRegreso IS NULL) OR (IdTipoViaje = 2 AND FechaRegreso IS NOT NULL))
+    )
+GO
+
+IF OBJECT_ID(N'dbo.ReservaPasajero', N'U') IS NULL
+    CREATE TABLE dbo.ReservaPasajero (
+        IdReserva   INT          NOT NULL CONSTRAINT FK_ReservaPasajero_Reserva  REFERENCES dbo.Reserva (Id),
+        DniPasajero NVARCHAR(20) NOT NULL CONSTRAINT FK_ReservaPasajero_Pasajero REFERENCES dbo.Pasajero (DNI),
+        CONSTRAINT PK_ReservaPasajero PRIMARY KEY (IdReserva, DniPasajero)
+    )
+GO
+
+IF OBJECT_ID(N'dbo.ReservaAdicional', N'U') IS NULL
+    CREATE TABLE dbo.ReservaAdicional (
+        Id              INT IDENTITY(1,1) NOT NULL PRIMARY KEY,
+        IdReserva       INT               NOT NULL CONSTRAINT FK_ReservaAdicional_Reserva REFERENCES dbo.Reserva (Id),
+        IdTipoAdicional INT               NOT NULL CONSTRAINT FK_ReservaAdicional_Tipo    REFERENCES dbo.TipoAdicional (Id),
+        Cantidad        INT               NOT NULL CONSTRAINT CK_ReservaAdicional_Cantidad CHECK (Cantidad > 0),
+        CostoUnitario   DECIMAL(12,2)     NOT NULL CONSTRAINT CK_ReservaAdicional_Costo    CHECK (CostoUnitario >= 0),
+        Subtotal        AS (Cantidad * CostoUnitario) PERSISTED
+    )
+GO
+
+IF OBJECT_ID(N'dbo.Pago', N'U') IS NULL
+    CREATE TABLE dbo.Pago (
+        Id                  INT IDENTITY(1,1) NOT NULL PRIMARY KEY,
+        IdReserva         INT               NOT NULL,
+        ImporteTotalAbonado DECIMAL(12,2)     NOT NULL CONSTRAINT CK_Pago_Importe CHECK (ImporteTotalAbonado > 0),
+        IdMedioPago         INT               NOT NULL CONSTRAINT FK_Pago_Medio REFERENCES dbo.MedioPago (Id),
+        NumeroTransaccion   NVARCHAR(40)      NOT NULL CONSTRAINT UQ_Pago_Transaccion UNIQUE,
+        FechaHoraPago       DATETIME2(0)      NOT NULL CONSTRAINT DF_Pago_Fecha DEFAULT (GETDATE()),
+        LoginVendedor       NVARCHAR(50)      NOT NULL,
+        CONSTRAINT UQ_Pago_Reserva UNIQUE (IdReserva),
+        CONSTRAINT FK_Pago_Reserva FOREIGN KEY (IdReserva) REFERENCES dbo.Reserva (Id)
+    )
+GO
+
+-- Un boleto por pasajero, emitido al confirmarse el pago.
+IF OBJECT_ID(N'dbo.Boleto', N'U') IS NULL
+    CREATE TABLE dbo.Boleto (
+        Id            INT IDENTITY(1,1) NOT NULL PRIMARY KEY,
+        NumeroBoleto  AS (N'BOL-' + RIGHT(N'000000' + CAST(Id AS NVARCHAR(10)), 6)) PERSISTED,
+        IdReserva     INT               NOT NULL,
+        DniPasajero   NVARCHAR(20)      NOT NULL,
+        FechaEmision  DATETIME2(0)      NOT NULL CONSTRAINT DF_Boleto_Fecha DEFAULT (GETDATE()),
+        CONSTRAINT UQ_Boleto_Numero UNIQUE (NumeroBoleto),
+        CONSTRAINT UQ_Boleto_Pasajero UNIQUE (IdReserva, DniPasajero),
+        CONSTRAINT FK_Boleto_ReservaPasajero FOREIGN KEY (IdReserva, DniPasajero) REFERENCES dbo.ReservaPasajero (IdReserva, DniPasajero)
+    )
+GO
+
+/* --------------------------------- CHECK-IN --------------------------------- */
+
+-- Se crea (estado Pendiente) para cada pasajero al confirmarse el pago de la reserva.
+IF OBJECT_ID(N'dbo.CheckIn', N'U') IS NULL
+    CREATE TABLE dbo.CheckIn (
+        Id               INT IDENTITY(1,1) NOT NULL PRIMARY KEY,
+        IdReserva        INT               NOT NULL,
+        DniPasajero      NVARCHAR(20)      NOT NULL,
+        IdEstadoCheckIn  INT               NOT NULL CONSTRAINT DF_CheckIn_Estado DEFAULT (1)
+                                           CONSTRAINT FK_CheckIn_Estado REFERENCES dbo.EstadoCheckIn (Id),
+        FechaHoraCheckIn DATETIME2(0)      NULL,
+        IdAsiento        INT               NULL CONSTRAINT FK_CheckIn_Asiento REFERENCES dbo.Asiento (Id),
+        LoginEncargado   NVARCHAR(50)      NULL,
+        CONSTRAINT UQ_CheckIn_Pasajero UNIQUE (IdReserva, DniPasajero),
+        CONSTRAINT FK_CheckIn_ReservaPasajero FOREIGN KEY (IdReserva, DniPasajero) REFERENCES dbo.ReservaPasajero (IdReserva, DniPasajero)
+    )
+GO
+-- Un asiento no puede estar asignado a dos check-ins a la vez.
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'UX_CheckIn_Asiento' AND object_id = OBJECT_ID(N'dbo.CheckIn'))
+    CREATE UNIQUE INDEX UX_CheckIn_Asiento ON dbo.CheckIn (IdAsiento) WHERE IdAsiento IS NOT NULL
+GO
+
+IF OBJECT_ID(N'dbo.Equipaje', N'U') IS NULL
+    CREATE TABLE dbo.Equipaje (
+        Id             INT IDENTITY(1,1) NOT NULL PRIMARY KEY,
+        IdCheckIn         INT               NOT NULL,
+        CantidadBultos INT               NOT NULL CONSTRAINT CK_Equipaje_Bultos CHECK (CantidadBultos > 0),
+        PesoTotalKg    DECIMAL(7,2)      NOT NULL CONSTRAINT CK_Equipaje_Peso   CHECK (PesoTotalKg > 0),
+        FranquiciaKg   DECIMAL(7,2)      NOT NULL,
+        CONSTRAINT UQ_Equipaje_CheckIn UNIQUE (IdCheckIn),
+        CONSTRAINT FK_Equipaje_CheckIn FOREIGN KEY (IdCheckIn) REFERENCES dbo.CheckIn (Id)
+    )
+GO
+
+IF OBJECT_ID(N'dbo.EtiquetaEquipaje', N'U') IS NULL
+    CREATE TABLE dbo.EtiquetaEquipaje (
+        Id             INT IDENTITY(1,1) NOT NULL PRIMARY KEY,
+        IdEquipaje     INT               NOT NULL CONSTRAINT FK_Etiqueta_Equipaje REFERENCES dbo.Equipaje (Id),
+        CodigoEquipaje NVARCHAR(20)      NOT NULL CONSTRAINT UQ_Etiqueta_Codigo UNIQUE
+    )
+GO
+
+-- Solo existe si el peso superó la franquicia; incluye el cobro al pasajero.
+IF OBJECT_ID(N'dbo.CargoExcesoEquipaje', N'U') IS NULL
+    CREATE TABLE dbo.CargoExcesoEquipaje (
+        Id                INT IDENTITY(1,1) NOT NULL PRIMARY KEY,
+        IdEquipaje        INT               NOT NULL,
+        KilosExceso       DECIMAL(7,2)      NOT NULL CONSTRAINT CK_Cargo_Kilos CHECK (KilosExceso > 0),
+        CostoPorKilo      DECIMAL(10,2)     NOT NULL,
+        ImporteCargo      DECIMAL(12,2)     NOT NULL,
+        IdMedioPago       INT               NOT NULL CONSTRAINT FK_Cargo_Medio REFERENCES dbo.MedioPago (Id),
+        NumeroTransaccion NVARCHAR(40)      NULL,
+        FechaHoraCobro    DATETIME2(0)      NOT NULL CONSTRAINT DF_Cargo_Fecha DEFAULT (GETDATE()),
+        CONSTRAINT UQ_Cargo_Equipaje UNIQUE (IdEquipaje),
+        CONSTRAINT FK_Cargo_Equipaje FOREIGN KEY (IdEquipaje) REFERENCES dbo.Equipaje (Id)
+    )
+GO
+
+IF OBJECT_ID(N'dbo.TarjetaEmbarque', N'U') IS NULL
+    CREATE TABLE dbo.TarjetaEmbarque (
+        Id                 INT IDENTITY(1,1) NOT NULL PRIMARY KEY,
+        NumeroTarjeta      AS (N'TE-' + RIGHT(N'000000' + CAST(Id AS NVARCHAR(10)), 6)) PERSISTED,
+        IdCheckIn         INT               NOT NULL,
+        PuertaEmbarque     NVARCHAR(10)      NOT NULL,
+        HoraLimiteEmbarque DATETIME2(0)      NOT NULL,
+        FechaHoraEmision   DATETIME2(0)      NOT NULL CONSTRAINT DF_Tarjeta_Fecha DEFAULT (GETDATE()),
+        CONSTRAINT UQ_Tarjeta_Numero UNIQUE (NumeroTarjeta),
+        CONSTRAINT UQ_Tarjeta_CheckIn UNIQUE (IdCheckIn),
+        CONSTRAINT FK_Tarjeta_CheckIn FOREIGN KEY (IdCheckIn) REFERENCES dbo.CheckIn (Id)
+    )
+GO
+
+/* =====================================================================
+   DATOS DE EJEMPLO (aeropuertos, aerolíneas, vuelos y asientos)
+   Las fechas son relativas a HOY para que siempre haya vuelos futuros.
+   Para probar el check-in usar el vuelo AR1500 (sale mañana, dentro de
+   la ventana de 48 hs).
+   ===================================================================== */
+
+INSERT INTO dbo.Aeropuerto (CodigoIata, Nombre, Ciudad, Pais)
+SELECT v.Iata, v.Nombre, v.Ciudad, v.Pais
+FROM (VALUES
+    ('AEP', N'Aeroparque Jorge Newbery',            N'Buenos Aires', N'Argentina'),
+    ('EZE', N'Aeropuerto Internacional Ezeiza',     N'Buenos Aires', N'Argentina'),
+    ('COR', N'Aeropuerto Internacional Pajas Blancas', N'Córdoba',   N'Argentina'),
+    ('MDZ', N'Aeropuerto Internacional El Plumerillo', N'Mendoza',   N'Argentina'),
+    ('BRC', N'Aeropuerto Internacional Teniente Candelaria', N'Bariloche', N'Argentina'),
+    ('IGR', N'Aeropuerto Internacional Cataratas del Iguazú', N'Puerto Iguazú', N'Argentina')
+) v(Iata, Nombre, Ciudad, Pais)
+WHERE NOT EXISTS (SELECT 1 FROM dbo.Aeropuerto a WHERE a.CodigoIata = v.Iata)
+GO
+
+INSERT INTO dbo.Aerolinea (Nombre)
+SELECT v.Nombre FROM (VALUES (N'Aerolíneas Argentinas'), (N'Flybondi'), (N'JetSMART')) v(Nombre)
+WHERE NOT EXISTS (SELECT 1 FROM dbo.Aerolinea a WHERE a.Nombre = v.Nombre)
+GO
+
+-- Vuelos de ejemplo.
+INSERT INTO dbo.Vuelo (CodigoVuelo, IdAerolinea, IdOrigen, IdDestino, FechaHoraSalida, FechaHoraLlegada, PuertaEmbarque, CostoKiloExceso)
+SELECT v.Codigo, al.Id, o.Id, d.Id,
+       DATEADD(MINUTE, v.MinSalida, CAST(CAST(GETDATE() AS DATE) AS DATETIME2(0))) ,
+       DATEADD(MINUTE, v.MinSalida + v.DuracionMin, CAST(CAST(GETDATE() AS DATE) AS DATETIME2(0))),
+       v.Puerta, v.CostoKilo
+FROM (VALUES
+    -- Código  Aerolínea                  Origen Destino  minutos desde hoy 00:00      Duración Puerta  $/kg
+    (N'AR1500', N'Aerolíneas Argentinas', 'AEP', 'COR',   1 * 1440 + 10 * 60 + 30,      80,      N'A4',  3500.00),
+    (N'AR1502', N'Aerolíneas Argentinas', 'AEP', 'COR',   1 * 1440 + 18 * 60,           80,      N'A6',  3500.00),
+    (N'FB3020', N'Flybondi',              'AEP', 'MDZ',   3 * 1440 +  7 * 60 + 15,      115,     N'B2',  3000.00),
+    (N'JA8110', N'JetSMART',              'AEP', 'BRC',   5 * 1440 +  9 * 60,           140,     N'C1',  3200.00),
+    (N'AR1880', N'Aerolíneas Argentinas', 'EZE', 'IGR',   6 * 1440 + 13 * 60 + 45,      120,     N'D3',  3800.00),
+    (N'AR1501', N'Aerolíneas Argentinas', 'COR', 'AEP',   7 * 1440 + 16 * 60,           80,      N'B5',  3500.00)
+) v(Codigo, Aerolinea, Origen, Destino, MinSalida, DuracionMin, Puerta, CostoKilo)
+INNER JOIN dbo.Aerolinea al ON al.Nombre = v.Aerolinea
+INNER JOIN dbo.Aeropuerto o ON o.CodigoIata = v.Origen
+INNER JOIN dbo.Aeropuerto d ON d.CodigoIata = v.Destino
+WHERE NOT EXISTS (SELECT 1 FROM dbo.Vuelo x WHERE x.CodigoVuelo = v.Codigo)
+GO
+
+-- Asientos de cada vuelo de ejemplo:
+--   Filas 1-2   Primera clase  (12 asientos)
+--   Filas 3-6   Ejecutiva      (24 asientos)
+--   Filas 7-20  Económica      (84 asientos)
+-- Letras A y F = Ventana, B y E = Central, C y D = Pasillo.
+;WITH Filas AS (
+    SELECT TOP (20) ROW_NUMBER() OVER (ORDER BY (SELECT NULL)) AS Fila FROM sys.all_objects
+),
+Letras AS (
+    SELECT l.Letra, l.Ubicacion FROM (VALUES
+        ('A', N'Ventana'), ('B', N'Central'), ('C', N'Pasillo'),
+        ('D', N'Pasillo'), ('E', N'Central'), ('F', N'Ventana')) l(Letra, Ubicacion)
+)
+INSERT INTO dbo.Asiento (IdVuelo, Fila, Letra, IdClase, Ubicacion)
+SELECT v.Id, f.Fila, l.Letra,
+       CASE WHEN f.Fila <= 2 THEN 3 WHEN f.Fila <= 6 THEN 2 ELSE 1 END,
+       l.Ubicacion
+FROM dbo.Vuelo v
+CROSS JOIN Filas f
+CROSS JOIN Letras l
+WHERE NOT EXISTS (SELECT 1 FROM dbo.Asiento a WHERE a.IdVuelo = v.Id)
+GO
+
+-- Cupo, precio y franquicia por clase (el cupo coincide con la cantidad de asientos creados).
+INSERT INTO dbo.VueloClase (IdVuelo, IdClase, PrecioBase, CapacidadAsientos, FranquiciaEquipajeKg)
+SELECT v.Id, c.IdClase,
+       CAST(ROUND(b.PrecioEco * c.Factor, 0) AS DECIMAL(12,2)),
+       c.Capacidad, c.Franquicia
+FROM dbo.Vuelo v
+INNER JOIN (VALUES
+    (N'AR1500', 95000.00), (N'AR1502', 98000.00), (N'FB3020', 72000.00),
+    (N'JA8110', 89000.00), (N'AR1880', 130000.00), (N'AR1501', 95000.00)
+) b(Codigo, PrecioEco) ON b.Codigo = v.CodigoVuelo
+CROSS JOIN (VALUES
+    -- IdClase Factor Capacidad Franquicia (kg)
+    (1, 1.0, 84, 15.0),
+    (2, 2.2, 24, 23.0),
+    (3, 3.5, 12, 32.0)
+) c(IdClase, Factor, Capacidad, Franquicia)
+WHERE NOT EXISTS (SELECT 1 FROM dbo.VueloClase x WHERE x.IdVuelo = v.Id AND x.IdClase = c.IdClase)
+GO
+GO
 USE [master]
 GO
 ALTER DATABASE [Gestion Usuario] SET  READ_WRITE 

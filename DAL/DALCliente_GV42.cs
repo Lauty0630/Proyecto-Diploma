@@ -1,4 +1,4 @@
-﻿using BE;
+﻿﻿using BE;
 using System;
 using System.Data;
 using System.Data.SqlClient;
@@ -30,6 +30,13 @@ namespace DAL
             var c = new Cliente_GV42();
             DALUtil_GV42.LlenarPersona(c, dt.Rows[0], "");
             return c;
+        }
+
+        // Solo para compensar el alta autogestionada si falla la creación del usuario asociado
+        // (ver BLLReserva_GV42.RegistrarClienteAutogestionado). No se usa en el alta normal.
+        public void Eliminar(string dni)
+        {
+            _acceso.escribir("DELETE FROM Cliente WHERE DNI = @DNI", new[] { new SqlParameter("@DNI", dni) });
         }
 
         public void Insertar(Cliente_GV42 c)

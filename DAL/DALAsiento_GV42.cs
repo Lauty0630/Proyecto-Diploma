@@ -1,4 +1,4 @@
-﻿using BE;
+﻿﻿using BE;
 using System;
 using System.Collections.Generic;
 using System.Data;
@@ -50,6 +50,45 @@ namespace DAL
         {
             DataTable dt = _acceso.leer(SELECT_BASE + " WHERE A.Id = @Id", new[] { new SqlParameter("@Id", idAsiento) });
             return dt.Rows.Count == 0 ? null : Mapear(dt.Rows[0]);
+        }
+
+        // Mapa completo de la clase para la pantalla de selección estilo cine: todos los
+        // asientos de esa clase en ese vuelo, indicando cuáles ya están elegidos por otro pasajero.
+        public List<AsientoDisponibilidad_GV42> ListarMapa(int idVuelo, ClaseVuelo_GV42 clase)
+        {
+            string query =
+                "SELECT A.Id, A.IdVuelo, A.Fila, A.Letra, A.NumeroAsiento, A.IdClase, A.Ubicacion, " +
+                "       CASE WHEN RP.IdAsiento IS NULL THEN 0 ELSE 1 END AS Ocupado " +
+                "FROM Asiento A " +
+                "LEFT JOIN ReservaPasajero RP ON RP.IdAsiento = A.Id " +
+                "WHERE A.IdVuelo = @IdVuelo AND A.IdClase = @IdClase " +
+                "ORDER BY A.Fila, A.Letra";
+
+            DataTable dt = _acceso.leer(query, new[] {
+                new SqlParameter("@IdVuelo", idVuelo),
+                new SqlParameter("@IdClase", (int)clase)
+            });
+
+            var lista = new List<AsientoDisponibilidad_GV42>();
+            foreach (DataRow r in dt.Rows)
+            {
+                lista.Add(new AsientoDisponibilidad_GV42
+                {
+                    Asiento = Mapear(r),
+                    Fila = DALUtil_GV42.Int(r, "Fila"),
+                    Letra = DALUtil_GV42.Str(r, "Letra"),
+                    Ocupado = DALUtil_GV42.Int(r, "Ocupado") == 1
+                });
+            }
+            return lista;
+        }
+
+        // Ocupado a nivel reserva (elegido por un pasajero al reservar), no a nivel check-in.
+        public bool EstaReservado(int idAsiento)
+        {
+            object r = _acceso.leerEscalar("SELECT COUNT(1) FROM ReservaPasajero WHERE IdAsiento = @Id",
+                new[] { new SqlParameter("@Id", idAsiento) });
+            return r != null && Convert.ToInt32(r) > 0;
         }
 
         public bool EstaOcupado(int idAsiento)

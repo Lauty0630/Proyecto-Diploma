@@ -1,4 +1,4 @@
-﻿using System;
+﻿﻿using System;
 
 namespace BE
 {
@@ -13,6 +13,9 @@ namespace BE
     public enum MedioPago_GV42 { TarjetaDebito = 1, TarjetaCredito = 2, Transferencia = 3, Efectivo = 4 }
 
     public enum EstadoCheckIn_GV42 { Pendiente = 1, Realizado = 2 }
+
+    // Presencial: lo genera un Vendedor. Autogestion: el propio Cliente reserva desde su cuenta.
+    public enum CanalVenta_GV42 { Presencial = 1, Autogestion = 2 }
 
     public static class Textos_GV42
     {
@@ -50,6 +53,11 @@ namespace BE
         public static string Texto(this EstadoCheckIn_GV42 v)
         {
             return v == EstadoCheckIn_GV42.Pendiente ? "Pendiente" : "Realizado";
+        }
+
+        public static string Texto(this CanalVenta_GV42 v)
+        {
+            return v == CanalVenta_GV42.Presencial ? "Presencial" : "Autogestión";
         }
     }
 }
