@@ -32,6 +32,15 @@ namespace DAL
             int idModulo = ResolverIdModulo(registro.Modulo);
             int idTipoEvento = ResolverIdTipoEvento(registro.TipoEvento);
 
+            // EVENTOS.Detalle es NVARCHAR(500): se recorta para que un detalle largo
+            // (por ejemplo, muchos registros alterados) no haga fallar el INSERT.
+            const int MAX_DETALLE = 500;
+            const string SUFIJO = "... (truncado)";
+
+            string detalle = registro.Detalle;
+            if (detalle != null && detalle.Length > MAX_DETALLE)
+                detalle = detalle.Substring(0, MAX_DETALLE - SUFIJO.Length) + SUFIJO;
+
             string query =
                 "INSERT INTO EVENTOS (UserName, IdModulo, IdTipoEvento, Detalle, Criticidad, FechaHora) " +
                 "VALUES (@UserName, @IdModulo, @IdTipoEvento, @Detalle, @Criticidad, @FechaHora)";
@@ -40,7 +49,7 @@ namespace DAL
                 new SqlParameter("@UserName",     registro.Login),
                 new SqlParameter("@IdModulo",     idModulo),
                 new SqlParameter("@IdTipoEvento", idTipoEvento),
-                new SqlParameter("@Detalle",      (object)registro.Detalle ?? DBNull.Value),
+                new SqlParameter("@Detalle",      (object)detalle ?? DBNull.Value),
                 new SqlParameter("@Criticidad",   registro.Criticidad),
                 new SqlParameter("@FechaHora",    registro.FechaHora)
             };
