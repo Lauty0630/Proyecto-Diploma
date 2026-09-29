@@ -113,7 +113,9 @@
       <SubType>Form</SubType>
     </Compile>
     <Compile Include="Tema_GV42.cs" />
-    <Compile Include="CtrlButacas_GV42.cs" />
+    <Compile Include="CtrlButacas_GV42.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
     <Compile Include="FRMConsultarReservas_GV42.cs">
       <SubType>Form</SubType>
     </Compile>
