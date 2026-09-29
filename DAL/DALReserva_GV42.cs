@@ -1,4 +1,4 @@
-﻿﻿using BE;
+﻿﻿﻿using BE;
 using System;
 using System.Collections.Generic;
 using System.Data;
@@ -178,6 +178,121 @@ namespace DAL
             reserva.Adicionales = ListarAdicionales(reserva.Id);
             reserva.Pago = new DALPago_GV42().BuscarPorReserva(reserva.Id);
             return reserva;
+        }
+
+        private const string SELECT_LISTADO =
+            "SELECT R.Id AS IdReserva, R.NumeroReserva, R.IdTipoViaje, R.FechaRegreso, " +
+            "       R.ImporteBase, R.SubtotalAdicionales, R.Impuestos, R.ImporteTotal, " +
+            "       R.IdEstadoReserva, R.FechaRealizacion, R.LoginVendedor, " +
+            "       R.FechaCancelacion, R.MontoPenalidadCancelacion, " +
+            "       C.DNI AS CliDNI, C.Nombre AS CliNombre, C.Apellido AS CliApellido, " +
+            "       C.Email AS CliEmail, C.Telefono AS CliTelefono, " +
+            DALUtil_GV42.COLUMNAS_VUELO_CLASE + " " +
+            "FROM Reserva R " +
+            "INNER JOIN Cliente C ON C.DNI = R.DniCliente " +
+            "INNER JOIN Vuelo V ON V.Id = R.IdVuelo " +
+            "INNER JOIN VueloClase VC ON VC.IdVuelo = R.IdVuelo AND VC.IdClase = R.IdClase" +
+            DALUtil_GV42.JOINS_VUELO;
+
+        private Reserva_GV42 MapearListado(DataRow row)
+        {
+            var cliente = new Cliente_GV42();
+            DALUtil_GV42.LlenarPersona(cliente, row, "Cli");
+
+            return new Reserva_GV42
+            {
+                Id = DALUtil_GV42.Int(row, "IdReserva"),
+                NumeroReserva = DALUtil_GV42.Str(row, "NumeroReserva"),
+                Cliente = cliente,
+                VueloClase = DALUtil_GV42.MapearVueloClase(row),
+                TipoViaje = (TipoViaje_GV42)DALUtil_GV42.Int(row, "IdTipoViaje"),
+                FechaRegreso = DALUtil_GV42.FechaNull(row, "FechaRegreso"),
+                ImporteBase = DALUtil_GV42.Dec(row, "ImporteBase"),
+                SubtotalAdicionales = DALUtil_GV42.Dec(row, "SubtotalAdicionales"),
+                Impuestos = DALUtil_GV42.Dec(row, "Impuestos"),
+                ImporteTotal = DALUtil_GV42.Dec(row, "ImporteTotal"),
+                Estado = (EstadoReserva_GV42)DALUtil_GV42.Int(row, "IdEstadoReserva"),
+                FechaRealizacion = DALUtil_GV42.Fecha(row, "FechaRealizacion"),
+                LoginVendedor = DALUtil_GV42.Str(row, "LoginVendedor"),
+                FechaCancelacion = DALUtil_GV42.FechaNull(row, "FechaCancelacion"),
+                MontoPenalidadCancelacion = row["MontoPenalidadCancelacion"] == DBNull.Value ? (decimal?)null : DALUtil_GV42.Dec(row, "MontoPenalidadCancelacion")
+            };
+        }
+
+        // "Mis reservas" del cliente autogestionado.
+        public List<Reserva_GV42> ListarPorCliente(string dni)
+        {
+            string query = SELECT_LISTADO + " WHERE R.DniCliente = @DNI ORDER BY R.FechaRealizacion DESC";
+            DataTable dt = _acceso.leer(query, new[] { new SqlParameter("@DNI", dni) });
+            var lista = new List<Reserva_GV42>();
+            foreach (DataRow r in dt.Rows) lista.Add(MapearListado(r));
+            return lista;
+        }
+
+        // Consulta del vendedor: sin texto trae las últimas reservas; con texto filtra por número,
+        // DNI o apellido del cliente.
+        public List<Reserva_GV42> Buscar(string textoLibre)
+        {
+            string query = SELECT_LISTADO;
+            SqlParameter[] p = null;
+
+            if (!string.IsNullOrWhiteSpace(textoLibre))
+            {
+                query += " WHERE R.NumeroReserva LIKE @Texto OR C.DNI LIKE @Texto OR C.Apellido LIKE @Texto";
+                p = new[] { new SqlParameter("@Texto", "%" + textoLibre.Trim() + "%") };
+            }
+            query += " ORDER BY R.FechaRealizacion DESC";
+
+            DataTable dt = _acceso.leer(query, p);
+            var lista = new List<Reserva_GV42>();
+            foreach (DataRow r in dt.Rows) lista.Add(MapearListado(r));
+            return lista;
+        }
+
+        // Cancela la reserva, libera los asientos que tenían sus pasajeros y descuenta el cupo
+        // ocupado del vuelo, todo en una sola transacción.
+        public Reserva_GV42 Cancelar(int idReserva, decimal montoPenalidad)
+        {
+            return _acceso.EjecutarEnTransaccion(tx =>
+            {
+                DataTable dtRes = _acceso.leer(tx,
+                    "SELECT IdVuelo, IdClase, CantidadPasajeros, IdEstadoReserva FROM Reserva WHERE Id = @Id",
+                    new[] { new SqlParameter("@Id", idReserva) });
+                if (dtRes.Rows.Count == 0)
+                    throw new NegocioException_GV42("La reserva no existe.");
+                if (DALUtil_GV42.Int(dtRes.Rows[0], "IdEstadoReserva") == (int)EstadoReserva_GV42.Cancelada)
+                    throw new NegocioException_GV42("La reserva ya estaba cancelada.");
+
+                int idVuelo = DALUtil_GV42.Int(dtRes.Rows[0], "IdVuelo");
+                int idClase = DALUtil_GV42.Int(dtRes.Rows[0], "IdClase");
+                int cantidad = DALUtil_GV42.Int(dtRes.Rows[0], "CantidadPasajeros");
+
+                _acceso.escribir(tx,
+                    "UPDATE Reserva SET IdEstadoReserva = @Cancelada, FechaCancelacion = GETDATE(), MontoPenalidadCancelacion = @Monto " +
+                    "WHERE Id = @Id",
+                    new[] {
+                        new SqlParameter("@Cancelada", (int)EstadoReserva_GV42.Cancelada),
+                        new SqlParameter("@Monto",     montoPenalidad),
+                        new SqlParameter("@Id",        idReserva)
+                    });
+
+                // Libera los asientos que tenían los pasajeros de esta reserva.
+                _acceso.escribir(tx,
+                    "UPDATE ReservaPasajero SET IdAsiento = NULL WHERE IdReserva = @Id",
+                    new[] { new SqlParameter("@Id", idReserva) });
+
+                _acceso.escribir(tx,
+                    "UPDATE VueloClase SET AsientosReservados = AsientosReservados - @Cant " +
+                    "WHERE IdVuelo = @IdVuelo AND IdClase = @IdClase",
+                    new[] {
+                        new SqlParameter("@Cant",    cantidad),
+                        new SqlParameter("@IdVuelo", idVuelo),
+                        new SqlParameter("@IdClase", idClase)
+                    });
+
+                DataTable dt = _acceso.leer(tx, SELECT_LISTADO + " WHERE R.Id = @Id", new[] { new SqlParameter("@Id", idReserva) });
+                return MapearListado(dt.Rows[0]);
+            });
         }
 
         public List<Pasajero_GV42> ListarPasajeros(int idReserva)

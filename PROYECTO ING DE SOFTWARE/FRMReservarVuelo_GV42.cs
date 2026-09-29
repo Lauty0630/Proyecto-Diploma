@@ -1,4 +1,4 @@
-﻿using BE;
+﻿﻿using BE;
 using BLL;
 using Servicios;
 using System;
@@ -25,7 +25,7 @@ namespace PROYECTO_ING_DE_SOFTWARE
         private readonly bool _esVendedor;
 
         // Paso 1 - búsqueda
-        private ComboBox cmbOrigen, cmbDestino, cmbTipoViaje;
+        private ComboBox cmbOrigen, cmbDestino, cmbTipoViaje, cmbClaseFiltro;
         private DateTimePicker dtSalida, dtRegreso;
         private NumericUpDown numPasajeros;
         private DataGridView dgvVuelos;
@@ -240,6 +240,16 @@ namespace PROYECTO_ING_DE_SOFTWARE
             lblPax.Location = new Point(440, 60);
             numPasajeros = new NumericUpDown { Location = new Point(440, 80), Size = new Size(80, 24), Minimum = 1, Maximum = 9, Value = 1 };
 
+            var lblClaseFiltro = Tema_GV42.CrearLabel("Clase");
+            lblClaseFiltro.Location = new Point(540, 60);
+            cmbClaseFiltro = new ComboBox { DropDownStyle = ComboBoxStyle.DropDownList, Location = new Point(540, 80), Size = new Size(140, 24) };
+            cmbClaseFiltro.Items.Add("Todas las clases");
+            cmbClaseFiltro.Items.Add(ClaseVuelo_GV42.Economica);
+            cmbClaseFiltro.Items.Add(ClaseVuelo_GV42.Ejecutiva);
+            cmbClaseFiltro.Items.Add(ClaseVuelo_GV42.Primera);
+            cmbClaseFiltro.Format += (s, e) => { if (e.ListItem is ClaseVuelo_GV42 c) e.Value = c.Texto(); };
+            cmbClaseFiltro.SelectedIndex = 0;
+
             var btnBuscar = new Button { Text = "Buscar vuelos", Location = new Point(0, 120), Size = new Size(160, 36) };
             Tema_GV42.EstilizarBotonPrimario(btnBuscar);
             btnBuscar.Click += btnBuscarVuelos_Click;
@@ -259,6 +269,7 @@ namespace PROYECTO_ING_DE_SOFTWARE
             contenido.Controls.AddRange(new Control[] {
                 lblOrigen, cmbOrigen, lblDestino, cmbDestino, lblFecha, dtSalida,
                 lblTipoViaje, cmbTipoViaje, lblRegreso, dtRegreso, lblPax, numPasajeros,
+                lblClaseFiltro, cmbClaseFiltro,
                 btnBuscar, dgvVuelos
             });
 
@@ -283,7 +294,8 @@ namespace PROYECTO_ING_DE_SOFTWARE
                 FechaSalida = dtSalida.Value.Date,
                 CantidadPasajeros = (int)numPasajeros.Value,
                 TipoViaje = cmbTipoViaje.SelectedIndex == 1 ? TipoViaje_GV42.IdaYVuelta : TipoViaje_GV42.Ida,
-                FechaRegreso = cmbTipoViaje.SelectedIndex == 1 ? (DateTime?)dtRegreso.Value.Date : null
+                FechaRegreso = cmbTipoViaje.SelectedIndex == 1 ? (DateTime?)dtRegreso.Value.Date : null,
+                Clase = cmbClaseFiltro.SelectedIndex > 0 ? (ClaseVuelo_GV42?)cmbClaseFiltro.SelectedItem : null
             };
 
             try
@@ -473,7 +485,9 @@ namespace PROYECTO_ING_DE_SOFTWARE
                 UbicarConEtiqueta(grupo, "Email", dp.Email, 430, 24, 180);
                 UbicarConEtiqueta(grupo, "Teléfono", dp.Telefono, 620, 24, 120);
 
-                // El titular de la cuenta suele ser el primer pasajero: precargamos sus datos.
+                // El titular de la cuenta ya está identificado por su sesión: no tiene sentido
+                // pedirle que vuelva a tipear sus propios datos. Para pasajeros adicionales sí se
+                // piden datos completos (pueden ser personas distintas del titular).
                 if (i == 0 && !_esVendedor)
                 {
                     Usuario_GV42 actual = SessionManager_GV42.Instancia.ObtenerUsuarioActual();
@@ -482,6 +496,13 @@ namespace PROYECTO_ING_DE_SOFTWARE
                     {
                         dp.Dni.Text = propio.DNI; dp.Nombre.Text = propio.Nombre; dp.Apellido.Text = propio.Apellido;
                         dp.Email.Text = propio.Email; dp.Telefono.Text = propio.Telefono;
+
+                        foreach (var txt in new[] { dp.Dni, dp.Nombre, dp.Apellido, dp.Email, dp.Telefono })
+                        {
+                            txt.ReadOnly = true;
+                            txt.BackColor = Tema_GV42.Fondo;
+                        }
+                        grupo.Text = "Pasajero 1 (vos)";
                     }
                 }
 

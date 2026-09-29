@@ -1,4 +1,4 @@
-﻿using BLL;
+﻿﻿using BLL;
 using Servicios;
 using System;
 using System.Linq;
@@ -18,6 +18,8 @@ namespace PROYECTO_ING_DE_SOFTWARE
         private ToolStripMenuItem _menuReservas;
         private ToolStripMenuItem _itemNuevaReserva;
         private ToolStripMenuItem _itemRegistrarPago;
+        private ToolStripMenuItem _itemConsultarReservas;
+        private ToolStripMenuItem _itemMisReservas;
 
         public FRMMenuPrincipalAdmin()
         {
@@ -44,9 +46,19 @@ namespace PROYECTO_ING_DE_SOFTWARE
             _itemRegistrarPago = new ToolStripMenuItem("Registrar pago");
             _itemRegistrarPago.Click += (s, e) => AbrirFormularioHijo(new FRMPagoReserva_GV42());
 
+            // Antes se podía asignar la patente Reservas.Consultar / Reservas.ConsultarPropia
+            // pero no existía ninguna pantalla que las usara. Estos dos ítems las cubren.
+            _itemConsultarReservas = new ToolStripMenuItem("Consultar reservas");
+            _itemConsultarReservas.Click += (s, e) => AbrirFormularioHijo(new FRMConsultarReservas_GV42());
+
+            _itemMisReservas = new ToolStripMenuItem("Mis reservas");
+            _itemMisReservas.Click += (s, e) => AbrirFormularioHijo(new FRMConsultarReservas_GV42());
+
             _menuReservas = new ToolStripMenuItem("Reservas");
             _menuReservas.DropDownItems.Add(_itemNuevaReserva);
             _menuReservas.DropDownItems.Add(_itemRegistrarPago);
+            _menuReservas.DropDownItems.Add(_itemConsultarReservas);
+            _menuReservas.DropDownItems.Add(_itemMisReservas);
 
             menuStrip1.Items.Add(_menuReservas);
         }
@@ -149,9 +161,15 @@ namespace PROYECTO_ING_DE_SOFTWARE
             bool puedeGenerarReserva = dataKeys.Contains("Reservas.Generar") || dataKeys.Contains("Reservas.GenerarPropia");
             bool puedeRegistrarPago  = dataKeys.Contains("Pagos.Registrar") || dataKeys.Contains("Pagos.RegistrarPropio");
 
+            bool puedeConsultarTodas = dataKeys.Contains("Reservas.Consultar");
+            bool puedeConsultarPropias = dataKeys.Contains("Reservas.ConsultarPropia");
+
             if (_itemNuevaReserva != null) _itemNuevaReserva.Visible = puedeGenerarReserva;
             if (_itemRegistrarPago != null) _itemRegistrarPago.Visible = puedeRegistrarPago;
-            if (_menuReservas != null) _menuReservas.Visible = puedeGenerarReserva || puedeRegistrarPago;
+            if (_itemConsultarReservas != null) _itemConsultarReservas.Visible = puedeConsultarTodas;
+            if (_itemMisReservas != null) _itemMisReservas.Visible = puedeConsultarPropias;
+            if (_menuReservas != null)
+                _menuReservas.Visible = puedeGenerarReserva || puedeRegistrarPago || puedeConsultarTodas || puedeConsultarPropias;
 
             bool puedeCambiarIdioma = dataKeys.Contains("Sesion.CambiarIdioma");
             if (_menuIdioma != null)

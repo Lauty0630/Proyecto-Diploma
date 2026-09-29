@@ -1,4 +1,4 @@
-﻿﻿using BE;
+﻿﻿﻿using BE;
 using DAL;
 using Servicios;
 using System;
@@ -357,6 +357,84 @@ namespace BLL
                 reserva.NumeroReserva + " - " + medioPago.Texto() + " - " + BLLNegocioUtil_GV42.Dinero(registrado.ImporteTotalAbonado), "Media");
 
             return registrado;
+        }
+
+        // ---- Consultar reservas ----
+
+        // "Mis reservas" del cliente autogestionado (usa el DNI de la sesión, no lo que venga de la UI).
+        public List<Reserva_GV42> ListarMisReservas()
+        {
+            string dniSesion = SessionManager_GV42.Instancia.ObtenerUsuarioActual().DNI;
+            return _dalReserva.ListarPorCliente(dniSesion);
+        }
+
+        // Consulta del vendedor: sin texto trae las últimas reservas; con texto filtra por
+        // número de reserva, DNI o apellido del cliente.
+        public List<Reserva_GV42> BuscarReservas(string textoLibre)
+        {
+            return _dalReserva.Buscar(textoLibre);
+        }
+
+        // ---- Cancelar reserva ----
+
+        // Reglas de penalidad según el tiempo que falta para la salida (ajustable si la cátedra
+        // pide otros porcentajes u horas de corte):
+        //   72 hs o más antes de la salida -> sin cargo.
+        //   entre 24 y 72 hs                -> 30% del importe total.
+        //   menos de 24 hs                  -> 100% del importe total (sin reembolso).
+        public const int HORAS_SIN_PENALIDAD = 72;
+        public const int HORAS_PENALIDAD_PARCIAL = 24;
+        public const decimal PORCENTAJE_PENALIDAD_PARCIAL = 0.30m;
+        public const decimal PORCENTAJE_PENALIDAD_TOTAL = 1.00m;
+
+        public decimal CalcularPorcentajePenalidad(DateTime fechaHoraSalida)
+        {
+            double horasRestantes = (fechaHoraSalida - DateTime.Now).TotalHours;
+            if (horasRestantes >= HORAS_SIN_PENALIDAD) return 0m;
+            if (horasRestantes >= HORAS_PENALIDAD_PARCIAL) return PORCENTAJE_PENALIDAD_PARCIAL;
+            return PORCENTAJE_PENALIDAD_TOTAL;
+        }
+
+        public Reserva_GV42 CancelarReserva(string numeroReserva)
+        {
+            BLLNegocioUtil_GV42.LoginActual();
+
+            Reserva_GV42 reserva = BuscarReserva(numeroReserva);
+            if (reserva == null)
+                throw new NegocioException_GV42("No existe una reserva con el número indicado.");
+            if (reserva.Estado == EstadoReserva_GV42.Cancelada)
+                throw new NegocioException_GV42("La reserva ya estaba cancelada.");
+
+            if (CanalSegunSesion() == CanalVenta_GV42.Autogestion)
+            {
+                string dniSesion = SessionManager_GV42.Instancia.ObtenerUsuarioActual().DNI;
+                if (!string.Equals(reserva.Cliente.DNI, dniSesion, StringComparison.OrdinalIgnoreCase))
+                    throw new NegocioException_GV42("No podés cancelar una reserva que no es tuya.");
+            }
+
+            // No alcanza con ocultar el botón en la pantalla: se vuelve a chequear el permiso acá,
+            // igual que ya se valida la sesión con LoginActual().
+            Usuario_GV42 actual = SessionManager_GV42.Instancia.ObtenerUsuarioActual();
+            Rol_GV42 rolCompleto = actual?.Rol != null ? new BLLPermisos_GV42().ObtenerArbolRol(actual.Rol.Id) : null;
+            var patentes = rolCompleto?.ObtenerPatentes().Select(p => p.DataKey ?? string.Empty).ToList() ?? new List<string>();
+            bool puedeCancelar = patentes.Contains("Reservas.Cancelar") || patentes.Contains("Reservas.CancelarPropia");
+            if (!puedeCancelar)
+                throw new NegocioException_GV42("No tenés permiso para cancelar reservas.");
+
+            if (reserva.Vuelo.FechaHoraSalida <= DateTime.Now)
+                throw new NegocioException_GV42("El vuelo ya salió: la reserva no se puede cancelar.");
+
+            decimal porcentaje = CalcularPorcentajePenalidad(reserva.Vuelo.FechaHoraSalida);
+            decimal monto = Math.Round(reserva.ImporteTotal * porcentaje, 2);
+
+            Reserva_GV42 cancelada = _dalReserva.Cancelar(reserva.Id, monto);
+            RecalcularIntegridad("Reserva");
+
+            BLLNegocioUtil_GV42.Auditar(BLLNegocioUtil_GV42.MODULO_RESERVAS, "Reserva cancelada",
+                cancelada.NumeroReserva + " - penalidad " + BLLNegocioUtil_GV42.Dinero(monto) +
+                " (" + (porcentaje * 100) + "%)", "Media");
+
+            return cancelada;
         }
 
         // ---- Paso 14: boletos para entregar al cliente (uno por pasajero) ----
