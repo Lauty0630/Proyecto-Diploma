@@ -1,4 +1,4 @@
-﻿﻿using System;
+﻿using System;
 
 namespace BE
 {
@@ -13,9 +13,5 @@ namespace BE
 
         // Obligatoria solo si TipoViaje es IdaYVuelta.
         public DateTime? FechaRegreso { get; set; }
-
-        // Opcional: si se indica, la búsqueda devuelve solo esa clase (evita repetir el mismo
-        // vuelo en varias filas, una por clase). Null = todas las clases.
-        public ClaseVuelo_GV42? Clase { get; set; }
     }
 }

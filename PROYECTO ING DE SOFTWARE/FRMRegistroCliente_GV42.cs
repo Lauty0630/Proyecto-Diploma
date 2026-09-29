@@ -1,4 +1,4 @@
-﻿﻿using BE;
+﻿using BE;
 using BLL;
 using System;
 using System.Drawing;
@@ -23,10 +23,7 @@ namespace PROYECTO_ING_DE_SOFTWARE
         private void ConstruirUI()
         {
             Text = "Crear cuenta de cliente";
-            // Antes el alto no alcanzaba: con 8 campos + botón, el contenido terminaba fuera del
-            // formulario y "Crear cuenta" quedaba inalcanzable. AutoScroll queda como red de
-            // seguridad por si se agrega algún campo más adelante.
-            ClientSize = new Size(560, 680);
+            ClientSize = new Size(560, 560);
             BackColor = Tema_GV42.Fondo;
             FormBorderStyle = FormBorderStyle.FixedSingle;
             MaximizeBox = false;
@@ -34,9 +31,8 @@ namespace PROYECTO_ING_DE_SOFTWARE
             Font = new Font("Segoe UI", 9F);
 
             var card = Tema_GV42.CrearCard();
-            card.Location = new Point(60, 20);
-            card.Size = new Size(440, 640);
-            card.AutoScroll = true;
+            card.Location = new Point(60, 30);
+            card.Size = new Size(440, 500);
             Controls.Add(card);
 
             var lblTitulo = new Label

@@ -1,4 +1,4 @@
-﻿﻿﻿using System;
+﻿﻿using System;
 using System.Collections.Generic;
 
 namespace BE
@@ -29,10 +29,6 @@ namespace BE
         public EstadoReserva_GV42 Estado { get; set; } = EstadoReserva_GV42.PendienteDePago;
         public string LoginVendedor { get; set; }
         public CanalVenta_GV42 CanalVenta { get; set; } = CanalVenta_GV42.Presencial;
-
-        // Solo tienen valor si Estado es Cancelada.
-        public DateTime? FechaCancelacion { get; set; }
-        public decimal? MontoPenalidadCancelacion { get; set; }
 
         // Solo tiene valor una vez registrado el pago.
         public Pago_GV42 Pago { get; set; }
