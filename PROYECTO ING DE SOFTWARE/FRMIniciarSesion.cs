@@ -1,4 +1,4 @@
-using BLL;
+﻿using BLL;
 using Servicios;
 using System;
 using System.Collections.Generic;
@@ -28,6 +28,29 @@ namespace PROYECTO_ING_DE_SOFTWARE
             this.FormClosed += (s, e) => IdiomaManager_GV42.Instancia.Desuscribir(this);
 
             ActualizarIdioma();
+            AgregarLinkRegistroCliente();
+        }
+
+        // RFN 1: el cliente puede crearse su propia cuenta y reservar sin pasar por un vendedor.
+        // Se agrega en código (no en el Designer) para no tocar el diseño existente del login.
+        private void AgregarLinkRegistroCliente()
+        {
+            var link = new LinkLabel
+            {
+                Text = "¿Sos cliente y no tenés cuenta? Registrate",
+                AutoSize = false,
+                TextAlign = ContentAlignment.MiddleCenter,
+                Location = new Point(80, 392),
+                Size = new Size(380, 20),
+                LinkColor = Color.FromArgb(13, 71, 161),
+                Font = new Font("Segoe UI", 9F)
+            };
+            link.Click += (s, e) =>
+            {
+                using (var frm = new FRMRegistroCliente_GV42())
+                    frm.ShowDialog(this);
+            };
+            Controls.Add(link);
         }
 
         public void ActualizarIdioma()

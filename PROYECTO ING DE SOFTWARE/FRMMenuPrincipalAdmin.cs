@@ -1,4 +1,4 @@
-using BLL;
+﻿using BLL;
 using Servicios;
 using System;
 using System.Linq;
@@ -15,6 +15,10 @@ namespace PROYECTO_ING_DE_SOFTWARE
         private ToolStripMenuItem _itemEspanol;
         private ToolStripMenuItem _itemIngles;
 
+        private ToolStripMenuItem _menuReservas;
+        private ToolStripMenuItem _itemNuevaReserva;
+        private ToolStripMenuItem _itemRegistrarPago;
+
         public FRMMenuPrincipalAdmin()
         {
             InitializeComponent();
@@ -23,8 +27,28 @@ namespace PROYECTO_ING_DE_SOFTWARE
             IdiomaManager_GV42.Instancia.Suscribir(this);
             this.FormClosed += (s, e) => IdiomaManager_GV42.Instancia.Desuscribir(this);
 
+            ConstruirMenuReservas();
             ConstruirMenuIdioma();
             ActualizarIdioma();
+        }
+
+        // Negocio (RFN 1): un solo formulario para vendedor y cliente (ver FRMReservarVuelo_GV42);
+        // la visibilidad de cada opción depende de las patentes del rol, igual que el resto del menú.
+        private void ConstruirMenuReservas()
+        {
+            if (menuStrip1 == null) return;
+
+            _itemNuevaReserva = new ToolStripMenuItem("Nueva reserva");
+            _itemNuevaReserva.Click += (s, e) => AbrirFormularioHijo(new FRMReservarVuelo_GV42());
+
+            _itemRegistrarPago = new ToolStripMenuItem("Registrar pago");
+            _itemRegistrarPago.Click += (s, e) => AbrirFormularioHijo(new FRMPagoReserva_GV42());
+
+            _menuReservas = new ToolStripMenuItem("Reservas");
+            _menuReservas.DropDownItems.Add(_itemNuevaReserva);
+            _menuReservas.DropDownItems.Add(_itemRegistrarPago);
+
+            menuStrip1.Items.Add(_menuReservas);
         }
 
         private void ConstruirMenuIdioma()
@@ -121,6 +145,13 @@ namespace PROYECTO_ING_DE_SOFTWARE
 
             if (usuarioToolStripMenuItem != null)
                 usuarioToolStripMenuItem.Visible = puedeCambiarClave || puedeReLogin || puedeLogout;
+
+            bool puedeGenerarReserva = dataKeys.Contains("Reservas.Generar") || dataKeys.Contains("Reservas.GenerarPropia");
+            bool puedeRegistrarPago  = dataKeys.Contains("Pagos.Registrar") || dataKeys.Contains("Pagos.RegistrarPropio");
+
+            if (_itemNuevaReserva != null) _itemNuevaReserva.Visible = puedeGenerarReserva;
+            if (_itemRegistrarPago != null) _itemRegistrarPago.Visible = puedeRegistrarPago;
+            if (_menuReservas != null) _menuReservas.Visible = puedeGenerarReserva || puedeRegistrarPago;
 
             bool puedeCambiarIdioma = dataKeys.Contains("Sesion.CambiarIdioma");
             if (_menuIdioma != null)

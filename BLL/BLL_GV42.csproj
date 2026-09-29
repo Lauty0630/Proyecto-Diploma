@@ -50,7 +50,6 @@
     <Compile Include="BLLCheckIn_GV42.cs" />
     <Compile Include="BLLNegocioUtil_GV42.cs" />
     <Compile Include="BLLReserva_GV42.cs" />
-    <Compile Include="BLLUsuario_GV42.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
