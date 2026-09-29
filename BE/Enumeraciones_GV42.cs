@@ -1,4 +1,4 @@
-﻿﻿using System;
+﻿﻿﻿using System;
 
 namespace BE
 {
@@ -8,7 +8,7 @@ namespace BE
 
     public enum TipoViaje_GV42 { Ida = 1, IdaYVuelta = 2 }
 
-    public enum EstadoReserva_GV42 { PendienteDePago = 1, Confirmada = 2 }
+    public enum EstadoReserva_GV42 { PendienteDePago = 1, Confirmada = 2, Cancelada = 3 }
 
     public enum MedioPago_GV42 { TarjetaDebito = 1, TarjetaCredito = 2, Transferencia = 3, Efectivo = 4 }
 
@@ -36,7 +36,12 @@ namespace BE
 
         public static string Texto(this EstadoReserva_GV42 v)
         {
-            return v == EstadoReserva_GV42.PendienteDePago ? "Pendiente de Pago" : "Confirmada";
+            switch (v)
+            {
+                case EstadoReserva_GV42.PendienteDePago: return "Pendiente de Pago";
+                case EstadoReserva_GV42.Confirmada: return "Confirmada";
+                default: return "Cancelada";
+            }
         }
 
         public static string Texto(this MedioPago_GV42 v)

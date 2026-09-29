@@ -1,4 +1,4 @@
-﻿using BE;
+﻿﻿using BE;
 using System;
 using System.Collections.Generic;
 using System.Data;
@@ -31,16 +31,19 @@ namespace DAL
                 "   AND CAST(V.FechaHoraSalida AS DATE) = @Fecha" +
                 "   AND V.FechaHoraSalida > GETDATE()" +
                 "   AND (VC.CapacidadAsientos - VC.AsientosReservados) >= @Cantidad" +
+                (criterio.Clase.HasValue ? "   AND VC.IdClase = @IdClase" : "") +
                 " ORDER BY V.FechaHoraSalida, VC.IdClase";
 
-            SqlParameter[] p = {
+            var parametros = new System.Collections.Generic.List<SqlParameter> {
                 new SqlParameter("@IdOrigen",  criterio.IdOrigen),
                 new SqlParameter("@IdDestino", criterio.IdDestino),
                 new SqlParameter("@Fecha",     criterio.FechaSalida.Date),
                 new SqlParameter("@Cantidad",  criterio.CantidadPasajeros)
             };
+            if (criterio.Clase.HasValue)
+                parametros.Add(new SqlParameter("@IdClase", (int)criterio.Clase.Value));
 
-            DataTable dt = _acceso.leer(query, p);
+            DataTable dt = _acceso.leer(query, parametros.ToArray());
             var lista = new List<VueloClase_GV42>();
             foreach (DataRow r in dt.Rows)
                 lista.Add(DALUtil_GV42.MapearVueloClase(r));
