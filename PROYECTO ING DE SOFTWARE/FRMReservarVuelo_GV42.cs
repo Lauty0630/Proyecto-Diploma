@@ -10,10 +10,11 @@ using System.Windows.Forms;
 namespace PROYECTO_ING_DE_SOFTWARE
 {
     // RFN 1 - Reservar vuelo. Un solo formulario para los dos canales:
-    //  - Vendedor (rol distinto de "Cliente"): incluye el paso de buscar/registrar al cliente.
-    //  - Cliente autogestionado (rol "Cliente"): ese paso se omite, la reserva queda a su nombre.
-    // La capa de negocio (BLLReserva_GV42.GenerarReserva) es la que decide el canal según la sesión;
-    // acá solo se ajusta qué pasos se muestran.
+    //  - Vendedor (patente Reservas.Generar): incluye el paso de buscar/registrar al cliente.
+    //  - Pasajero con cuenta (solo Reservas.GenerarPropia): ese paso se omite; la reserva queda a su
+    //    nombre y sus datos se toman de la sesión activa.
+    // El modo se decide por patentes, no por el nombre del rol. La capa de negocio
+    // (BLLReserva_GV42.GenerarReserva) vuelve a validar el canal según la sesión.
     public class FRMReservarVuelo_GV42 : Form
     {
         private class DatosPasajero
@@ -68,8 +69,7 @@ namespace PROYECTO_ING_DE_SOFTWARE
 
         public FRMReservarVuelo_GV42()
         {
-            Usuario_GV42 actual = SessionManager_GV42.Instancia.ObtenerUsuarioActual();
-            _esVendedor = actual == null || !string.Equals(actual.RolNombre, "Cliente", StringComparison.OrdinalIgnoreCase);
+            _esVendedor = _bll.PuedeGenerarParaTerceros();
 
             ConstruirUI();
             CargarAeropuertos();
@@ -507,41 +507,27 @@ namespace PROYECTO_ING_DE_SOFTWARE
                 UbicarConEtiqueta(grupo, "Email", dp.Email, 430, 24, 180);
                 UbicarConEtiqueta(grupo, "Teléfono", dp.Telefono, 620, 24, 120);
 
-                // El titular de la cuenta ya está identificado por su sesión: no tiene sentido
-                // pedirle que vuelva a tipear sus propios datos. Para pasajeros adicionales sí se
+                // El titular de la cuenta ya está identificado por su sesión: sus datos salen de ahí y no
+                // se le pide que los vuelva a tipear (ni que se "registre"). Para pasajeros adicionales sí se
                 // piden datos completos (pueden ser personas distintas del titular).
                 if (i == 0 && !_esVendedor)
                 {
-                    Usuario_GV42 actual = SessionManager_GV42.Instancia.ObtenerUsuarioActual();
-                    Pasajero_GV42 propio = null;
-                    bool soloTelefonoPendiente = false;
-                    if (actual != null)
-                    {
-                        propio = _bll.BuscarPasajero(actual.DNI);
-                        if (propio == null)
-                        {
-                            // Cuenta sin fila en Pasajero todavía: se precarga desde Usuario y solo falta el teléfono.
-                            propio = _bll.PrecargarDesdeUsuario(actual.DNI);
-                            soloTelefonoPendiente = propio != null;
-                        }
-                    }
-                    if (propio != null)
-                    {
-                        dp.Dni.Text = propio.DNI; dp.Nombre.Text = propio.Nombre; dp.Apellido.Text = propio.Apellido;
-                        dp.Email.Text = propio.Email; dp.Telefono.Text = propio.Telefono;
+                    Pasajero_GV42 titular = _bll.ObtenerTitularDeSesion();
+                    dp.Dni.Text = titular.DNI; dp.Nombre.Text = titular.Nombre; dp.Apellido.Text = titular.Apellido;
+                    dp.Email.Text = titular.Email; dp.Telefono.Text = titular.Telefono;
 
-                        foreach (var txt in new[] { dp.Dni, dp.Nombre, dp.Apellido, dp.Email, dp.Telefono })
-                        {
-                            txt.ReadOnly = true;
-                            txt.BackColor = Tema_GV42.Fondo;
-                        }
-                        if (soloTelefonoPendiente)
-                        {
-                            dp.Telefono.ReadOnly = false;
-                            dp.Telefono.BackColor = Color.White;
-                        }
-                        grupo.Text = "Pasajero 1 (vos)";
+                    foreach (var txt in new[] { dp.Dni, dp.Nombre, dp.Apellido, dp.Email })
+                    {
+                        txt.ReadOnly = true;
+                        txt.BackColor = Tema_GV42.Fondo;
                     }
+                    // Usuario no guarda teléfono: solo se pide si nunca reservó antes.
+                    if (!string.IsNullOrWhiteSpace(titular.Telefono))
+                    {
+                        dp.Telefono.ReadOnly = true;
+                        dp.Telefono.BackColor = Tema_GV42.Fondo;
+                    }
+                    grupo.Text = "Pasajero 1 (vos)";
                 }
 
                 _pasajeros.Add(dp);

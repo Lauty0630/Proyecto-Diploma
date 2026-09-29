@@ -164,14 +164,65 @@ namespace BLL
             return _dalAsiento.ListarMapa(idVuelo, clase);
         }
 
-        // Sesión con rol "Cliente" => la reserva es autogestión (RFN 1, sin vendedor de por medio).
-        // Cualquier otro rol logueado (Vendedor, Admin) => reserva presencial.
-        private CanalVenta_GV42 CanalSegunSesion()
+        // ---- Permisos de reservas ----
+        // El modo de cada pantalla (vendedor / pasajero) se decide por las PATENTES del rol de la
+        // sesión, no por el nombre del rol: "X" (general) = opera sobre cualquier reserva y para
+        // cualquier cliente; "XPropia" = solo sobre las suyas y a su propio nombre.
+
+        private static HashSet<string> PatentesActuales()
         {
             Usuario_GV42 actual = SessionManager_GV42.Instancia.ObtenerUsuarioActual();
-            bool esCliente = actual != null && actual.Rol != null &&
-                             string.Equals(actual.Rol.Nombre, "Cliente", StringComparison.OrdinalIgnoreCase);
-            return esCliente ? CanalVenta_GV42.Autogestion : CanalVenta_GV42.Presencial;
+            Rol_GV42 rol = actual?.Rol != null ? new BLLPermisos_GV42().ObtenerArbolRol(actual.Rol.Id) : null;
+            var claves = rol != null
+                ? rol.ObtenerPatentes().Select(p => p.DataKey ?? string.Empty)
+                : Enumerable.Empty<string>();
+            return new HashSet<string>(claves);
+        }
+
+        private static string DniSesion()
+        {
+            Usuario_GV42 actual = SessionManager_GV42.Instancia.ObtenerUsuarioActual();
+            return actual != null ? (actual.DNI ?? string.Empty).Trim() : string.Empty;
+        }
+
+        private static bool EsDeLaSesion(Reserva_GV42 r)
+        {
+            return r != null && r.Cliente != null &&
+                   string.Equals((r.Cliente.DNI ?? string.Empty).Trim(), DniSesion(), StringComparison.OrdinalIgnoreCase);
+        }
+
+        // Reservar para terceros: la pantalla incluye buscar/registrar al cliente (vendedor).
+        public bool PuedeGenerarParaTerceros() { return PatentesActuales().Contains("Reservas.Generar"); }
+
+        // Consultar todas las reservas (vendedor). Sin esta patente solo ve las propias.
+        public bool PuedeConsultarTodas() { return PatentesActuales().Contains("Reservas.Consultar"); }
+
+        public bool PuedeCancelar()
+        {
+            var p = PatentesActuales();
+            return p.Contains("Reservas.Cancelar") || p.Contains("Reservas.CancelarPropia");
+        }
+
+        // Autogestión = solo tiene la patente "propia" para generar (el vendedor tiene la general).
+        private CanalVenta_GV42 CanalSegunSesion()
+        {
+            var p = PatentesActuales();
+            bool autogestion = !p.Contains("Reservas.Generar") && p.Contains("Reservas.GenerarPropia");
+            return autogestion ? CanalVenta_GV42.Autogestion : CanalVenta_GV42.Presencial;
+        }
+
+        // Datos del usuario logueado como pasajero titular: nombre, apellido y email salen de la
+        // sesión; el teléfono, si ya reservó antes, de su fila en Pasajero (Usuario no lo guarda).
+        public Pasajero_GV42 ObtenerTitularDeSesion()
+        {
+            Usuario_GV42 actual = SessionManager_GV42.Instancia.ObtenerUsuarioActual();
+            if (actual == null)
+                throw new NegocioException_GV42("No hay una sesión activa.");
+
+            string dni = (actual.DNI ?? string.Empty).Trim();
+            Pasajero_GV42 guardado = _dalPasajero.BuscarPorDni(dni);
+            return new Pasajero_GV42(dni, actual.Nombre, actual.Apellido, actual.Email,
+                                     guardado != null ? guardado.Telefono : string.Empty);
         }
 
         public Reserva_GV42 GenerarReserva(Reserva_GV42 borrador)
@@ -185,25 +236,26 @@ namespace BLL
             CanalVenta_GV42 canal = CanalSegunSesion();
             borrador.CanalVenta = canal;
 
+            var patentes = PatentesActuales();
+            if (!patentes.Contains("Reservas.Generar") && !patentes.Contains("Reservas.GenerarPropia"))
+                throw new NegocioException_GV42("No tenés permiso para generar reservas.");
+
             if (canal == CanalVenta_GV42.Autogestion)
             {
-                // El cliente reserva para sí mismo: el cliente de la reserva es siempre el de su propia
-                // cuenta, nunca el que venga (o no) de la pantalla, para que nadie reserve "a nombre de" otro DNI.
-                string dniSesion = SessionManager_GV42.Instancia.ObtenerUsuarioActual().DNI;
-                Pasajero_GV42 propio = _dalPasajero.BuscarPorDni(dniSesion);
-                if (propio == null)
+                // El cliente reserva para sí mismo: el cliente de la reserva sale siempre de su sesión,
+                // nunca de lo que venga (o no) de la pantalla, para que nadie reserve "a nombre de" otro DNI.
+                Pasajero_GV42 titular = ObtenerTitularDeSesion();
+                if (string.IsNullOrWhiteSpace(titular.Telefono))
                 {
-                    // Cuenta creada por un administrador: todavía no tiene fila en Pasajero. Se la da de alta
-                    // con los datos del primer pasajero, que la pantalla precarga con los de su propia cuenta.
-                    Pasajero_GV42 titular = (borrador.Pasajeros ?? new List<Pasajero_GV42>())
-                        .FirstOrDefault(x => x != null && string.Equals((x.DNI ?? "").Trim(), dniSesion, StringComparison.OrdinalIgnoreCase));
-                    if (titular == null)
-                        throw new NegocioException_GV42("Su cuenta no tiene datos de pasajero. Incluyase como pasajero en la reserva o contacte al administrador.");
-                    BLLNegocioUtil_GV42.ValidarPersona(titular, "Pasajero");
-                    _dalPasajero.Insertar(titular);
-                    propio = titular;
+                    // Primera reserva: el único dato que la sesión no tiene es el teléfono, que se pide en pantalla.
+                    Pasajero_GV42 enPantalla = (borrador.Pasajeros ?? new List<Pasajero_GV42>())
+                        .FirstOrDefault(x => x != null && string.Equals((x.DNI ?? string.Empty).Trim(), titular.DNI, StringComparison.OrdinalIgnoreCase));
+                    if (enPantalla != null) titular.Telefono = enPantalla.Telefono;
                 }
-                borrador.Cliente = propio;
+                BLLNegocioUtil_GV42.ValidarPersona(titular, "Pasajero");
+                if (!_dalPasajero.ExisteDni(titular.DNI))
+                    _dalPasajero.Insertar(titular);
+                borrador.Cliente = titular;
             }
             else
             {
@@ -329,7 +381,14 @@ namespace BLL
             numeroReserva = (numeroReserva ?? string.Empty).Trim();
             if (numeroReserva.Length == 0)
                 throw new NegocioException_GV42("Debe indicar el número de reserva.");
-            return _dalReserva.BuscarPorNumero(numeroReserva);
+            Reserva_GV42 reserva = _dalReserva.BuscarPorNumero(numeroReserva);
+
+            // Quien solo tiene permisos "propios" no puede ver reservas de otras personas.
+            var p = PatentesActuales();
+            bool veAjenas = p.Contains("Reservas.Consultar") || p.Contains("Pagos.Registrar") || p.Contains("Reservas.Cancelar");
+            if (reserva != null && !veAjenas && !EsDeLaSesion(reserva))
+                throw new NegocioException_GV42("La reserva indicada no es tuya.");
+            return reserva;
         }
 
         // ---- Pasos 11 a 13: registrar el pago y confirmar la reserva ----
@@ -340,9 +399,16 @@ namespace BLL
         {
             string login = BLLNegocioUtil_GV42.LoginActual();
 
+            var patentesPago = PatentesActuales();
+            bool pagaCualquiera = patentesPago.Contains("Pagos.Registrar");
+            if (!pagaCualquiera && !patentesPago.Contains("Pagos.RegistrarPropio"))
+                throw new NegocioException_GV42("No tenés permiso para registrar pagos.");
+
             Reserva_GV42 reserva = BuscarReserva(numeroReserva);
             if (reserva == null)
                 throw new NegocioException_GV42("No existe una reserva con el número indicado.");
+            if (!pagaCualquiera && !EsDeLaSesion(reserva))
+                throw new NegocioException_GV42("Solo podés pagar tus propias reservas.");
             if (reserva.Estado != EstadoReserva_GV42.PendienteDePago)
                 throw new NegocioException_GV42("La reserva " + reserva.NumeroReserva + " ya está " + reserva.EstadoTexto.ToLower() + ".");
 
@@ -384,14 +450,17 @@ namespace BLL
         // "Mis reservas" del cliente autogestionado (usa el DNI de la sesión, no lo que venga de la UI).
         public List<Reserva_GV42> ListarMisReservas()
         {
-            string dniSesion = SessionManager_GV42.Instancia.ObtenerUsuarioActual().DNI;
-            return _dalReserva.ListarPorCliente(dniSesion);
+            if (!PatentesActuales().Contains("Reservas.ConsultarPropia"))
+                throw new NegocioException_GV42("No tenés permiso para consultar tus reservas.");
+            return _dalReserva.ListarPorCliente(DniSesion());
         }
 
         // Consulta del vendedor: sin texto trae las últimas reservas; con texto filtra por
         // número de reserva, DNI o apellido del cliente.
         public List<Reserva_GV42> BuscarReservas(string textoLibre)
         {
+            if (!PatentesActuales().Contains("Reservas.Consultar"))
+                throw new NegocioException_GV42("No tenés permiso para consultar todas las reservas.");
             return _dalReserva.Buscar(textoLibre);
         }
 
@@ -419,27 +488,21 @@ namespace BLL
         {
             BLLNegocioUtil_GV42.LoginActual();
 
+            // No alcanza con ocultar el botón en la pantalla: el permiso se vuelve a chequear acá.
+            var patentes = PatentesActuales();
+            bool cancelaCualquiera = patentes.Contains("Reservas.Cancelar");
+            if (!cancelaCualquiera && !patentes.Contains("Reservas.CancelarPropia"))
+                throw new NegocioException_GV42("No tenés permiso para cancelar reservas.");
+
             Reserva_GV42 reserva = BuscarReserva(numeroReserva);
             if (reserva == null)
                 throw new NegocioException_GV42("No existe una reserva con el número indicado.");
             if (reserva.Estado == EstadoReserva_GV42.Cancelada)
                 throw new NegocioException_GV42("La reserva ya estaba cancelada.");
 
-            if (CanalSegunSesion() == CanalVenta_GV42.Autogestion)
-            {
-                string dniSesion = SessionManager_GV42.Instancia.ObtenerUsuarioActual().DNI;
-                if (!string.Equals(reserva.Cliente.DNI, dniSesion, StringComparison.OrdinalIgnoreCase))
-                    throw new NegocioException_GV42("No podés cancelar una reserva que no es tuya.");
-            }
-
-            // No alcanza con ocultar el botón en la pantalla: se vuelve a chequear el permiso acá,
-            // igual que ya se valida la sesión con LoginActual().
-            Usuario_GV42 actual = SessionManager_GV42.Instancia.ObtenerUsuarioActual();
-            Rol_GV42 rolCompleto = actual?.Rol != null ? new BLLPermisos_GV42().ObtenerArbolRol(actual.Rol.Id) : null;
-            var patentes = rolCompleto?.ObtenerPatentes().Select(p => p.DataKey ?? string.Empty).ToList() ?? new List<string>();
-            bool puedeCancelar = patentes.Contains("Reservas.Cancelar") || patentes.Contains("Reservas.CancelarPropia");
-            if (!puedeCancelar)
-                throw new NegocioException_GV42("No tenés permiso para cancelar reservas.");
+            // Con la patente "propia" solo se cancelan las reservas del propio usuario.
+            if (!cancelaCualquiera && !EsDeLaSesion(reserva))
+                throw new NegocioException_GV42("No podés cancelar una reserva que no es tuya.");
 
             if (reserva.Vuelo.FechaHoraSalida <= DateTime.Now)
                 throw new NegocioException_GV42("El vuelo ya salió: la reserva no se puede cancelar.");

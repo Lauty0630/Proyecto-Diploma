@@ -167,7 +167,7 @@ namespace PROYECTO_ING_DE_SOFTWARE
             if (_itemNuevaReserva != null) _itemNuevaReserva.Visible = puedeGenerarReserva;
             if (_itemRegistrarPago != null) _itemRegistrarPago.Visible = puedeRegistrarPago;
             if (_itemConsultarReservas != null) _itemConsultarReservas.Visible = puedeConsultarTodas;
-            if (_itemMisReservas != null) _itemMisReservas.Visible = puedeConsultarPropias;
+            if (_itemMisReservas != null) _itemMisReservas.Visible = puedeConsultarPropias && !puedeConsultarTodas;
             if (_menuReservas != null)
                 _menuReservas.Visible = puedeGenerarReserva || puedeRegistrarPago || puedeConsultarTodas || puedeConsultarPropias;
 

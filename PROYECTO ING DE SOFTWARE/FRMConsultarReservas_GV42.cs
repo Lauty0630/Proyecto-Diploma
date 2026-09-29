@@ -9,15 +9,18 @@ using System.Windows.Forms;
 
 namespace PROYECTO_ING_DE_SOFTWARE
 {
-    // Consultar reservas: el vendedor busca entre todas (patente Reservas.Consultar); el cliente
-    // ve solo las propias (patente Reservas.ConsultarPropia). Un mismo formulario para los dos,
-    // igual que FRMReservarVuelo_GV42 — el modo se decide por el rol de la sesión.
+    // Consultar reservas. Un mismo formulario con dos modos, decididos por las patentes del rol:
+    //  - Vendedor (Reservas.Consultar): busca entre todas las reservas y ve de quién es cada una.
+    //    Solo ve el botón Cancelar si además tiene Reservas.Cancelar.
+    //  - Pasajero (Reservas.ConsultarPropia): "Mis reservas", sin buscador; ve y cancela solo las suyas
+    //    (Reservas.CancelarPropia).
     public class FRMConsultarReservas_GV42 : Form
     {
         private class FilaReserva
         {
             public string NumeroReserva { get; set; }
             public string Cliente { get; set; }
+            public string DniCliente { get; set; }
             public string Vuelo { get; set; }
             public string Ruta { get; set; }
             public DateTime Salida { get; set; }
@@ -38,12 +41,8 @@ namespace PROYECTO_ING_DE_SOFTWARE
 
         public FRMConsultarReservas_GV42()
         {
-            Usuario_GV42 actual = SessionManager_GV42.Instancia.ObtenerUsuarioActual();
-            _esVendedor = actual == null || !string.Equals(actual.RolNombre, "Cliente", StringComparison.OrdinalIgnoreCase);
-
-            var patentes = (actual?.Rol != null ? new BLLPermisos_GV42().ObtenerArbolRol(actual.Rol.Id) : null)
-                ?.ObtenerPatentes().Select(p => p.DataKey ?? string.Empty).ToList() ?? new List<string>();
-            _puedeCancelar = patentes.Contains("Reservas.Cancelar") || patentes.Contains("Reservas.CancelarPropia");
+            _esVendedor = _bll.PuedeConsultarTodas();
+            _puedeCancelar = _bll.PuedeCancelar();
 
             ConstruirUI();
             CargarReservas();
@@ -101,7 +100,10 @@ namespace PROYECTO_ING_DE_SOFTWARE
             dgv.AutoGenerateColumns = false;
             dgv.Columns.Add(new DataGridViewTextBoxColumn { DataPropertyName = "NumeroReserva", HeaderText = "Reserva" });
             if (_esVendedor)
+            {
+                dgv.Columns.Add(new DataGridViewTextBoxColumn { DataPropertyName = "DniCliente", HeaderText = "DNI cliente" });
                 dgv.Columns.Add(new DataGridViewTextBoxColumn { DataPropertyName = "Cliente", HeaderText = "Cliente" });
+            }
             dgv.Columns.Add(new DataGridViewTextBoxColumn { DataPropertyName = "Vuelo", HeaderText = "Vuelo" });
             dgv.Columns.Add(new DataGridViewTextBoxColumn { DataPropertyName = "Ruta", HeaderText = "Ruta" });
             dgv.Columns.Add(new DataGridViewTextBoxColumn { DataPropertyName = "Salida", HeaderText = "Salida", DefaultCellStyle = new DataGridViewCellStyle { Format = "dd/MM/yyyy HH:mm" } });
@@ -113,7 +115,7 @@ namespace PROYECTO_ING_DE_SOFTWARE
 
             btnCancelar = new Button
             {
-                Text = "Cancelar reserva seleccionada",
+                Text = _esVendedor ? "Cancelar reserva seleccionada" : "Cancelar mi reserva",
                 Location = new Point(0, yBajoTitulo + 350),
                 Size = new Size(240, 36),
                 Anchor = AnchorStyles.Bottom | AnchorStyles.Left,
@@ -136,6 +138,7 @@ namespace PROYECTO_ING_DE_SOFTWARE
                 {
                     NumeroReserva = r.NumeroReserva,
                     Cliente = r.Cliente.NombreCompleto,
+                    DniCliente = r.Cliente.DNI,
                     Vuelo = r.VueloClase.CodigoVuelo,
                     Ruta = r.VueloClase.OrigenDescripcion + " -> " + r.VueloClase.DestinoDescripcion,
                     Salida = r.VueloClase.FechaHoraSalida,
