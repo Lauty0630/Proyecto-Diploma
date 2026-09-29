@@ -21,6 +21,10 @@ namespace PROYECTO_ING_DE_SOFTWARE
         private ToolStripMenuItem _itemConsultarReservas;
         private ToolStripMenuItem _itemMisReservas;
 
+        private ToolStripMenuItem _menuVuelos;
+        private ToolStripMenuItem _itemGestionVuelos;
+        private ToolStripMenuItem _itemBitacoraVuelos;
+
         public FRMMenuPrincipalAdmin()
         {
             InitializeComponent();
@@ -30,6 +34,7 @@ namespace PROYECTO_ING_DE_SOFTWARE
             this.FormClosed += (s, e) => IdiomaManager_GV42.Instancia.Desuscribir(this);
 
             ConstruirMenuReservas();
+            ConstruirMenuVuelos();
             ConstruirMenuIdioma();
             ActualizarIdioma();
         }
@@ -61,6 +66,25 @@ namespace PROYECTO_ING_DE_SOFTWARE
             _menuReservas.DropDownItems.Add(_itemMisReservas);
 
             menuStrip1.Items.Add(_menuReservas);
+        }
+
+        // Vuelos: gestión (modificar / baja lógica) y bitácora de cambios (tabla Vuelo_C).
+        // Cada opción se muestra según su patente (Vuelos.Gestionar / Vuelos.Bitacora).
+        private void ConstruirMenuVuelos()
+        {
+            if (menuStrip1 == null) return;
+
+            _itemGestionVuelos = new ToolStripMenuItem("Gestión de vuelos");
+            _itemGestionVuelos.Click += (s, e) => AbrirFormularioHijo(new FRMGestionVuelos_GV42());
+
+            _itemBitacoraVuelos = new ToolStripMenuItem("Bitácora de cambios");
+            _itemBitacoraVuelos.Click += (s, e) => AbrirFormularioHijo(new FRMBitacoraVuelos_GV42());
+
+            _menuVuelos = new ToolStripMenuItem("Vuelos");
+            _menuVuelos.DropDownItems.Add(_itemGestionVuelos);
+            _menuVuelos.DropDownItems.Add(_itemBitacoraVuelos);
+
+            menuStrip1.Items.Add(_menuVuelos);
         }
 
         private void ConstruirMenuIdioma()
@@ -171,6 +195,12 @@ namespace PROYECTO_ING_DE_SOFTWARE
             if (_menuReservas != null)
                 _menuReservas.Visible = puedeGenerarReserva || puedeRegistrarPago || puedeConsultarTodas || puedeConsultarPropias;
 
+            bool puedeGestionarVuelos = dataKeys.Contains("Vuelos.Gestionar");
+            bool puedeVerBitacoraVuelos = dataKeys.Contains("Vuelos.Bitacora");
+            if (_itemGestionVuelos != null) _itemGestionVuelos.Visible = puedeGestionarVuelos;
+            if (_itemBitacoraVuelos != null) _itemBitacoraVuelos.Visible = puedeVerBitacoraVuelos;
+            if (_menuVuelos != null) _menuVuelos.Visible = puedeGestionarVuelos || puedeVerBitacoraVuelos;
+
             bool puedeCambiarIdioma = dataKeys.Contains("Sesion.CambiarIdioma");
             if (_menuIdioma != null)
                 _menuIdioma.Visible = puedeCambiarIdioma;
@@ -178,6 +208,9 @@ namespace PROYECTO_ING_DE_SOFTWARE
 
         public void AbrirFormularioHijo(Form f)
         {
+            if (_formularioActual != null && _formularioActual.IsDisposed)
+                _formularioActual = null;
+
             if (_formularioActual != null && _formularioActual.GetType() == f.GetType())
             {
                 _formularioActual.Close();

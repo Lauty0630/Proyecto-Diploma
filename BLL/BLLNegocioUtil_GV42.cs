@@ -11,6 +11,7 @@ namespace BLL
     {
         public const string MODULO_RESERVAS = "Reservas";
         public const string MODULO_CHECKIN = "CheckIn";
+        public const string MODULO_VUELOS = "Vuelos";
 
         private static readonly CultureInfo Cultura = new CultureInfo("es-AR");
 
@@ -36,6 +37,23 @@ namespace BLL
             catch
             {
             }
+        }
+
+        // ¿El rol de la sesión tiene esa patente? Las reglas de negocio la vuelven a chequear
+        // aunque la pantalla ya oculte el botón.
+        public static bool TienePatente(string dataKey)
+        {
+            Usuario_GV42 u = SessionManager_GV42.Instancia.ObtenerUsuarioActual();
+            if (u == null || u.Rol == null) return false;
+            Rol_GV42 rol = new BLLPermisos_GV42().ObtenerArbolRol(u.Rol.Id);
+            return rol != null && rol.TienePermiso(dataKey);
+        }
+
+        public static void ExigirPatente(string dataKey, string mensaje)
+        {
+            LoginActual();
+            if (!TienePatente(dataKey))
+                throw new NegocioException_GV42(mensaje);
         }
 
         public static string Dinero(decimal importe)

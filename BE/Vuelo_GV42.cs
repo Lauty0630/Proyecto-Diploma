@@ -15,5 +15,13 @@ namespace BE
 
         // Tarifa por cada kilo que exceda la franquicia de equipaje (RFN 2).
         public decimal CostoKiloExceso { get; set; }
+
+        // Borrado lógico: un vuelo dado de baja no se ofrece para nuevas reservas, pero no se elimina.
+        public bool BorradoLogico { get; set; }
+
+        public string Descripcion
+        {
+            get { return CodigoVuelo + " - " + (Origen != null ? Origen.CodigoIata : "?") + " -> " + (Destino != null ? Destino.CodigoIata : "?"); }
+        }
     }
 }

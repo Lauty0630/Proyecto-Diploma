@@ -62,6 +62,7 @@
     <Compile Include="DALTipoAdicional_GV42.cs" />
     <Compile Include="DALUtil_GV42.cs" />
     <Compile Include="DALVuelo_GV42.cs" />
+    <Compile Include="DALVueloHistorial_GV42.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>

@@ -69,6 +69,7 @@
     <Compile Include="TipoAdicional_GV42.cs" />
     <Compile Include="VueloClase_GV42.cs" />
     <Compile Include="Vuelo_GV42.cs" />
+    <Compile Include="VueloCambio_GV42.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

@@ -116,6 +116,12 @@
     <Compile Include="CtrlButacas_GV42.cs">
       <SubType>UserControl</SubType>
     </Compile>
+    <Compile Include="FRMGestionVuelos_GV42.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="FRMBitacoraVuelos_GV42.cs">
+      <SubType>Form</SubType>
+    </Compile>
     <Compile Include="FRMConsultarReservas_GV42.cs">
       <SubType>Form</SubType>
     </Compile>
