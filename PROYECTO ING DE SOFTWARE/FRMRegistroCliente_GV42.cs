@@ -101,7 +101,7 @@ namespace PROYECTO_ING_DE_SOFTWARE
         {
             try
             {
-                var cliente = new Cliente_GV42
+                var cliente = new Pasajero_GV42
                 {
                     DNI = txtDni.Text.Trim(),
                     Nombre = txtNombre.Text.Trim(),

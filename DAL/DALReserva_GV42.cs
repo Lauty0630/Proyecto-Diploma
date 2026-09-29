@@ -143,7 +143,7 @@ namespace DAL
                 "       C.Email AS CliEmail, C.Telefono AS CliTelefono, " +
                 DALUtil_GV42.COLUMNAS_VUELO_CLASE + " " +
                 "FROM Reserva R " +
-                "INNER JOIN Cliente C ON C.DNI = R.DniCliente " +
+                "INNER JOIN Pasajero C ON C.DNI = R.DniCliente " +
                 "INNER JOIN Vuelo V ON V.Id = R.IdVuelo " +
                 "INNER JOIN VueloClase VC ON VC.IdVuelo = R.IdVuelo AND VC.IdClase = R.IdClase" +
                 DALUtil_GV42.JOINS_VUELO + " " +
@@ -153,7 +153,7 @@ namespace DAL
             if (dt.Rows.Count == 0) return null;
 
             DataRow row = dt.Rows[0];
-            var cliente = new Cliente_GV42();
+            var cliente = new Pasajero_GV42();
             DALUtil_GV42.LlenarPersona(cliente, row, "Cli");
 
             var reserva = new Reserva_GV42
@@ -189,14 +189,14 @@ namespace DAL
             "       C.Email AS CliEmail, C.Telefono AS CliTelefono, " +
             DALUtil_GV42.COLUMNAS_VUELO_CLASE + " " +
             "FROM Reserva R " +
-            "INNER JOIN Cliente C ON C.DNI = R.DniCliente " +
+            "INNER JOIN Pasajero C ON C.DNI = R.DniCliente " +
             "INNER JOIN Vuelo V ON V.Id = R.IdVuelo " +
             "INNER JOIN VueloClase VC ON VC.IdVuelo = R.IdVuelo AND VC.IdClase = R.IdClase" +
             DALUtil_GV42.JOINS_VUELO;
 
         private Reserva_GV42 MapearListado(DataRow row)
         {
-            var cliente = new Cliente_GV42();
+            var cliente = new Pasajero_GV42();
             DALUtil_GV42.LlenarPersona(cliente, row, "Cli");
 
             return new Reserva_GV42

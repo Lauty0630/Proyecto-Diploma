@@ -16,7 +16,7 @@ namespace BLL
         private readonly DALAeropuerto_GV42 _dalAeropuerto;
         private readonly DALTipoAdicional_GV42 _dalTipoAdicional;
         private readonly DALVuelo_GV42 _dalVuelo;
-        private readonly DALCliente_GV42 _dalCliente;
+        private readonly DALPasajero_GV42 _dalPasajero;
         private readonly DALReserva_GV42 _dalReserva;
         private readonly DALPago_GV42 _dalPago;
         private readonly DALBoleto_GV42 _dalBoleto;
@@ -28,7 +28,7 @@ namespace BLL
             _dalAeropuerto = new DALAeropuerto_GV42();
             _dalTipoAdicional = new DALTipoAdicional_GV42();
             _dalVuelo = new DALVuelo_GV42();
-            _dalCliente = new DALCliente_GV42();
+            _dalPasajero = new DALPasajero_GV42();
             _dalReserva = new DALReserva_GV42();
             _dalPago = new DALPago_GV42();
             _dalBoleto = new DALBoleto_GV42();
@@ -88,34 +88,44 @@ namespace BLL
             }
         }
 
-        // ---- Pasos 6 y 7: cliente ----
+        // ---- Pasos 6 y 7: cliente (la tabla Pasajero guarda tanto al que reserva como al que viaja) ----
 
-        // Devuelve null si el DNI no está registrado.
-        public Cliente_GV42 BuscarCliente(string dni)
+        // Devuelve null si el DNI no está registrado como pasajero.
+        public Pasajero_GV42 BuscarPasajero(string dni)
         {
             dni = (dni ?? string.Empty).Trim();
             if (!Servicios.Validaciones_GV42.EsDniValido(dni))
                 throw new NegocioException_GV42(Servicios.Validaciones_GV42.MENSAJE_DNI);
-            return _dalCliente.BuscarPorDni(dni);
+            return _dalPasajero.BuscarPorDni(dni);
         }
 
-        public void RegistrarCliente(Cliente_GV42 cliente)
+        // Si el DNI no está en Pasajero pero sí tiene una cuenta de Usuario, devuelve sus datos
+        // (sin teléfono) para precargar el formulario de alta. Null si tampoco tiene cuenta.
+        public Pasajero_GV42 PrecargarDesdeUsuario(string dni)
         {
-            BLLNegocioUtil_GV42.ValidarPersona(cliente, "Cliente");
+            dni = (dni ?? string.Empty).Trim();
+            if (!Servicios.Validaciones_GV42.EsDniValido(dni))
+                throw new NegocioException_GV42(Servicios.Validaciones_GV42.MENSAJE_DNI);
+            return _dalPasajero.BuscarDatosEnUsuario(dni);
+        }
 
-            if (_dalCliente.ExisteDni(cliente.DNI))
-                throw new NegocioException_GV42("Ya existe un cliente registrado con el DNI " + cliente.DNI + ".");
+        public void RegistrarPasajero(Pasajero_GV42 pasajero)
+        {
+            BLLNegocioUtil_GV42.ValidarPersona(pasajero, "Cliente");
 
-            _dalCliente.Insertar(cliente);
+            if (_dalPasajero.ExisteDni(pasajero.DNI))
+                throw new NegocioException_GV42("Ya existe una persona registrada con el DNI " + pasajero.DNI + ".");
+
+            _dalPasajero.Insertar(pasajero);
 
             BLLNegocioUtil_GV42.Auditar(BLLNegocioUtil_GV42.MODULO_RESERVAS, "Cliente registrado",
-                "DNI " + cliente.DNI, "Baja");
+                "DNI " + pasajero.DNI, "Baja");
         }
 
         // El propio cliente se registra y crea su cuenta para reservar sin pasar por un vendedor
-        // (RFN 1 - CUN02, canal Autogestión). Da de alta Cliente y Usuario (rol "Cliente") juntos;
-        // si falla la creación del usuario, deshace el alta del cliente.
-        public Usuario_GV42 RegistrarClienteAutogestionado(Cliente_GV42 cliente, string login,
+        // (RFN 1 - CUN02, canal Autogestión). Da de alta Pasajero y Usuario (rol "Cliente") juntos;
+        // si falla la creación del usuario, deshace el alta del pasajero.
+        public Usuario_GV42 RegistrarClienteAutogestionado(Pasajero_GV42 cliente, string login,
                                                             string contrasenaPlana, string confirmarContrasena)
         {
             BLLNegocioUtil_GV42.ValidarPersona(cliente, "Cliente");
@@ -123,10 +133,10 @@ namespace BLL
             if (contrasenaPlana != confirmarContrasena)
                 throw new NegocioException_GV42("Las contraseñas no coinciden.");
 
-            if (_dalCliente.ExisteDni(cliente.DNI))
-                throw new NegocioException_GV42("Ya existe un cliente registrado con el DNI " + cliente.DNI + ".");
+            if (_dalPasajero.ExisteDni(cliente.DNI))
+                throw new NegocioException_GV42("Ya existe una persona registrada con el DNI " + cliente.DNI + ".");
 
-            _dalCliente.Insertar(cliente);
+            _dalPasajero.Insertar(cliente);
 
             try
             {
@@ -137,7 +147,7 @@ namespace BLL
             catch (Exception)
             {
                 // Compensación: sin usuario no hay cómo loguearse, así que no dejamos el cliente huérfano.
-                try { _dalCliente.Eliminar(cliente.DNI); } catch { }
+                try { _dalPasajero.Eliminar(cliente.DNI); } catch { }
                 throw;
             }
         }
@@ -180,16 +190,26 @@ namespace BLL
                 // El cliente reserva para sí mismo: el cliente de la reserva es siempre el de su propia
                 // cuenta, nunca el que venga (o no) de la pantalla, para que nadie reserve "a nombre de" otro DNI.
                 string dniSesion = SessionManager_GV42.Instancia.ObtenerUsuarioActual().DNI;
-                Cliente_GV42 propio = _dalCliente.BuscarPorDni(dniSesion);
+                Pasajero_GV42 propio = _dalPasajero.BuscarPorDni(dniSesion);
                 if (propio == null)
-                    throw new NegocioException_GV42("Su cuenta no tiene un cliente asociado. Contacte al administrador.");
+                {
+                    // Cuenta creada por un administrador: todavía no tiene fila en Pasajero. Se la da de alta
+                    // con los datos del primer pasajero, que la pantalla precarga con los de su propia cuenta.
+                    Pasajero_GV42 titular = (borrador.Pasajeros ?? new List<Pasajero_GV42>())
+                        .FirstOrDefault(x => x != null && string.Equals((x.DNI ?? "").Trim(), dniSesion, StringComparison.OrdinalIgnoreCase));
+                    if (titular == null)
+                        throw new NegocioException_GV42("Su cuenta no tiene datos de pasajero. Incluyase como pasajero en la reserva o contacte al administrador.");
+                    BLLNegocioUtil_GV42.ValidarPersona(titular, "Pasajero");
+                    _dalPasajero.Insertar(titular);
+                    propio = titular;
+                }
                 borrador.Cliente = propio;
             }
             else
             {
                 if (borrador.Cliente == null || string.IsNullOrWhiteSpace(borrador.Cliente.DNI))
                     throw new NegocioException_GV42("Debe indicar el cliente de la reserva.");
-                if (!_dalCliente.ExisteDni(borrador.Cliente.DNI.Trim()))
+                if (!_dalPasajero.ExisteDni(borrador.Cliente.DNI.Trim()))
                     throw new NegocioException_GV42("El cliente no está registrado. Regístrelo antes de generar la reserva.");
             }
 

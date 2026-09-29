@@ -2,7 +2,9 @@
 
 namespace BE
 {
-    // Persona que viaja. Puede coincidir o no con el cliente que reserva.
+    // Persona registrada en el sistema para reservar y/o viajar (tabla Pasajero, PK = DNI).
+    // El cliente que contrata una reserva y los que viajan son la misma entidad: si el cliente
+    // también viaja, se guarda una sola vez.
     public class Pasajero_GV42 : Persona_GV42
     {
         public Pasajero_GV42() { }

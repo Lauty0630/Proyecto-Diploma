@@ -35,7 +35,7 @@ namespace PROYECTO_ING_DE_SOFTWARE
         // Paso 2 - cliente (solo vendedor)
         private TextBox txtDniCliente, txtNombreCliente, txtApellidoCliente, txtEmailCliente, txtTelefonoCliente;
         private Button btnBuscarCliente, btnRegistrarCliente;
-        private Cliente_GV42 _clienteElegido;
+        private Pasajero_GV42 _clienteElegido;
 
         // Paso 3 - pasajeros
         private Panel pnlListaPasajeros;
@@ -388,22 +388,36 @@ namespace PROYECTO_ING_DE_SOFTWARE
             string dni = txtDniCliente.Text.Trim();
             try
             {
-                _clienteElegido = _bll.BuscarCliente(dni);
-                if (_clienteElegido != null)
+                _clienteElegido = null;
+                Pasajero_GV42 encontrado = _bll.BuscarPasajero(dni);
+                if (encontrado != null)
                 {
-                    txtNombreCliente.Text = _clienteElegido.Nombre;
-                    txtApellidoCliente.Text = _clienteElegido.Apellido;
-                    txtEmailCliente.Text = _clienteElegido.Email;
-                    txtTelefonoCliente.Text = _clienteElegido.Telefono;
+                    // Ya está registrado: se usa tal cual, sin volver a cargarlo.
+                    _clienteElegido = encontrado;
+                    MostrarDatosCliente(encontrado);
                     PonerDatosClienteSoloLectura(true);
                     btnRegistrarCliente.Visible = false;
+                    return;
+                }
+
+                // No está en Pasajero: si tiene cuenta de usuario, se precargan sus datos.
+                Pasajero_GV42 deUsuario = _bll.PrecargarDesdeUsuario(dni);
+                if (deUsuario != null)
+                {
+                    MostrarDatosCliente(deUsuario);
+                    PonerDatosClienteSoloLectura(true);
+                    txtTelefonoCliente.ReadOnly = false;   // Usuario no guarda teléfono: se completa acá.
+                    btnRegistrarCliente.Visible = true;
+                    MessageBox.Show("Ese DNI tiene una cuenta de usuario. Se precargaron sus datos: " +
+                        "completá el teléfono y registralo para poder reservar.",
+                        "Datos precargados", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 }
                 else
                 {
                     txtNombreCliente.Clear(); txtApellidoCliente.Clear(); txtEmailCliente.Clear(); txtTelefonoCliente.Clear();
                     PonerDatosClienteSoloLectura(false);
                     btnRegistrarCliente.Visible = true;
-                    MessageBox.Show("No existe un cliente con ese DNI. Completá sus datos para registrarlo.",
+                    MessageBox.Show("No existe una persona registrada con ese DNI. Completá sus datos para registrarla.",
                         "Cliente no encontrado", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 }
             }
@@ -413,11 +427,19 @@ namespace PROYECTO_ING_DE_SOFTWARE
             }
         }
 
+        private void MostrarDatosCliente(Pasajero_GV42 p)
+        {
+            txtNombreCliente.Text = p.Nombre;
+            txtApellidoCliente.Text = p.Apellido;
+            txtEmailCliente.Text = p.Email;
+            txtTelefonoCliente.Text = p.Telefono;
+        }
+
         private void btnRegistrarCliente_Click(object sender, EventArgs e)
         {
             try
             {
-                var cliente = new Cliente_GV42
+                var cliente = new Pasajero_GV42
                 {
                     DNI = txtDniCliente.Text.Trim(),
                     Nombre = txtNombreCliente.Text.Trim(),
@@ -425,7 +447,7 @@ namespace PROYECTO_ING_DE_SOFTWARE
                     Email = txtEmailCliente.Text.Trim(),
                     Telefono = txtTelefonoCliente.Text.Trim()
                 };
-                _bll.RegistrarCliente(cliente);
+                _bll.RegistrarPasajero(cliente);
                 _clienteElegido = cliente;
                 PonerDatosClienteSoloLectura(true);
                 btnRegistrarCliente.Visible = false;
@@ -491,7 +513,18 @@ namespace PROYECTO_ING_DE_SOFTWARE
                 if (i == 0 && !_esVendedor)
                 {
                     Usuario_GV42 actual = SessionManager_GV42.Instancia.ObtenerUsuarioActual();
-                    Cliente_GV42 propio = actual != null ? _bll.BuscarCliente(actual.DNI) : null;
+                    Pasajero_GV42 propio = null;
+                    bool soloTelefonoPendiente = false;
+                    if (actual != null)
+                    {
+                        propio = _bll.BuscarPasajero(actual.DNI);
+                        if (propio == null)
+                        {
+                            // Cuenta sin fila en Pasajero todavía: se precarga desde Usuario y solo falta el teléfono.
+                            propio = _bll.PrecargarDesdeUsuario(actual.DNI);
+                            soloTelefonoPendiente = propio != null;
+                        }
+                    }
                     if (propio != null)
                     {
                         dp.Dni.Text = propio.DNI; dp.Nombre.Text = propio.Nombre; dp.Apellido.Text = propio.Apellido;
@@ -501,6 +534,11 @@ namespace PROYECTO_ING_DE_SOFTWARE
                         {
                             txt.ReadOnly = true;
                             txt.BackColor = Tema_GV42.Fondo;
+                        }
+                        if (soloTelefonoPendiente)
+                        {
+                            dp.Telefono.ReadOnly = false;
+                            dp.Telefono.BackColor = Color.White;
                         }
                         grupo.Text = "Pasajero 1 (vos)";
                     }

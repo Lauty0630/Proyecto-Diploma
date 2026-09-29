@@ -10,7 +10,8 @@ namespace BE
         // Autogenerado por la base de datos (ej: RES-000001).
         public string NumeroReserva { get; set; }
 
-        public Cliente_GV42 Cliente { get; set; }
+        // Quien contrata la reserva. Es una fila de Pasajero (misma tabla que los que viajan).
+        public Pasajero_GV42 Cliente { get; set; }
         public VueloClase_GV42 VueloClase { get; set; }
         public TipoViaje_GV42 TipoViaje { get; set; }
         public DateTime? FechaRegreso { get; set; }

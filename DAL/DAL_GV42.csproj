@@ -54,7 +54,7 @@
     <Compile Include="DALAsiento_GV42.cs" />
     <Compile Include="DALBoleto_GV42.cs" />
     <Compile Include="DALCheckIn_GV42.cs" />
-    <Compile Include="DALCliente_GV42.cs" />
+    <Compile Include="DALPasajero_GV42.cs" />
     <Compile Include="DALEquipaje_GV42.cs" />
     <Compile Include="DALPago_GV42.cs" />
     <Compile Include="DALReserva_GV42.cs" />
