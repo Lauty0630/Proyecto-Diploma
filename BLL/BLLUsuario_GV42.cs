@@ -61,14 +61,14 @@ namespace BLL
 
                 if (usuario == null)
                 {
+                    // Antes, si la bitácora se grababa bien, el flujo seguía de largo con usuario == null
+                    // y reventaba en usuario.Bloqueo: el login mostraba "Error" en vez de "Usuario inexistente".
                     try
                     {
                         Auditar(login, "Usuario", "Usuario inexistente", "el usuario no existe", "Alta");
                     }
-                    catch
-                    {
-                        return ResultadoLogin.UsuarioInexistente;
-                    }
+                    catch { }
+                    return ResultadoLogin.UsuarioInexistente;
                 }
 
                 if (usuario.Bloqueo)
@@ -295,6 +295,88 @@ namespace BLL
             return u;
         }
 
+        // ---------------------------------------------------------------------------------
+        // Serialización XML del maestro de usuarios.
+        // Se serializa lo que el operador ve en la matriz de la pantalla (no se vuelve a leer
+        // la base). No hay tabla para los archivos XML: quedan en la carpeta que elija el operador.
+        // ---------------------------------------------------------------------------------
+
+        public int SerializarUsuarios(List<Usuario_GV42> usuarios, string rutaArchivo)
+        {
+            if (usuarios == null || usuarios.Count == 0)
+                throw new Exception(IdiomaManager_GV42.T("serializacion.sinDatos"));
+            if (string.IsNullOrWhiteSpace(rutaArchivo))
+                throw new Exception(IdiomaManager_GV42.T("serializacion.sinUbicacion"));
+            if (!string.Equals(System.IO.Path.GetExtension(rutaArchivo), ".xml", StringComparison.OrdinalIgnoreCase))
+                rutaArchivo += ".xml";
+
+            Usuario_GV42 actual = SessionManager_GV42.Instancia.ObtenerUsuarioActual();
+            string operador = actual != null ? actual.Login : "sistema";
+
+            var lista = new ListaUsuariosXml_GV42
+            {
+                FechaGeneracion = DateTime.Now,
+                GeneradoPor = operador,
+                Cantidad = usuarios.Count,
+                Usuarios = usuarios.Select(UsuarioXml_GV42.DesdeUsuario).ToList()
+            };
+
+            try
+            {
+                SerializadorXml_GV42.Serializar(lista, rutaArchivo);
+            }
+            catch (UnauthorizedAccessException)
+            {
+                throw new Exception(IdiomaManager_GV42.T("serializacion.sinPermisoEscritura"));
+            }
+            catch (System.IO.IOException ex)
+            {
+                throw new Exception(IdiomaManager_GV42.T("serializacion.errorSerializar") + " " + ex.Message);
+            }
+
+            try
+            {
+                Auditar(operador, "Admin", "Usuarios serializados a XML",
+                        $"{usuarios.Count} usuario(s) -> {System.IO.Path.GetFileName(rutaArchivo)}", "Baja");
+            }
+            catch { }
+
+            return usuarios.Count;
+        }
+
+        public List<Usuario_GV42> DeserializarUsuarios(string rutaArchivo)
+        {
+            if (string.IsNullOrWhiteSpace(rutaArchivo))
+                throw new Exception(IdiomaManager_GV42.T("serializacion.sinArchivo"));
+            if (!System.IO.File.Exists(rutaArchivo))
+                throw new Exception(IdiomaManager_GV42.T("serializacion.archivoNoExiste"));
+
+            ListaUsuariosXml_GV42 lista;
+            try
+            {
+                lista = SerializadorXml_GV42.Deserializar<ListaUsuariosXml_GV42>(rutaArchivo);
+            }
+            catch (Exception)
+            {
+                // XML mal formado, raíz distinta a <MaestroUsuarios>, tipos inválidos, etc.
+                throw new Exception(IdiomaManager_GV42.T("serializacion.formatoInvalido"));
+            }
+
+            List<Usuario_GV42> usuarios = (lista?.Usuarios ?? new List<UsuarioXml_GV42>())
+                .Select(x => x.AUsuario())
+                .ToList();
+
+            Usuario_GV42 actual = SessionManager_GV42.Instancia.ObtenerUsuarioActual();
+            try
+            {
+                Auditar(actual != null ? actual.Login : "sistema", "Admin", "Usuarios deserializados desde XML",
+                        $"{usuarios.Count} usuario(s) <- {System.IO.Path.GetFileName(rutaArchivo)}", "Baja");
+            }
+            catch { }
+
+            return usuarios;
+        }
+
         public enum ResultadoCambioContrasena
         {
             Exitoso,
@@ -338,8 +420,18 @@ namespace BLL
 
         public static void CerrarSesión()
         {
-            BLLUsuario_GV42 bll = new BLLUsuario_GV42();
-            bll.Auditar(SessionManager_GV42.Instancia.ObtenerUsuarioActual().Login,"Usuario", "Logout realizado", "LogOut", "Alta");
+            Usuario_GV42 actual = SessionManager_GV42.Instancia.ObtenerUsuarioActual();
+            if (actual != null)
+            {
+                // Si la bitácora falla, igual se tiene que cerrar la sesión
+                // (si no, el siguiente login devuelve "sesión activa").
+                try
+                {
+                    BLLUsuario_GV42 bll = new BLLUsuario_GV42();
+                    bll.Auditar(actual.Login, "Usuario", "Logout realizado", "LogOut", "Alta");
+                }
+                catch { }
+            }
             SessionManager_GV42.Instancia.CerrarSesion();
             IdiomaManager_GV42.Instancia.CambiarIdioma(IdiomaManager_GV42.ES);
         }

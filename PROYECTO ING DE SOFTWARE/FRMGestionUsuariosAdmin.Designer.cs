@@ -58,6 +58,20 @@
             this.label8 = new System.Windows.Forms.Label();
             this.lblMensaje = new System.Windows.Forms.Label();
             this.comboBox1 = new System.Windows.Forms.ComboBox();
+            this.components = new System.ComponentModel.Container();
+            this.toolTipAyuda = new System.Windows.Forms.ToolTip(this.components);
+            this.btnActualizar = new System.Windows.Forms.Button();
+            this.lblTituloMensaje = new System.Windows.Forms.Label();
+            this.txtMensaje = new System.Windows.Forms.TextBox();
+            this.lblSeparadorSerializacion = new System.Windows.Forms.Label();
+            this.lblTituloSerializacion = new System.Windows.Forms.Label();
+            this.btnSerializar = new System.Windows.Forms.Button();
+            this.txtRutaSerializar = new System.Windows.Forms.TextBox();
+            this.btnUbicacionSerializar = new System.Windows.Forms.Button();
+            this.btnDeserializar = new System.Windows.Forms.Button();
+            this.txtRutaDeserializar = new System.Windows.Forms.TextBox();
+            this.btnUbicacionDeserializar = new System.Windows.Forms.Button();
+            this.btnLimpiar = new System.Windows.Forms.Button();
             ((System.ComponentModel.ISupportInitialize)(this.dgvUsuarios)).BeginInit();
             this.SuspendLayout();
             // 
@@ -439,14 +453,206 @@
             this.comboBox1.Size = new System.Drawing.Size(121, 23);
             this.comboBox1.TabIndex = 31;
             // 
+            // btnActualizar
+            // 
+            this.btnActualizar.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(25)))), ((int)(((byte)(118)))), ((int)(((byte)(210)))));
+            this.btnActualizar.Cursor = System.Windows.Forms.Cursors.Hand;
+            this.btnActualizar.FlatAppearance.BorderSize = 0;
+            this.btnActualizar.FlatAppearance.MouseDownBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(13)))), ((int)(((byte)(71)))), ((int)(((byte)(161)))));
+            this.btnActualizar.FlatAppearance.MouseOverBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(33)))), ((int)(((byte)(150)))), ((int)(((byte)(243)))));
+            this.btnActualizar.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.btnActualizar.Font = new System.Drawing.Font("Segoe UI Semibold", 9.75F, System.Drawing.FontStyle.Bold);
+            this.btnActualizar.ForeColor = System.Drawing.Color.White;
+            this.btnActualizar.Location = new System.Drawing.Point(580, 30);
+            this.btnActualizar.Name = "btnActualizar";
+            this.btnActualizar.Size = new System.Drawing.Size(110, 37);
+            this.btnActualizar.TabIndex = 32;
+            this.btnActualizar.Text = "Actualizar";
+            this.btnActualizar.UseVisualStyleBackColor = false;
+            this.btnActualizar.Click += new System.EventHandler(this.btnActualizar_Click);
+            // 
+            // lblTituloMensaje
+            // 
+            this.lblTituloMensaje.AutoSize = true;
+            this.lblTituloMensaje.Font = new System.Drawing.Font("Segoe UI Semibold", 9.75F, System.Drawing.FontStyle.Bold);
+            this.lblTituloMensaje.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(13)))), ((int)(((byte)(71)))), ((int)(((byte)(161)))));
+            this.lblTituloMensaje.Location = new System.Drawing.Point(368, 356);
+            this.lblTituloMensaje.Name = "lblTituloMensaje";
+            this.lblTituloMensaje.Size = new System.Drawing.Size(62, 17);
+            this.lblTituloMensaje.TabIndex = 33;
+            this.lblTituloMensaje.Text = "Mensaje:";
+            // 
+            // txtMensaje
+            // 
+            this.txtMensaje.BackColor = System.Drawing.Color.White;
+            this.txtMensaje.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
+            this.txtMensaje.Font = new System.Drawing.Font("Segoe UI", 9F);
+            this.txtMensaje.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(33)))), ((int)(((byte)(33)))), ((int)(((byte)(33)))));
+            this.txtMensaje.Multiline = true;
+            this.txtMensaje.ReadOnly = true;
+            this.txtMensaje.ScrollBars = System.Windows.Forms.ScrollBars.Vertical;
+            this.txtMensaje.Location = new System.Drawing.Point(368, 378);
+            this.txtMensaje.Name = "txtMensaje";
+            this.txtMensaje.Size = new System.Drawing.Size(322, 103);
+            this.txtMensaje.TabIndex = 34;
+            // 
+            // lblSeparadorSerializacion
+            // 
+            this.lblSeparadorSerializacion.BorderStyle = System.Windows.Forms.BorderStyle.Fixed3D;
+            this.lblSeparadorSerializacion.Location = new System.Drawing.Point(66, 500);
+            this.lblSeparadorSerializacion.Name = "lblSeparadorSerializacion";
+            this.lblSeparadorSerializacion.Size = new System.Drawing.Size(768, 2);
+            this.lblSeparadorSerializacion.TabIndex = 35;
+            // 
+            // lblTituloSerializacion
+            // 
+            this.lblTituloSerializacion.AutoSize = true;
+            this.lblTituloSerializacion.Font = new System.Drawing.Font("Segoe UI Semibold", 9.75F, System.Drawing.FontStyle.Bold);
+            this.lblTituloSerializacion.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(13)))), ((int)(((byte)(71)))), ((int)(((byte)(161)))));
+            this.lblTituloSerializacion.Location = new System.Drawing.Point(63, 510);
+            this.lblTituloSerializacion.Name = "lblTituloSerializacion";
+            this.lblTituloSerializacion.Size = new System.Drawing.Size(128, 17);
+            this.lblTituloSerializacion.TabIndex = 36;
+            this.lblTituloSerializacion.Text = "Serialización XML";
+            // 
+            // btnSerializar
+            // 
+            this.btnSerializar.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(245)))), ((int)(((byte)(124)))), ((int)(((byte)(0)))));
+            this.btnSerializar.Cursor = System.Windows.Forms.Cursors.Hand;
+            this.btnSerializar.FlatAppearance.BorderSize = 0;
+            this.btnSerializar.FlatAppearance.MouseDownBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(230)))), ((int)(((byte)(81)))), ((int)(((byte)(0)))));
+            this.btnSerializar.FlatAppearance.MouseOverBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(251)))), ((int)(((byte)(140)))), ((int)(((byte)(0)))));
+            this.btnSerializar.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.btnSerializar.Font = new System.Drawing.Font("Segoe UI Semibold", 9.75F, System.Drawing.FontStyle.Bold);
+            this.btnSerializar.ForeColor = System.Drawing.Color.White;
+            this.btnSerializar.Location = new System.Drawing.Point(66, 538);
+            this.btnSerializar.Name = "btnSerializar";
+            this.btnSerializar.Size = new System.Drawing.Size(150, 37);
+            this.btnSerializar.TabIndex = 37;
+            this.btnSerializar.Text = "SERIALIZAR";
+            this.btnSerializar.UseVisualStyleBackColor = false;
+            this.btnSerializar.Click += new System.EventHandler(this.btnSerializar_Click);
+            // 
+            // txtRutaSerializar
+            // 
+            this.txtRutaSerializar.BackColor = System.Drawing.Color.White;
+            this.txtRutaSerializar.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
+            this.txtRutaSerializar.Font = new System.Drawing.Font("Segoe UI", 9F);
+            this.txtRutaSerializar.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(33)))), ((int)(((byte)(33)))), ((int)(((byte)(33)))));
+            this.txtRutaSerializar.ReadOnly = true;
+            this.txtRutaSerializar.Location = new System.Drawing.Point(66, 585);
+            this.txtRutaSerializar.Name = "txtRutaSerializar";
+            this.txtRutaSerializar.Size = new System.Drawing.Size(262, 23);
+            this.txtRutaSerializar.TabIndex = 38;
+            // 
+            // btnUbicacionSerializar
+            // 
+            this.btnUbicacionSerializar.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(255)))), ((int)(((byte)(224)))), ((int)(((byte)(130)))));
+            this.btnUbicacionSerializar.Cursor = System.Windows.Forms.Cursors.Hand;
+            this.btnUbicacionSerializar.FlatAppearance.BorderColor = System.Drawing.Color.FromArgb(((int)(((byte)(13)))), ((int)(((byte)(71)))), ((int)(((byte)(161)))));
+            this.btnUbicacionSerializar.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.btnUbicacionSerializar.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Bold);
+            this.btnUbicacionSerializar.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(13)))), ((int)(((byte)(71)))), ((int)(((byte)(161)))));
+            this.btnUbicacionSerializar.Location = new System.Drawing.Point(332, 584);
+            this.btnUbicacionSerializar.Name = "btnUbicacionSerializar";
+            this.btnUbicacionSerializar.Size = new System.Drawing.Size(38, 25);
+            this.btnUbicacionSerializar.TabIndex = 39;
+            this.btnUbicacionSerializar.Text = "...";
+            this.btnUbicacionSerializar.UseVisualStyleBackColor = false;
+            this.btnUbicacionSerializar.Click += new System.EventHandler(this.btnUbicacionSerializar_Click);
+            // 
+            // btnDeserializar
+            // 
+            this.btnDeserializar.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(245)))), ((int)(((byte)(124)))), ((int)(((byte)(0)))));
+            this.btnDeserializar.Cursor = System.Windows.Forms.Cursors.Hand;
+            this.btnDeserializar.FlatAppearance.BorderSize = 0;
+            this.btnDeserializar.FlatAppearance.MouseDownBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(230)))), ((int)(((byte)(81)))), ((int)(((byte)(0)))));
+            this.btnDeserializar.FlatAppearance.MouseOverBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(251)))), ((int)(((byte)(140)))), ((int)(((byte)(0)))));
+            this.btnDeserializar.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.btnDeserializar.Font = new System.Drawing.Font("Segoe UI Semibold", 9.75F, System.Drawing.FontStyle.Bold);
+            this.btnDeserializar.ForeColor = System.Drawing.Color.White;
+            this.btnDeserializar.Location = new System.Drawing.Point(412, 538);
+            this.btnDeserializar.Name = "btnDeserializar";
+            this.btnDeserializar.Size = new System.Drawing.Size(150, 37);
+            this.btnDeserializar.TabIndex = 40;
+            this.btnDeserializar.Text = "DES-SERIALIZAR";
+            this.btnDeserializar.UseVisualStyleBackColor = false;
+            this.btnDeserializar.Click += new System.EventHandler(this.btnDeserializar_Click);
+            // 
+            // txtRutaDeserializar
+            // 
+            this.txtRutaDeserializar.BackColor = System.Drawing.Color.White;
+            this.txtRutaDeserializar.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
+            this.txtRutaDeserializar.Font = new System.Drawing.Font("Segoe UI", 9F);
+            this.txtRutaDeserializar.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(33)))), ((int)(((byte)(33)))), ((int)(((byte)(33)))));
+            this.txtRutaDeserializar.ReadOnly = true;
+            this.txtRutaDeserializar.Location = new System.Drawing.Point(412, 585);
+            this.txtRutaDeserializar.Name = "txtRutaDeserializar";
+            this.txtRutaDeserializar.Size = new System.Drawing.Size(262, 23);
+            this.txtRutaDeserializar.TabIndex = 41;
+            // 
+            // btnUbicacionDeserializar
+            // 
+            this.btnUbicacionDeserializar.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(255)))), ((int)(((byte)(224)))), ((int)(((byte)(130)))));
+            this.btnUbicacionDeserializar.Cursor = System.Windows.Forms.Cursors.Hand;
+            this.btnUbicacionDeserializar.FlatAppearance.BorderColor = System.Drawing.Color.FromArgb(((int)(((byte)(13)))), ((int)(((byte)(71)))), ((int)(((byte)(161)))));
+            this.btnUbicacionDeserializar.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.btnUbicacionDeserializar.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Bold);
+            this.btnUbicacionDeserializar.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(13)))), ((int)(((byte)(71)))), ((int)(((byte)(161)))));
+            this.btnUbicacionDeserializar.Location = new System.Drawing.Point(678, 584);
+            this.btnUbicacionDeserializar.Name = "btnUbicacionDeserializar";
+            this.btnUbicacionDeserializar.Size = new System.Drawing.Size(38, 25);
+            this.btnUbicacionDeserializar.TabIndex = 42;
+            this.btnUbicacionDeserializar.Text = "...";
+            this.btnUbicacionDeserializar.UseVisualStyleBackColor = false;
+            this.btnUbicacionDeserializar.Click += new System.EventHandler(this.btnUbicacionDeserializar_Click);
+            // 
+            // btnLimpiar
+            // 
+            this.btnLimpiar.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(25)))), ((int)(((byte)(118)))), ((int)(((byte)(210)))));
+            this.btnLimpiar.Cursor = System.Windows.Forms.Cursors.Hand;
+            this.btnLimpiar.FlatAppearance.BorderSize = 0;
+            this.btnLimpiar.FlatAppearance.MouseDownBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(13)))), ((int)(((byte)(71)))), ((int)(((byte)(161)))));
+            this.btnLimpiar.FlatAppearance.MouseOverBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(33)))), ((int)(((byte)(150)))), ((int)(((byte)(243)))));
+            this.btnLimpiar.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.btnLimpiar.Font = new System.Drawing.Font("Segoe UI Semibold", 9.75F, System.Drawing.FontStyle.Bold);
+            this.btnLimpiar.ForeColor = System.Drawing.Color.White;
+            this.btnLimpiar.Location = new System.Drawing.Point(724, 538);
+            this.btnLimpiar.Name = "btnLimpiar";
+            this.btnLimpiar.Size = new System.Drawing.Size(110, 37);
+            this.btnLimpiar.TabIndex = 43;
+            this.btnLimpiar.Text = "Limpiar";
+            this.btnLimpiar.UseVisualStyleBackColor = false;
+            this.btnLimpiar.Click += new System.EventHandler(this.btnLimpiar_Click);
+            // 
+            // toolTipAyuda
+            // 
+            this.toolTipAyuda.AutoPopDelay = 10000;
+            this.toolTipAyuda.InitialDelay = 400;
+            this.toolTipAyuda.ReshowDelay = 100;
+            this.toolTipAyuda.ToolTipIcon = System.Windows.Forms.ToolTipIcon.Info;
+            // 
             // FRMGestionUsuariosAdmin
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 15F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.AutoSize = true;
             this.AutoSizeMode = System.Windows.Forms.AutoSizeMode.GrowAndShrink;
+            this.AutoScroll = true;
             this.BackColor = System.Drawing.Color.White;
-            this.ClientSize = new System.Drawing.Size(885, 493);
+            this.ClientSize = new System.Drawing.Size(885, 630);
+            this.Controls.Add(this.btnLimpiar);
+            this.Controls.Add(this.btnUbicacionDeserializar);
+            this.Controls.Add(this.txtRutaDeserializar);
+            this.Controls.Add(this.btnDeserializar);
+            this.Controls.Add(this.btnUbicacionSerializar);
+            this.Controls.Add(this.txtRutaSerializar);
+            this.Controls.Add(this.btnSerializar);
+            this.Controls.Add(this.lblTituloSerializacion);
+            this.Controls.Add(this.lblSeparadorSerializacion);
+            this.Controls.Add(this.txtMensaje);
+            this.Controls.Add(this.lblTituloMensaje);
+            this.Controls.Add(this.btnActualizar);
             this.Controls.Add(this.comboBox1);
             this.Controls.Add(this.lblMensaje);
             this.Controls.Add(this.label8);
@@ -515,5 +721,18 @@
         private System.Windows.Forms.Label label8;
         private System.Windows.Forms.Label lblMensaje;
         private System.Windows.Forms.ComboBox comboBox1;
+        private System.Windows.Forms.ToolTip toolTipAyuda;
+        private System.Windows.Forms.Button btnActualizar;
+        private System.Windows.Forms.Label lblTituloMensaje;
+        private System.Windows.Forms.TextBox txtMensaje;
+        private System.Windows.Forms.Label lblSeparadorSerializacion;
+        private System.Windows.Forms.Label lblTituloSerializacion;
+        private System.Windows.Forms.Button btnSerializar;
+        private System.Windows.Forms.TextBox txtRutaSerializar;
+        private System.Windows.Forms.Button btnUbicacionSerializar;
+        private System.Windows.Forms.Button btnDeserializar;
+        private System.Windows.Forms.TextBox txtRutaDeserializar;
+        private System.Windows.Forms.Button btnUbicacionDeserializar;
+        private System.Windows.Forms.Button btnLimpiar;
     }
 }

@@ -1,4 +1,4 @@
-﻿﻿using BLL;
+﻿using BLL;
 using Servicios;
 using System;
 using System.Linq;
@@ -21,6 +21,9 @@ namespace PROYECTO_ING_DE_SOFTWARE
         private ToolStripMenuItem _itemConsultarReservas;
         private ToolStripMenuItem _itemMisReservas;
 
+        // true cuando el propio menú abre el login (logout / re-login) antes de cerrarse.
+        private bool _cerrandoSesion = false;
+
         private ToolStripMenuItem _menuVuelos;
         private ToolStripMenuItem _itemGestionVuelos;
         private ToolStripMenuItem _itemBitacoraVuelos;
@@ -32,6 +35,8 @@ namespace PROYECTO_ING_DE_SOFTWARE
 
             IdiomaManager_GV42.Instancia.Suscribir(this);
             this.FormClosed += (s, e) => IdiomaManager_GV42.Instancia.Desuscribir(this);
+            this.FormClosing += FRMMenuPrincipalAdmin_FormClosing;
+            Program.CerrarAplicacionAlSerUltimaVentana(this);
 
             ConstruirMenuReservas();
             ConstruirMenuVuelos();
@@ -239,9 +244,24 @@ namespace PROYECTO_ING_DE_SOFTWARE
             AbrirFormularioHijo(new FRMGestionUsuariosAdmin());
         }
 
+        // Re-Login: cierra la sesión actual y vuelve al login para entrar con otro usuario.
+        // Antes abría el login embebido en el panel con la sesión todavía activa, por lo que
+        // cualquier intento terminaba en "Ya hay una sesión activa".
         private void reLoginToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            AbrirFormularioHijo(new FRMIniciarSesion());
+            try { BLLUsuario_GV42.CerrarSesión(); } catch { }
+            _cerrandoSesion = true;
+            new FRMIniciarSesion().Show();
+            this.Close();
+        }
+
+        // Si se cierra el menú con la X, se registra el logout en la bitácora y se cierra la sesión.
+        private void FRMMenuPrincipalAdmin_FormClosing(object sender, FormClosingEventArgs e)
+        {
+            if (_cerrandoSesion) return;
+            if (e.CloseReason != CloseReason.UserClosing) return;
+            if (!SessionManager_GV42.Instancia.HaySesionActiva()) return;
+            try { BLLUsuario_GV42.CerrarSesión(); } catch { }
         }
 
         private void logOutToolStripMenuItem_Click(object sender, EventArgs e)
@@ -254,6 +274,7 @@ namespace PROYECTO_ING_DE_SOFTWARE
             if (result == DialogResult.Yes)
             {
                 BLLUsuario_GV42.CerrarSesión();
+                _cerrandoSesion = true;
                 FRMIniciarSesion frm = new FRMIniciarSesion();
                 frm.Show();
                 this.Close();

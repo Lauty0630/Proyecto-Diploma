@@ -28,6 +28,7 @@ namespace PROYECTO_ING_DE_SOFTWARE
 
             IdiomaManager_GV42.Instancia.Suscribir(this);
             this.FormClosed += (s, e) => IdiomaManager_GV42.Instancia.Desuscribir(this);
+            Program.CerrarAplicacionAlSerUltimaVentana(this);
 
             ActualizarIdioma();
         }

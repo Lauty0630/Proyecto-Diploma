@@ -21,6 +21,10 @@ namespace PROYECTO_ING_DE_SOFTWARE
 
         private Usuario_GV42 _usuarioSeleccionado = null;
 
+        // true mientras la matriz muestra usuarios cargados desde un archivo XML
+        // (no desde la base): en ese estado no se permite el ABM sobre esas filas.
+        private bool _mostrandoXml = false;
+
         public FRMGestionUsuariosAdmin()
         {
             InitializeComponent();
@@ -53,6 +57,17 @@ namespace PROYECTO_ING_DE_SOFTWARE
                 btnActivarDesactivar.Visible = rolCompleto.TienePermiso("Usuarios.Activar");
         }
 
+        private void ConfigurarAyudas()
+        {
+            toolTipAyuda.ToolTipTitle = IdiomaManager_GV42.T("serializacion.tituloAyuda");
+            toolTipAyuda.SetToolTip(btnActualizar, IdiomaManager_GV42.T("serializacion.ayudaActualizar"));
+            toolTipAyuda.SetToolTip(btnLimpiar, IdiomaManager_GV42.T("serializacion.ayudaLimpiar"));
+            toolTipAyuda.SetToolTip(btnSerializar, IdiomaManager_GV42.T("serializacion.ayudaSerializar"));
+            toolTipAyuda.SetToolTip(btnDeserializar, IdiomaManager_GV42.T("serializacion.ayudaDeserializar"));
+            toolTipAyuda.SetToolTip(btnUbicacionSerializar, IdiomaManager_GV42.T("serializacion.ayudaUbicacion"));
+            toolTipAyuda.SetToolTip(btnUbicacionDeserializar, IdiomaManager_GV42.T("serializacion.ayudaArchivo"));
+        }
+
         public void ActualizarIdioma()
         {
             this.Text = IdiomaManager_GV42.T("usuarios.titulo");
@@ -79,12 +94,21 @@ namespace PROYECTO_ING_DE_SOFTWARE
 
             if (lblMensaje != null) lblMensaje.Text = TraducirModo(_modo);
 
+            if (btnActualizar != null) btnActualizar.Text = IdiomaManager_GV42.T("usuarios.actualizar");
+            if (btnLimpiar != null) btnLimpiar.Text = IdiomaManager_GV42.T("usuarios.limpiar");
+            if (lblTituloMensaje != null) lblTituloMensaje.Text = IdiomaManager_GV42.T("usuarios.mensaje");
+            if (lblTituloSerializacion != null) lblTituloSerializacion.Text = IdiomaManager_GV42.T("serializacion.titulo");
+            if (btnSerializar != null) btnSerializar.Text = IdiomaManager_GV42.T("serializacion.serializar");
+            if (btnDeserializar != null) btnDeserializar.Text = IdiomaManager_GV42.T("serializacion.deserializar");
+            if (toolTipAyuda != null) ConfigurarAyudas();
+
             ConfigurarColumnasGrilla();
         }
 
         private string TraducirModo(string modo)
         {
             string etiquetaModo = IdiomaManager_GV42.T("usuarios.modo");
+            if (_mostrandoXml) return etiquetaModo + " " + IdiomaManager_GV42.T("serializacion.modoVistaXml");
             return etiquetaModo + " " + modo;
         }
 
@@ -93,8 +117,10 @@ namespace PROYECTO_ING_DE_SOFTWARE
             ConfigurarGrillaSoloLectura();
             CargarRoles();
             ModoConsulta();
-            CargarGrilla(soloActivos: true);
-            rbActivos.Checked = true;
+            // Al marcar rbActivos se dispara rbActivos_CheckedChanged, que ya carga la grilla
+            // (antes la grilla se cargaba dos veces al abrir el formulario).
+            if (rbActivos.Checked) CargarGrilla(soloActivos: true);
+            else rbActivos.Checked = true;
         }
 
         private void ConfigurarGrillaSoloLectura()
@@ -124,15 +150,26 @@ namespace PROYECTO_ING_DE_SOFTWARE
         private void CargarGrilla(bool soloActivos)
         {
             List<Usuario_GV42> lista = soloActivos ? _bll.ListarActivos() : _bll.ListarTodos();
+            MostrarEnGrilla(lista);
+        }
+
+        private void MostrarEnGrilla(List<Usuario_GV42> lista)
+        {
             dgvUsuarios.DataSource = null;
-            dgvUsuarios.DataSource = lista;
+            dgvUsuarios.DataSource = lista ?? new List<Usuario_GV42>();
 
             ConfigurarColumnasGrilla();
 
             foreach (DataGridViewRow row in dgvUsuarios.Rows)
             {
-                if (!(bool)row.Cells["Activo"].Value)
+                if (row.DataBoundItem is Usuario_GV42 u && !u.Activo)
                     row.DefaultCellStyle.BackColor = Color.LightCoral;
+            }
+
+            if (dgvUsuarios.Rows.Count == 0)
+            {
+                _usuarioSeleccionado = null;
+                LimpiarCampos();
             }
         }
 
@@ -169,6 +206,7 @@ namespace PROYECTO_ING_DE_SOFTWARE
         private void ModoConsulta()
         {
             _modo = "Consulta";
+            _mostrandoXml = false;
             lblMensaje.Text = TraducirModo(_modo);
             LimpiarCampos();
             HabilitarCampos(false);
@@ -181,6 +219,7 @@ namespace PROYECTO_ING_DE_SOFTWARE
             rbActivos.Enabled = true;
             rbTodos.Enabled = true;
             dgvUsuarios.Enabled = true;
+            HabilitarSerializacion(true);
         }
 
         private void ModoOperacion(string modo)
@@ -195,6 +234,37 @@ namespace PROYECTO_ING_DE_SOFTWARE
             btnCancelar.Enabled = true;
             rbActivos.Enabled = false;
             rbTodos.Enabled = false;
+            HabilitarSerializacion(false);
+        }
+
+        private void HabilitarSerializacion(bool habilitar)
+        {
+            btnActualizar.Enabled = habilitar;
+            btnLimpiar.Enabled = habilitar;
+            btnSerializar.Enabled = habilitar;
+            btnDeserializar.Enabled = habilitar;
+            btnUbicacionSerializar.Enabled = habilitar;
+            btnUbicacionDeserializar.Enabled = habilitar;
+        }
+
+        // La matriz muestra datos de un XML: se puede navegar, volver a serializar o limpiar,
+        // pero no hacer ABM, porque esas filas no son necesariamente las de la base.
+        private void ModoVistaXml()
+        {
+            _mostrandoXml = true;
+            _modo = "Consulta";
+            HabilitarCampos(false);
+            btnCrear.Enabled = false;
+            btnModificar.Enabled = false;
+            btnDesbloquear.Enabled = false;
+            btnActivarDesactivar.Enabled = false;
+            btnAplicar.Enabled = false;
+            btnCancelar.Enabled = false;
+            rbActivos.Enabled = false;
+            rbTodos.Enabled = false;
+            dgvUsuarios.Enabled = true;
+            HabilitarSerializacion(true);
+            lblMensaje.Text = TraducirModo(_modo);
         }
 
         private void HabilitarCampos(bool habilitar)
@@ -418,7 +488,10 @@ namespace PROYECTO_ING_DE_SOFTWARE
             for (int i = 0; i < comboBox1.Items.Count; i++)
             {
                 Rol_GV42 r = comboBox1.Items[i] as Rol_GV42;
-                if (r != null && r.Id == rol.Id)
+                bool mismoRol = rol.Id > 0
+                    ? r != null && r.Id == rol.Id
+                    : r != null && string.Equals(r.Nombre, rol.Nombre, StringComparison.OrdinalIgnoreCase);
+                if (mismoRol)
                 {
                     comboBox1.SelectedIndex = i;
                     return;
@@ -489,6 +562,135 @@ namespace PROYECTO_ING_DE_SOFTWARE
             HabilitarCampos(false);
             dgvUsuarios.Enabled = false;
             ModoOperacion("ActivarDesactivar");
+        }
+
+        // ---------------------------------------------------------------------------------
+        // Serialización XML (Caso de uso compartido: SERIALIZAR / DES-SERIALIZAR)
+        // ---------------------------------------------------------------------------------
+
+        private void MostrarMensaje(string texto, bool esError = false)
+        {
+            txtMensaje.ForeColor = esError ? Color.FromArgb(198, 40, 40) : Color.FromArgb(33, 33, 33);
+            txtMensaje.Text = texto;
+        }
+
+        private string FiltroXml() => IdiomaManager_GV42.T("serializacion.filtroXml") + " (*.xml)|*.xml";
+
+        private void btnUbicacionSerializar_Click(object sender, EventArgs e)
+        {
+            using (var dlg = new SaveFileDialog())
+            {
+                dlg.Title = IdiomaManager_GV42.T("serializacion.ayudaUbicacion");
+                dlg.Filter = FiltroXml();
+                dlg.DefaultExt = "xml";
+                dlg.AddExtension = true;
+                dlg.OverwritePrompt = true;
+                dlg.FileName = "Usuarios_" + DateTime.Now.ToString("yyyyMMdd_HHmm") + ".xml";
+                if (!string.IsNullOrWhiteSpace(txtRutaSerializar.Text))
+                {
+                    try
+                    {
+                        dlg.InitialDirectory = System.IO.Path.GetDirectoryName(txtRutaSerializar.Text);
+                        dlg.FileName = System.IO.Path.GetFileName(txtRutaSerializar.Text);
+                    }
+                    catch { }
+                }
+
+                if (dlg.ShowDialog(this) == DialogResult.OK)
+                {
+                    txtRutaSerializar.Text = dlg.FileName;
+                    MostrarMensaje(IdiomaManager_GV42.T("serializacion.ubicacionElegida") + Environment.NewLine + dlg.FileName);
+                }
+            }
+        }
+
+        private void btnSerializar_Click(object sender, EventArgs e)
+        {
+            if (string.IsNullOrWhiteSpace(txtRutaSerializar.Text))
+            {
+                MostrarMensaje(IdiomaManager_GV42.T("serializacion.sinUbicacion"), true);
+                return;
+            }
+
+            List<Usuario_GV42> visibles = dgvUsuarios.DataSource as List<Usuario_GV42>;
+            try
+            {
+                int cantidad = _bll.SerializarUsuarios(visibles, txtRutaSerializar.Text);
+                MostrarMensaje(string.Format(IdiomaManager_GV42.T("serializacion.okSerializar"),
+                                             cantidad, txtRutaSerializar.Text));
+            }
+            catch (Exception ex)
+            {
+                MostrarMensaje(ex.Message, true);
+            }
+        }
+
+        private void btnUbicacionDeserializar_Click(object sender, EventArgs e)
+        {
+            using (var dlg = new OpenFileDialog())
+            {
+                dlg.Title = IdiomaManager_GV42.T("serializacion.ayudaArchivo");
+                dlg.Filter = FiltroXml();
+                dlg.CheckFileExists = true;
+                dlg.Multiselect = false;
+                if (!string.IsNullOrWhiteSpace(txtRutaSerializar.Text))
+                {
+                    try { dlg.InitialDirectory = System.IO.Path.GetDirectoryName(txtRutaSerializar.Text); } catch { }
+                }
+
+                if (dlg.ShowDialog(this) == DialogResult.OK)
+                {
+                    txtRutaDeserializar.Text = dlg.FileName;
+                    MostrarMensaje(IdiomaManager_GV42.T("serializacion.archivoElegido") + Environment.NewLine + dlg.FileName);
+                }
+            }
+        }
+
+        private void btnDeserializar_Click(object sender, EventArgs e)
+        {
+            if (string.IsNullOrWhiteSpace(txtRutaDeserializar.Text))
+            {
+                MostrarMensaje(IdiomaManager_GV42.T("serializacion.sinArchivo"), true);
+                return;
+            }
+
+            try
+            {
+                List<Usuario_GV42> usuarios = _bll.DeserializarUsuarios(txtRutaDeserializar.Text);
+                MostrarEnGrilla(usuarios);
+                ModoVistaXml();
+                MostrarMensaje(string.Format(IdiomaManager_GV42.T("serializacion.okDeserializar"),
+                                             usuarios.Count, System.IO.Path.GetFileName(txtRutaDeserializar.Text)));
+            }
+            catch (Exception ex)
+            {
+                MostrarMensaje(ex.Message, true);
+            }
+        }
+
+        private void btnActualizar_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                ModoConsulta();
+                CargarGrilla(rbActivos.Checked);
+                MostrarMensaje(IdiomaManager_GV42.T("serializacion.actualizado"));
+            }
+            catch (Exception ex)
+            {
+                MostrarMensaje(ex.Message, true);
+            }
+        }
+
+        private void btnLimpiar_Click(object sender, EventArgs e)
+        {
+            ModoConsulta();
+            MostrarEnGrilla(new List<Usuario_GV42>());
+            _usuarioSeleccionado = null;
+            LimpiarCampos();
+            txtRutaSerializar.Text = string.Empty;
+            txtRutaDeserializar.Text = string.Empty;
+            MostrarMensaje(IdiomaManager_GV42.T("serializacion.limpiado"));
         }
     }
 }
