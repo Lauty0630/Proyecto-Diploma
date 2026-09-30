@@ -63,14 +63,13 @@ namespace PROYECTO_ING_DE_SOFTWARE
                 Font = Tema_GV42.FuenteTitulo, ForeColor = Tema_GV42.Acento,
                 AutoSize = true, Location = new Point(0, 0)
             };
-            card.Controls.Add(lblTitulo);
+            // Zonas acopladas: título arriba, filtros y botones abajo y la grilla ocupa el resto
+            // (antes, con tamaños fijos y anclajes, los botones quedaban cortados por abajo).
+            var pnlArriba = new Panel { Dock = DockStyle.Top, Height = 45 };
+            pnlArriba.Controls.Add(lblTitulo);
+            var pnlAbajo = new Panel { Dock = DockStyle.Bottom, Height = 115 };
 
-            dgv = new DataGridView
-            {
-                Location = new Point(0, 45),
-                Size = new Size(800, 290),
-                Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right | AnchorStyles.Bottom
-            };
+            dgv = new DataGridView { Dock = DockStyle.Fill };
             Tema_GV42.EstilizarGrilla(dgv);
             dgv.AutoGenerateColumns = false;
             dgv.Columns.Add(new DataGridViewTextBoxColumn { DataPropertyName = "CodigoVuelo", HeaderText = "Cod. vuelo", FillWeight = 70 });
@@ -80,30 +79,27 @@ namespace PROYECTO_ING_DE_SOFTWARE
             dgv.Columns.Add(new DataGridViewTextBoxColumn { DataPropertyName = "Descripcion", HeaderText = "Desc.", FillWeight = 260 });
             dgv.Columns.Add(new DataGridViewTextBoxColumn { DataPropertyName = "Act", HeaderText = "Act.", FillWeight = 35, DefaultCellStyle = new DataGridViewCellStyle { Alignment = DataGridViewContentAlignment.MiddleCenter } });
             dgv.CellFormatting += dgv_CellFormatting;
-            card.Controls.Add(dgv);
 
             // ---- Filtros
-            int y = 350;
+            int y = 10;
             var lblCod = Tema_GV42.CrearLabel("Cod. vuelo");
             lblCod.Location = new Point(0, y);
-            cmbCodigo = new ComboBox { DropDownStyle = ComboBoxStyle.DropDownList, Location = new Point(0, y + 20), Size = new Size(150, 24), Anchor = AnchorStyles.Bottom | AnchorStyles.Left };
+            cmbCodigo = new ComboBox { DropDownStyle = ComboBoxStyle.DropDownList, Location = new Point(0, y + 20), Size = new Size(150, 24) };
 
             var lblNom = Tema_GV42.CrearLabel("Nombre (ruta)");
             lblNom.Location = new Point(170, y);
-            cmbNombre = new ComboBox { DropDownStyle = ComboBoxStyle.DropDownList, Location = new Point(170, y + 20), Size = new Size(180, 24), Anchor = AnchorStyles.Bottom | AnchorStyles.Left };
+            cmbNombre = new ComboBox { DropDownStyle = ComboBoxStyle.DropDownList, Location = new Point(170, y + 20), Size = new Size(180, 24) };
 
             var lblIni = Tema_GV42.CrearLabel("Fecha ini.");
             lblIni.Location = new Point(370, y);
-            dtIni = new DateTimePicker { Location = new Point(370, y + 20), Size = new Size(130, 24), Format = DateTimePickerFormat.Short, ShowCheckBox = true, Checked = false, Anchor = AnchorStyles.Bottom | AnchorStyles.Left };
+            dtIni = new DateTimePicker { Location = new Point(370, y + 20), Size = new Size(130, 24), Format = DateTimePickerFormat.Short, ShowCheckBox = true, Checked = false };
 
             var lblFin = Tema_GV42.CrearLabel("Fecha fin");
             lblFin.Location = new Point(520, y);
-            dtFin = new DateTimePicker { Location = new Point(520, y + 20), Size = new Size(130, 24), Format = DateTimePickerFormat.Short, ShowCheckBox = true, Checked = false, Anchor = AnchorStyles.Bottom | AnchorStyles.Left };
-
-            foreach (var l in new[] { lblCod, lblNom, lblIni, lblFin }) l.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
+            dtFin = new DateTimePicker { Location = new Point(520, y + 20), Size = new Size(130, 24), Format = DateTimePickerFormat.Short, ShowCheckBox = true, Checked = false };
 
             // ---- Botones
-            int yb = 410;
+            int yb = 70;
             btnAplicar = CrearBoton("APLICAR", 0, yb, true);
             btnAplicar.Click += (s, e) => Aplicar();
 
@@ -117,15 +113,20 @@ namespace PROYECTO_ING_DE_SOFTWARE
             btnSalir = CrearBoton("SALIR", 420, yb, false);
             btnSalir.Click += (s, e) => Close();
 
-            card.Controls.AddRange(new Control[] {
+            pnlAbajo.Controls.AddRange(new Control[] {
                 lblCod, cmbCodigo, lblNom, cmbNombre, lblIni, dtIni, lblFin, dtFin,
                 btnAplicar, btnLimpiar, btnActivar, btnSalir
             });
+
+            // Orden de acoplamiento: Fill primero, después Bottom y Top.
+            card.Controls.Add(dgv);
+            card.Controls.Add(pnlAbajo);
+            card.Controls.Add(pnlArriba);
         }
 
         private Button CrearBoton(string texto, int x, int y, bool primario)
         {
-            var b = new Button { Text = texto, Location = new Point(x, y), Size = new Size(130, 34), Anchor = AnchorStyles.Bottom | AnchorStyles.Left };
+            var b = new Button { Text = texto, Location = new Point(x, y), Size = new Size(130, 34) };
             if (primario) Tema_GV42.EstilizarBotonPrimario(b); else Tema_GV42.EstilizarBotonSecundario(b);
             return b;
         }

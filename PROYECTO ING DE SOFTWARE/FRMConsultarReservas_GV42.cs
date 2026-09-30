@@ -70,7 +70,11 @@ namespace PROYECTO_ING_DE_SOFTWARE
                 Font = Tema_GV42.FuenteTitulo, ForeColor = Tema_GV42.Acento,
                 AutoSize = true, Location = new Point(0, 0)
             };
-            card.Controls.Add(lblTitulo);
+            // Zonas acopladas: título/búsqueda arriba, botón abajo y la grilla ocupa el resto
+            // (antes, con tamaños fijos y anclajes, la grilla y el botón quedaban cortados).
+            var pnlArriba = new Panel { Dock = DockStyle.Top };
+            var pnlAbajo = new Panel { Dock = DockStyle.Bottom, Height = 50, Visible = _puedeCancelar };
+            pnlArriba.Controls.Add(lblTitulo);
 
             int yBajoTitulo = 45;
 
@@ -84,18 +88,14 @@ namespace PROYECTO_ING_DE_SOFTWARE
                 var btnBuscar = new Button { Text = "Buscar", Location = new Point(330, yBajoTitulo + 19), Size = new Size(100, 26) };
                 Tema_GV42.EstilizarBotonSecundario(btnBuscar);
                 btnBuscar.Click += (s, e) => CargarReservas();
-                card.Controls.Add(lblBuscar);
-                card.Controls.Add(txtBusqueda);
-                card.Controls.Add(btnBuscar);
+                pnlArriba.Controls.Add(lblBuscar);
+                pnlArriba.Controls.Add(txtBusqueda);
+                pnlArriba.Controls.Add(btnBuscar);
                 yBajoTitulo += 60;
             }
+            pnlArriba.Height = yBajoTitulo;
 
-            dgv = new DataGridView
-            {
-                Location = new Point(0, yBajoTitulo),
-                Size = new Size(800, 340),
-                Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right | AnchorStyles.Bottom
-            };
+            dgv = new DataGridView { Dock = DockStyle.Fill };
             Tema_GV42.EstilizarGrilla(dgv);
             dgv.AutoGenerateColumns = false;
             dgv.Columns.Add(new DataGridViewTextBoxColumn { DataPropertyName = "NumeroReserva", HeaderText = "Reserva" });
@@ -111,19 +111,22 @@ namespace PROYECTO_ING_DE_SOFTWARE
             dgv.Columns.Add(new DataGridViewTextBoxColumn { DataPropertyName = "Estado", HeaderText = "Estado" });
             dgv.Columns.Add(new DataGridViewTextBoxColumn { DataPropertyName = "ImporteTotal", HeaderText = "Importe", DefaultCellStyle = new DataGridViewCellStyle { Format = "C2" } });
             dgv.SelectionChanged += (s, e) => ActualizarBotonCancelar();
-            card.Controls.Add(dgv);
 
             btnCancelar = new Button
             {
                 Text = _esVendedor ? "Cancelar reserva seleccionada" : "Cancelar mi reserva",
-                Location = new Point(0, yBajoTitulo + 350),
+                Location = new Point(0, 10),
                 Size = new Size(240, 36),
-                Anchor = AnchorStyles.Bottom | AnchorStyles.Left,
                 Visible = _puedeCancelar
             };
             Tema_GV42.EstilizarBotonSecundario(btnCancelar);
             btnCancelar.Click += btnCancelar_Click;
-            card.Controls.Add(btnCancelar);
+            pnlAbajo.Controls.Add(btnCancelar);
+
+            // Orden de acoplamiento: Fill primero, después Bottom y Top.
+            card.Controls.Add(dgv);
+            card.Controls.Add(pnlAbajo);
+            card.Controls.Add(pnlArriba);
         }
 
         private void CargarReservas()

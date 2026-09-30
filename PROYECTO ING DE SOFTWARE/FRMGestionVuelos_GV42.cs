@@ -68,14 +68,12 @@ namespace PROYECTO_ING_DE_SOFTWARE
                 Font = Tema_GV42.FuenteTitulo, ForeColor = Tema_GV42.Acento,
                 AutoSize = true, Location = new Point(0, 0)
             };
-            card.Controls.Add(lblTitulo);
+            // Zonas acopladas: título arriba, editor abajo y la grilla ocupa el resto
+            // (antes, con tamaños fijos y anclajes, la grilla y el editor quedaban cortados).
+            var pnlArriba = new Panel { Dock = DockStyle.Top, Height = 45 };
+            pnlArriba.Controls.Add(lblTitulo);
 
-            dgv = new DataGridView
-            {
-                Location = new Point(0, 45),
-                Size = new Size(800, 220),
-                Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right | AnchorStyles.Bottom
-            };
+            dgv = new DataGridView { Dock = DockStyle.Fill };
             Tema_GV42.EstilizarGrilla(dgv);
             dgv.AutoGenerateColumns = false;
             dgv.Columns.Add(new DataGridViewTextBoxColumn { DataPropertyName = "Codigo", HeaderText = "Vuelo", FillWeight = 60 });
@@ -88,10 +86,9 @@ namespace PROYECTO_ING_DE_SOFTWARE
             dgv.Columns.Add(new DataGridViewTextBoxColumn { DataPropertyName = "Estado", HeaderText = "Estado", FillWeight = 70 });
             dgv.CellFormatting += dgv_CellFormatting;
             dgv.SelectionChanged += (s, e) => MostrarSeleccionado();
-            card.Controls.Add(dgv);
 
             // ---- Editor (queda deshabilitado hasta elegir un vuelo)
-            pnlEditor = new Panel { Location = new Point(0, 275), Size = new Size(800, 200), Anchor = AnchorStyles.Bottom | AnchorStyles.Left, Enabled = false };
+            pnlEditor = new Panel { Dock = DockStyle.Bottom, Height = 185, Padding = new Padding(0, 10, 0, 0), Enabled = false };
 
             var lblCodigo = Tema_GV42.CrearLabel("Código");
             lblCodigo.Location = new Point(0, 0);
@@ -148,7 +145,13 @@ namespace PROYECTO_ING_DE_SOFTWARE
                 lblSalida, dtSalida, lblLlegada, dtLlegada, lblPuerta, txtPuerta, lblCosto, numCosto,
                 btnGuardar, btnBaja, btnReactivar, lblAyuda
             });
+            // El editor arranca 10 px por debajo de la grilla.
+            foreach (Control c in pnlEditor.Controls) c.Top += 10;
+
+            // Orden de acoplamiento: Fill primero, después Bottom y Top.
+            card.Controls.Add(dgv);
             card.Controls.Add(pnlEditor);
+            card.Controls.Add(pnlArriba);
         }
 
         private void dgv_CellFormatting(object sender, DataGridViewCellFormattingEventArgs e)

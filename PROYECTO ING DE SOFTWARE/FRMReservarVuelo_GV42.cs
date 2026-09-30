@@ -103,7 +103,7 @@ namespace PROYECTO_ING_DE_SOFTWARE
         {
             Text = "Reservar vuelo";
             BackColor = Tema_GV42.Fondo;
-            ClientSize = new Size(900, 620);
+            ClientSize = new Size(1040, 640);
             StartPosition = FormStartPosition.CenterScreen;
             Font = new Font("Segoe UI", 9F);
 
@@ -261,8 +261,8 @@ namespace PROYECTO_ING_DE_SOFTWARE
             numPasajeros = new NumericUpDown { Location = new Point(440, 80), Size = new Size(80, 24), Minimum = 1, Maximum = 9, Value = 1 };
 
             var lblClaseFiltro = Tema_GV42.CrearLabel("Clase");
-            lblClaseFiltro.Location = new Point(540, 60);
-            cmbClaseFiltro = new ComboBox { DropDownStyle = ComboBoxStyle.DropDownList, Location = new Point(540, 80), Size = new Size(140, 24) };
+            lblClaseFiltro.Location = new Point(620, 60);
+            cmbClaseFiltro = new ComboBox { DropDownStyle = ComboBoxStyle.DropDownList, Location = new Point(620, 80), Size = new Size(160, 24) };
             cmbClaseFiltro.Items.Add("Todas las clases");
             cmbClaseFiltro.Items.Add(ClaseVuelo_GV42.Economica);
             cmbClaseFiltro.Items.Add(ClaseVuelo_GV42.Ejecutiva);
@@ -274,26 +274,54 @@ namespace PROYECTO_ING_DE_SOFTWARE
             Tema_GV42.EstilizarBotonPrimario(btnBuscar);
             btnBuscar.Click += btnBuscarVuelos_Click;
 
-            dgvVuelos = new DataGridView { Location = new Point(0, 170), Size = new Size(800, 300), Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right | AnchorStyles.Bottom };
+            // La grilla ocupa todo el espacio que queda debajo de los filtros (Dock), así se ve completa
+            // con cualquier tamaño de ventana. Antes tenía tamaño fijo (800x300) con anclajes a los 4 lados
+            // sobre un panel que todavía medía 200x100: al estirarse quedaba más grande que la ventana y se
+            // cortaban las últimas columnas y filas.
+            dgvVuelos = new DataGridView { Dock = DockStyle.Fill };
             Tema_GV42.EstilizarGrilla(dgvVuelos);
             dgvVuelos.AutoGenerateColumns = false;
-            dgvVuelos.Columns.Add(new DataGridViewTextBoxColumn { DataPropertyName = "CodigoVuelo", HeaderText = "Vuelo" });
-            dgvVuelos.Columns.Add(new DataGridViewTextBoxColumn { DataPropertyName = "AerolineaNombre", HeaderText = "Aerolínea" });
-            dgvVuelos.Columns.Add(new DataGridViewTextBoxColumn { DataPropertyName = "OrigenDescripcion", HeaderText = "Origen" });
-            dgvVuelos.Columns.Add(new DataGridViewTextBoxColumn { DataPropertyName = "DestinoDescripcion", HeaderText = "Destino" });
-            dgvVuelos.Columns.Add(new DataGridViewTextBoxColumn { DataPropertyName = "FechaHoraSalida", HeaderText = "Salida", DefaultCellStyle = new DataGridViewCellStyle { Format = "dd/MM HH:mm" } });
-            dgvVuelos.Columns.Add(new DataGridViewTextBoxColumn { DataPropertyName = "ClaseTexto", HeaderText = "Clase" });
-            dgvVuelos.Columns.Add(new DataGridViewTextBoxColumn { DataPropertyName = "PrecioBase", HeaderText = "Precio", DefaultCellStyle = new DataGridViewCellStyle { Format = "C2" } });
-            dgvVuelos.Columns.Add(new DataGridViewTextBoxColumn { DataPropertyName = "AsientosDisponibles", HeaderText = "Disponibles" });
+            dgvVuelos.ScrollBars = ScrollBars.Both;
+            // Cada columna toma el ancho de su contenido; Origen y Destino se reparten el espacio que sobra.
+            // Si la ventana es angosta, aparece la barra de desplazamiento horizontal en vez de recortar.
+            dgvVuelos.Columns.Add(ColumnaVuelos("CodigoVuelo", "Vuelo", null));
+            dgvVuelos.Columns.Add(ColumnaVuelos("AerolineaNombre", "Aerolínea", null));
+            dgvVuelos.Columns.Add(ColumnaVuelos("OrigenDescripcion", "Origen", null, relleno: true));
+            dgvVuelos.Columns.Add(ColumnaVuelos("DestinoDescripcion", "Destino", null, relleno: true));
+            dgvVuelos.Columns.Add(ColumnaVuelos("FechaHoraSalida", "Salida", "dd/MM HH:mm"));
+            dgvVuelos.Columns.Add(ColumnaVuelos("FechaHoraLlegada", "Llegada", "HH:mm"));
+            dgvVuelos.Columns.Add(ColumnaVuelos("ClaseTexto", "Clase", null));
+            dgvVuelos.Columns.Add(ColumnaVuelos("PrecioBase", "Precio", "C2", DataGridViewContentAlignment.MiddleRight));
+            dgvVuelos.Columns.Add(ColumnaVuelos("AsientosDisponibles", "Disp.", null, DataGridViewContentAlignment.MiddleCenter));
 
-            contenido.Controls.AddRange(new Control[] {
+            var pnlFiltros = new Panel { Dock = DockStyle.Top, Height = 170 };
+            pnlFiltros.Controls.AddRange(new Control[] {
                 lblOrigen, cmbOrigen, lblDestino, cmbDestino, lblFecha, dtSalida,
                 lblTipoViaje, cmbTipoViaje, lblRegreso, dtRegreso, lblPax, numPasajeros,
                 lblClaseFiltro, cmbClaseFiltro,
-                btnBuscar, dgvVuelos
+                btnBuscar
             });
 
+            // Orden de acoplamiento: primero la grilla (Fill) y después los filtros (Top).
+            contenido.Controls.Add(dgvVuelos);
+            contenido.Controls.Add(pnlFiltros);
+
             return EnvolverEnCard(contenido);
+        }
+
+        private static DataGridViewTextBoxColumn ColumnaVuelos(string propiedad, string titulo, string formato,
+                                                               DataGridViewContentAlignment? alineacion = null, bool relleno = false)
+        {
+            var col = new DataGridViewTextBoxColumn
+            {
+                DataPropertyName = propiedad,
+                HeaderText = titulo,
+                AutoSizeMode = relleno ? DataGridViewAutoSizeColumnMode.Fill : DataGridViewAutoSizeColumnMode.AllCells,
+                MinimumWidth = relleno ? 120 : 45
+            };
+            if (formato != null) col.DefaultCellStyle.Format = formato;
+            if (alineacion.HasValue) col.DefaultCellStyle.Alignment = alineacion.Value;
+            return col;
         }
 
         private void CargarAeropuertos()
