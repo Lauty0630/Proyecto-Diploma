@@ -1,7 +1,9 @@
-using BLL;
+﻿using BLL;
 using Servicios;
 using Servicios.Instalacion;
 using System;
+using System.Collections.Generic;
+using System.Drawing;
 using System.Linq;
 using System.Windows.Forms;
 
@@ -59,6 +61,7 @@ namespace PROYECTO_ING_DE_SOFTWARE
                 {
                     if (BLLInstalador_GV42.ExisteBaseDatos(instancia))
                     {
+                        if (!PrepararBaseDatos(instancia)) return false;
                         BLLInstalador_GV42.ConfigurarConexion(instancia);
                         return true;
                     }
@@ -66,11 +69,18 @@ namespace PROYECTO_ING_DE_SOFTWARE
 #if DEBUG
                     try
                     {
-                        BLLInstalador_GV42.InstalarBaseDatos(instancia);
+                        using (var aviso = CrearAviso("Instalando la base de datos por primera vez...\nPuede tardar unos minutos."))
+                            BLLInstalador_GV42.InstalarBaseDatos(instancia);
+                        if (!PrepararBaseDatos(instancia)) return false;
                         BLLInstalador_GV42.ConfigurarConexion(instancia);
                         return true;
                     }
-                    catch { }
+                    catch (Exception ex)
+                    {
+                        MessageBox.Show("No se pudo instalar la base de datos en " + instancia + ".\n\n" + ex.Message +
+                                        "\n\nElegí la instancia de SQL Server en la siguiente pantalla.",
+                                        "Instalación", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    }
 #endif
                 }
                 catch
@@ -84,9 +94,102 @@ namespace PROYECTO_ING_DE_SOFTWARE
                 if (r != DialogResult.OK || string.IsNullOrEmpty(frm.InstanciaElegida))
                     return false;
 
+                if (!PrepararBaseDatos(frm.InstanciaElegida)) return false;
                 BLLInstalador_GV42.ConfigurarConexion(frm.InstanciaElegida);
                 return true;
             }
+        }
+
+        // Deja la base lista para esta versión del sistema, en cualquier computadora:
+        //  1) Si es demasiado vieja (le faltan tablas del negocio) ofrece reinstalarla.
+        //  2) Si es de una versión anterior, la actualiza conservando los datos.
+        //  3) Genera los vuelos que falten para los próximos días (nunca queda sin vuelos).
+        private static bool PrepararBaseDatos(string instancia)
+        {
+            try
+            {
+                List<string> faltan = BLLInstalador_GV42.ObjetosFaltantes(instancia);
+                if (faltan.Count > 0)
+                {
+                    DialogResult r = MessageBox.Show(
+                        "La base de datos \"" + BLLInstalador_GV42.NombreBD + "\" de esta computadora es de una versión " +
+                        "anterior del sistema y no se puede actualizar (le falta: " + string.Join(", ", faltan.Take(5)) +
+                        (faltan.Count > 5 ? "..." : "") + ").\n\n" +
+                        "¿Querés reemplazarla por la base de esta versión?\n" +
+                        "Se pierden los datos cargados en esta computadora (usuarios, reservas, etc.).",
+                        "Base de datos desactualizada", MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
+                    if (r != DialogResult.Yes) return false;
+
+                    using (CrearAviso("Reinstalando la base de datos...\nPuede tardar unos minutos."))
+                        BLLInstalador_GV42.ReinstalarBaseDatos(instancia);
+                }
+                else if (BLLInstalador_GV42.NecesitaActualizacion(instancia))
+                {
+                    try
+                    {
+                        using (CrearAviso("Actualizando la base de datos a la versión actual...\nLos datos existentes se conservan."))
+                            BLLInstalador_GV42.ActualizarBaseDatos(instancia);
+                    }
+                    catch (Exception ex)
+                    {
+                        DialogResult r = MessageBox.Show(
+                            "No se pudo actualizar la base de datos:\n" + ex.Message + "\n\n" +
+                            "¿Querés reinstalarla? Se pierden los datos cargados en esta computadora.",
+                            "Actualización", MessageBoxButtons.YesNo, MessageBoxIcon.Error);
+                        if (r != DialogResult.Yes) return false;
+                        using (CrearAviso("Reinstalando la base de datos...\nPuede tardar unos minutos."))
+                            BLLInstalador_GV42.ReinstalarBaseDatos(instancia);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("No se pudo preparar la base de datos.\n\n" + ex.Message, "Error",
+                                MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return false;
+            }
+
+            // Vuelos: si falla no se bloquea el ingreso (el resto del sistema funciona igual).
+            try
+            {
+                using (CrearAviso("Actualizando los vuelos disponibles..."))
+                    BLLInstalador_GV42.AsegurarVuelosDisponibles(instancia);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("No se pudieron generar los vuelos de los próximos días.\n\n" + ex.Message,
+                                "Vuelos", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            }
+            return true;
+        }
+
+        // Ventanita de "espere" mientras se trabaja con la base (se cierra con Dispose).
+        private static Form CrearAviso(string texto)
+        {
+            var aviso = new Form
+            {
+                FormBorderStyle = FormBorderStyle.FixedDialog,
+                ControlBox = false,
+                StartPosition = FormStartPosition.CenterScreen,
+                ClientSize = new Size(420, 110),
+                Text = "Gestión de reservas",
+                BackColor = Tema_GV42.Fondo,
+                ShowInTaskbar = true,
+                TopMost = true
+            };
+            aviso.Controls.Add(new Label
+            {
+                Text = texto,
+                Dock = DockStyle.Fill,
+                TextAlign = ContentAlignment.MiddleCenter,
+                Font = Tema_GV42.FuenteTexto,
+                ForeColor = Tema_GV42.Acento
+            });
+            aviso.Show();
+            aviso.Refresh();
+            Application.DoEvents();
+            Cursor.Current = Cursors.WaitCursor;
+            return aviso;
         }
     }
 }
