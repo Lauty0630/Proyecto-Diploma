@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
@@ -156,6 +156,250 @@ namespace BLL
 
             File.WriteAllBytes(ruta, _buffer.ToArray());
         }
+
+        // ------------------------------------------------------------------------------------
+        // Tabla con celdas de varias líneas (reportes con muchas columnas, p. ej. reservas).
+        // Mismo estilo que Generar (título, subtítulo gris, encabezados en negrita entre líneas),
+        // pero cada celda admite saltos de línea ("\n") y el texto largo se parte en renglones
+        // según el ancho real de la fuente Helvetica, así no se corta información.
+        // alinearDerecha (opcional) indica qué columnas son importes.
+        // resumen (opcional) se imprime al final, debajo de la última fila.
+        // ------------------------------------------------------------------------------------
+        public void GenerarTablaMultilinea(string ruta, string titulo, string[] subtitulos,
+                                           string[] headers, float[] anchosProporcionales,
+                                           List<string[]> filas, float tamanioFuente = 7f,
+                                           bool[] alinearDerecha = null, string[] resumen = null)
+        {
+            const float MARGEN_M = 30f;
+            const float PADDING_CELDA = 5f;
+            float interlinea = tamanioFuente + 2f;
+            float tamEncabezado = tamanioFuente + 0.5f;
+
+            float anchoUtil = ANCHO_PAGINA - 2 * MARGEN_M;
+            float[] anchos = anchosProporcionales.Select(pct => pct * anchoUtil).ToArray();
+            subtitulos = subtitulos ?? new string[0];
+
+            // 1) Partir cada celda en renglones.
+            var encabezadoLineas = headers.Select((h, c) => Partir(h, anchos[c] - PADDING_CELDA, tamEncabezado, true)).ToList();
+            int renglonesEncabezado = encabezadoLineas.Max(l => l.Count);
+
+            var filasLineas = new List<List<List<string>>>();
+            foreach (string[] fila in filas)
+            {
+                var celdas = new List<List<string>>();
+                for (int c = 0; c < headers.Length; c++)
+                {
+                    string val = c < fila.Length ? (fila[c] ?? "") : "";
+                    celdas.Add(Partir(val, anchos[c] - PADDING_CELDA, tamanioFuente, false));
+                }
+                filasLineas.Add(celdas);
+            }
+
+            // 2) Paginar según el alto de cada fila.
+            float yInicioTabla = ALTO_PAGINA - MARGEN_M - 36 - 13 * subtitulos.Length - 8
+                                 - renglonesEncabezado * (tamEncabezado + 2) - 10;
+            float yLimite = MARGEN_M + 14;   // deja lugar al número de página
+            var paginas = new List<List<int>>();
+            var actual = new List<int>();
+            float y = yInicioTabla;
+            for (int f = 0; f < filasLineas.Count; f++)
+            {
+                float alto = filasLineas[f].Max(l => l.Count) * interlinea + 6;
+                if (y - alto < yLimite && actual.Count > 0)
+                {
+                    paginas.Add(actual);
+                    actual = new List<int>();
+                    y = yInicioTabla;
+                }
+                actual.Add(f);
+                y -= alto;
+            }
+            paginas.Add(actual);
+
+            float altoResumen = resumen == null ? 0 : 10 + resumen.Length * (tamanioFuente + 4);
+            if (resumen != null && y - altoResumen < yLimite) paginas.Add(new List<int>());
+            int totalPaginas = paginas.Count;
+
+            // 3) Estructura del PDF (igual que Generar).
+            _buffer = new MemoryStream();
+            _offsetsObjetos = new List<long>();
+            int idCatalog = 1, idPages = 2, primerIdPagina = 3;
+            int idFont = primerIdPagina + totalPaginas;
+            int idFontBold = idFont + 1;
+            int primerIdContents = idFontBold + 1;
+
+            EscribirHeader();
+            EscribirObjeto(idCatalog, $"<</Type/Catalog/Pages {idPages} 0 R>>");
+            string kids = string.Join(" ", Enumerable.Range(0, totalPaginas).Select(i => $"{primerIdPagina + i} 0 R"));
+            EscribirObjeto(idPages, $"<</Type/Pages/Kids[{kids}]/Count {totalPaginas}>>");
+            for (int p = 0; p < totalPaginas; p++)
+            {
+                EscribirObjeto(primerIdPagina + p,
+                    $"<</Type/Page/Parent {idPages} 0 R" +
+                    $"/MediaBox[0 0 {ANCHO_PAGINA} {ALTO_PAGINA}]" +
+                    $"/Resources<</Font<</F1 {idFont} 0 R/F2 {idFontBold} 0 R>>>>" +
+                    $"/Contents {primerIdContents + p} 0 R>>");
+            }
+            EscribirObjeto(idFont, "<</Type/Font/Subtype/Type1/BaseFont/Helvetica/Encoding/WinAnsiEncoding>>");
+            EscribirObjeto(idFontBold, "<</Type/Font/Subtype/Type1/BaseFont/Helvetica-Bold/Encoding/WinAnsiEncoding>>");
+
+            // 4) Contenido de cada página.
+            for (int p = 0; p < totalPaginas; p++)
+            {
+                var sb = new StringBuilder();
+                float yy = ALTO_PAGINA - MARGEN_M;
+
+                Texto(sb, "F2", 16, 0, MARGEN_M, yy - 16, titulo);
+                yy -= 36;
+                foreach (string sub in subtitulos)
+                {
+                    Texto(sb, "F1", 9, 0.45f, MARGEN_M, yy, sub);
+                    yy -= 13;
+                }
+                yy -= 2;
+                Linea(sb, 0.7f, 0.6f, MARGEN_M, MARGEN_M + anchoUtil, yy);
+                yy -= tamEncabezado + 6;
+
+                float x = MARGEN_M;
+                for (int c = 0; c < headers.Length; c++)
+                {
+                    bool der = alinearDerecha != null && c < alinearDerecha.Length && alinearDerecha[c];
+                    for (int l = 0; l < encabezadoLineas[c].Count; l++)
+                        TextoCelda(sb, "F2", tamEncabezado, 0, x, anchos[c] - PADDING_CELDA, yy - l * (tamEncabezado + 2),
+                                   encabezadoLineas[c][l], der, true);
+                    x += anchos[c];
+                }
+                yy -= (renglonesEncabezado - 1) * (tamEncabezado + 2) + 6;
+                Linea(sb, 0.5f, 0.7f, MARGEN_M, MARGEN_M + anchoUtil, yy);
+                yy -= tamanioFuente + 4;
+
+                foreach (int f in paginas[p])
+                {
+                    var celdas = filasLineas[f];
+                    int renglones = celdas.Max(l => l.Count);
+                    x = MARGEN_M;
+                    for (int c = 0; c < headers.Length; c++)
+                    {
+                        bool der = alinearDerecha != null && c < alinearDerecha.Length && alinearDerecha[c];
+                        for (int l = 0; l < celdas[c].Count; l++)
+                            TextoCelda(sb, "F1", tamanioFuente, 0, x, anchos[c] - PADDING_CELDA, yy - l * interlinea,
+                                       celdas[c][l], der, false);
+                        x += anchos[c];
+                    }
+                    yy -= renglones * interlinea + 6;
+                    Linea(sb, 0.88f, 0.3f, MARGEN_M, MARGEN_M + anchoUtil, yy + tamanioFuente + 2);
+                }
+
+                if (resumen != null && p == totalPaginas - 1)
+                {
+                    yy -= 6;
+                    foreach (string linea in resumen)
+                    {
+                        Texto(sb, "F2", tamanioFuente + 1, 0, MARGEN_M, yy, linea);
+                        yy -= tamanioFuente + 4;
+                    }
+                }
+
+                if (totalPaginas > 1)
+                {
+                    string pie = $"Pagina {p + 1} de {totalPaginas}";
+                    float anchoPie = AnchoTexto(pie, 8, false);
+                    Texto(sb, "F1", 8, 0.45f, ANCHO_PAGINA - MARGEN_M - anchoPie, MARGEN_M - 6, pie);
+                }
+
+                EscribirStreamObjeto(primerIdContents + p, sb.ToString());
+            }
+
+            long xrefOffset = _buffer.Position;
+            EscribirXref();
+            EscribirTrailer(idCatalog, xrefOffset);
+            File.WriteAllBytes(ruta, _buffer.ToArray());
+        }
+
+        private void Texto(StringBuilder sb, string fuente, float tam, float gris, float x, float y, string texto)
+        {
+            sb.Append("BT\n");
+            sb.AppendFormat(INV, "{0} {0} {0} rg\n", gris);
+            sb.AppendFormat(INV, "/{0} {1} Tf\n", fuente, tam);
+            sb.AppendFormat(INV, "1 0 0 1 {0:0.##} {1:0.##} Tm\n", x, y);
+            sb.AppendFormat(INV, "({0}) Tj\n", EscaparTexto(texto));
+            sb.Append("ET\n");
+        }
+
+        private void TextoCelda(StringBuilder sb, string fuente, float tam, float gris, float x, float ancho,
+                                float y, string texto, bool derecha, bool negrita)
+        {
+            if (string.IsNullOrEmpty(texto)) return;
+            float xx = derecha ? x + ancho - AnchoTexto(texto, tam, negrita) : x;
+            Texto(sb, fuente, tam, gris, xx, y, texto);
+        }
+
+        private void Linea(StringBuilder sb, float gris, float grosor, float x1, float x2, float y)
+        {
+            sb.AppendFormat(INV, "{0} {0} {0} RG\n{1} w\n", gris, grosor);
+            sb.AppendFormat(INV, "{0:0.##} {1:0.##} m\n{2:0.##} {1:0.##} l\nS\n", x1, y, x2);
+        }
+
+        // Parte un texto en renglones que entren en el ancho indicado (respeta los "\n").
+        private static List<string> Partir(string texto, float ancho, float tam, bool negrita)
+        {
+            var renglones = new List<string>();
+            foreach (string parrafo in (texto ?? "").Replace("\r", "").Split('\n'))
+            {
+                string actual = "";
+                foreach (string palabra in parrafo.Split(' '))
+                {
+                    string candidato = actual.Length == 0 ? palabra : actual + " " + palabra;
+                    if (AnchoTexto(candidato, tam, negrita) <= ancho) { actual = candidato; continue; }
+
+                    if (actual.Length > 0) renglones.Add(actual);
+                    actual = palabra;
+                    // Palabra más larga que la columna (p. ej. un email): se corta por caracteres.
+                    while (AnchoTexto(actual, tam, negrita) > ancho && actual.Length > 1)
+                    {
+                        int n = actual.Length - 1;
+                        while (n > 1 && AnchoTexto(actual.Substring(0, n), tam, negrita) > ancho) n--;
+                        renglones.Add(actual.Substring(0, n));
+                        actual = actual.Substring(n);
+                    }
+                }
+                renglones.Add(actual);
+            }
+            return renglones;
+        }
+
+        // Ancho aproximado en puntos usando las métricas estándar de Helvetica (1/1000 del tamaño).
+        private static float AnchoTexto(string texto, float tam, bool negrita)
+        {
+            if (string.IsNullOrEmpty(texto)) return 0;
+            float total = 0;
+            foreach (char ch in texto)
+            {
+                char c = SinAcento(ch);
+                int w = c >= 32 && c <= 126 ? ANCHOS_HELVETICA[c - 32] : 556;
+                total += w;
+            }
+            return total * tam / 1000f * (negrita ? 1.08f : 1f);
+        }
+
+        private static char SinAcento(char c)
+        {
+            if (c == '\u00A0') return ' ';   // espacio duro: mismo ancho que el espacio
+            const string con = "áéíóúÁÉÍÓÚñÑüÜ";
+            const string sin = "aeiouAEIOUnNuU";
+            int i = con.IndexOf(c);
+            return i >= 0 ? sin[i] : c;
+        }
+
+        private static readonly int[] ANCHOS_HELVETICA =
+        {
+            278, 278, 355, 556, 556, 889, 667, 191, 333, 333, 389, 584, 278, 333, 278, 278,
+            556, 556, 556, 556, 556, 556, 556, 556, 556, 556, 278, 278, 584, 584, 584, 556,
+            1015, 667, 667, 722, 722, 667, 611, 778, 722, 278, 500, 667, 556, 833, 722, 778,
+            667, 778, 722, 667, 611, 722, 667, 944, 667, 667, 611, 278, 278, 278, 469, 556,
+            333, 556, 556, 500, 556, 556, 278, 556, 556, 222, 222, 500, 222, 833, 556, 556,
+            556, 556, 333, 500, 278, 556, 500, 722, 500, 500, 500, 334, 260, 334, 584
+        };
 
         private void EscribirHeader()
         {

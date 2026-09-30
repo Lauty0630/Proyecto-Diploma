@@ -28,6 +28,9 @@ namespace PROYECTO_ING_DE_SOFTWARE
         private ToolStripMenuItem _itemGestionVuelos;
         private ToolStripMenuItem _itemBitacoraVuelos;
 
+        private ToolStripMenuItem _menuReportes;
+        private ToolStripMenuItem _itemReporteReservas;
+
         public FRMMenuPrincipalAdmin()
         {
             InitializeComponent();
@@ -40,6 +43,7 @@ namespace PROYECTO_ING_DE_SOFTWARE
 
             ConstruirMenuReservas();
             ConstruirMenuVuelos();
+            ConstruirMenuReportes();
             ConstruirMenuIdioma();
             ActualizarIdioma();
         }
@@ -90,6 +94,20 @@ namespace PROYECTO_ING_DE_SOFTWARE
             _menuVuelos.DropDownItems.Add(_itemBitacoraVuelos);
 
             menuStrip1.Items.Add(_menuVuelos);
+        }
+
+        // Reportes de gestión (rol Gerente). Por ahora: reporte de reservas del RFN 1.
+        private void ConstruirMenuReportes()
+        {
+            if (menuStrip1 == null) return;
+
+            _itemReporteReservas = new ToolStripMenuItem("Reporte de reservas");
+            _itemReporteReservas.Click += (s, e) => AbrirFormularioHijo(new FRMReporteReservas_GV42());
+
+            _menuReportes = new ToolStripMenuItem("Reportes");
+            _menuReportes.DropDownItems.Add(_itemReporteReservas);
+
+            menuStrip1.Items.Add(_menuReportes);
         }
 
         private void ConstruirMenuIdioma()
@@ -205,6 +223,10 @@ namespace PROYECTO_ING_DE_SOFTWARE
             if (_itemGestionVuelos != null) _itemGestionVuelos.Visible = puedeGestionarVuelos;
             if (_itemBitacoraVuelos != null) _itemBitacoraVuelos.Visible = puedeVerBitacoraVuelos;
             if (_menuVuelos != null) _menuVuelos.Visible = puedeGestionarVuelos || puedeVerBitacoraVuelos;
+
+            bool puedeVerReporteReservas = dataKeys.Contains("Reportes.Reservas");
+            if (_itemReporteReservas != null) _itemReporteReservas.Visible = puedeVerReporteReservas;
+            if (_menuReportes != null) _menuReportes.Visible = puedeVerReporteReservas;
 
             bool puedeCambiarIdioma = dataKeys.Contains("Sesion.CambiarIdioma");
             if (_menuIdioma != null)
