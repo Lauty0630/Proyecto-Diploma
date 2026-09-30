@@ -320,9 +320,11 @@ namespace BLL
             Usuario_GV42 actual = SessionManager_GV42.Instancia.ObtenerUsuarioActual();
             string operador = actual != null ? actual.Login : "sistema";
 
+            DateTime ahora = DateTime.Now;
             var lista = new ListaUsuariosXml_GV42
             {
-                FechaGeneracion = DateTime.Now,
+                // Sin milisegundos ni zona horaria: el atributo queda legible (2026-09-30T00:05:12).
+                FechaGeneracion = new DateTime(ahora.Year, ahora.Month, ahora.Day, ahora.Hour, ahora.Minute, ahora.Second),
                 GeneradoPor = operador,
                 Cantidad = usuarios.Count,
                 Usuarios = usuarios.Select(UsuarioXml_GV42.DesdeUsuario).ToList()
@@ -330,7 +332,8 @@ namespace BLL
 
             try
             {
-                SerializadorXml_GV42.Serializar(lista, rutaArchivo);
+                // 1) Datos: XML generado por XmlSerializer, con la referencia estándar a la hoja CSS.
+                SerializadorXml_GV42.Serializar(lista, rutaArchivo, EstiloXmlUsuarios_GV42.NOMBRE_ARCHIVO);
             }
             catch (UnauthorizedAccessException)
             {
@@ -340,6 +343,16 @@ namespace BLL
             {
                 throw new Exception(IdiomaManager_GV42.T("serializacion.errorSerializar") + " " + ex.Message);
             }
+
+            // 2) Presentación: la hoja CSS se guarda aparte, en la misma carpeta que el XML.
+            //    Si no se puede escribir, el XML sigue siendo válido y des-serializable (solo se ve sin estilo).
+            try
+            {
+                string carpeta = System.IO.Path.GetDirectoryName(rutaArchivo) ?? string.Empty;
+                System.IO.File.WriteAllText(System.IO.Path.Combine(carpeta, EstiloXmlUsuarios_GV42.NOMBRE_ARCHIVO),
+                                            EstiloXmlUsuarios_GV42.CSS, new System.Text.UTF8Encoding(false));
+            }
+            catch { }
 
             try
             {

@@ -48,7 +48,8 @@ namespace DAL
                     if (string.IsNullOrWhiteSpace(batch)) continue;
                     using (var cmd = new SqlCommand(batch, conn))
                     {
-                        cmd.CommandTimeout = 120;
+                        // El lote que genera los vuelos (con sus asientos) puede tardar más de 2 minutos.
+                        cmd.CommandTimeout = 600;
                         cmd.ExecuteNonQuery();
                     }
                 }
