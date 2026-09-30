@@ -1,4 +1,4 @@
-﻿﻿﻿using BE;
+﻿using BE;
 using System;
 using System.Collections.Generic;
 using System.Data;
@@ -61,13 +61,14 @@ namespace DAL
                     });
                 int idReserva = Convert.ToInt32(idObj);
 
-                // 3) Pasajeros: se registran si no existen o se actualizan sus datos, y se vinculan a la reserva.
+                // 3) Pasajeros: se registran si no existen y se vinculan a la reserva.
+                //    Si el DNI ya estaba registrado NO se modifican sus datos: antes se hacía un UPDATE y una
+                //    reserva podía pisar el nombre, email y teléfono de otra persona con solo tipear su DNI.
+                //    (La BLL ya verificó que el nombre y apellido coincidan con los registrados.)
                 foreach (Pasajero_GV42 p in r.Pasajeros)
                 {
                     _acceso.escribir(tx,
-                        "IF EXISTS (SELECT 1 FROM Pasajero WHERE DNI = @DNI) " +
-                        "    UPDATE Pasajero SET Nombre = @Nombre, Apellido = @Apellido, Email = @Email, Telefono = @Telefono WHERE DNI = @DNI " +
-                        "ELSE " +
+                        "IF NOT EXISTS (SELECT 1 FROM Pasajero WHERE DNI = @DNI) " +
                         "    INSERT INTO Pasajero (DNI, Nombre, Apellido, Email, Telefono) VALUES (@DNI, @Nombre, @Apellido, @Email, @Telefono)",
                         new[] {
                             new SqlParameter("@DNI",      p.DNI),

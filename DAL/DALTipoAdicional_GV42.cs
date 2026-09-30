@@ -15,7 +15,7 @@ namespace DAL
 
         public List<TipoAdicional_GV42> ListarActivos()
         {
-            string query = "SELECT Id, Nombre FROM TipoAdicional WHERE Activo = 1 ORDER BY Nombre";
+            string query = "SELECT Id, Nombre, PrecioUnitario FROM TipoAdicional WHERE Activo = 1 ORDER BY Nombre";
             DataTable dt = _acceso.leer(query, null);
 
             var lista = new List<TipoAdicional_GV42>();
@@ -24,7 +24,8 @@ namespace DAL
                 lista.Add(new TipoAdicional_GV42
                 {
                     Id = DALUtil_GV42.Int(r, "Id"),
-                    Nombre = DALUtil_GV42.Str(r, "Nombre")
+                    Nombre = DALUtil_GV42.Str(r, "Nombre"),
+                    PrecioUnitario = DALUtil_GV42.Dec(r, "PrecioUnitario")
                 });
             }
             return lista;

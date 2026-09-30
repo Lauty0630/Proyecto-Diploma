@@ -188,8 +188,7 @@ namespace BLL
         {
             Usuario_GV42 usuario = _DALUsuario.BuscarPorLogin(login);
 
-            string ultimos3 = dni.Length >= 3 ? dni.Substring(dni.Length - 3) : dni;
-            string contrasenaPlana = usuario.Nombre.ToLower() + ultimos3;
+            string contrasenaPlana = CredencialInicial(usuario.Nombre, dni);
             string contrasenaCifrada = Encriptador_GV42.Instancia.EncriptarContrasena(contrasenaPlana);
             _DALUsuario.Desbloquear(dni, contrasenaCifrada);
             Auditar(SessionManager_GV42.Instancia.ObtenerUsuarioActual().Login, "Admin", "Usuario desbloqueado", $"Usuario {login} desbloqueado y contraseña reseteada", "Media");
@@ -225,10 +224,14 @@ namespace BLL
 
             if (_DALUsuario.ExisteDNI(dni))
                 throw new Exception(string.Format(IdiomaManager_GV42.T("err.dniDuplicado"), dni));
-            string ultimos3 = dni.Length >= 3 ? dni.Substring(dni.Length - 3) : dni;
-            string contrasenaPlana = nombre.ToLower() + ultimos3;
+
+            nombre = Validaciones_GV42.NormalizarEspacios(nombre);
+            apellido = Validaciones_GV42.NormalizarEspacios(apellido);
+            VerificarMismaPersonaQuePasajero(dni, nombre, apellido);
+
+            string contrasenaPlana = CredencialInicial(nombre, dni);
             string contrasenaCifrada = Encriptador_GV42.Instancia.EncriptarContrasena(contrasenaPlana);
-            string login = nombre.ToLower() + ultimos3;
+            string login = contrasenaPlana;
 
             if (_DALUsuario.BuscarPorLogin(login) != null)
                 throw new Exception(string.Format(IdiomaManager_GV42.T("err.usuarioLoginDuplicado"), login));
@@ -270,6 +273,10 @@ namespace BLL
                 throw new Exception(string.Format(IdiomaManager_GV42.T("err.dniDuplicado"), dni));
             if (_DALUsuario.BuscarPorLogin(login) != null)
                 throw new Exception(string.Format(IdiomaManager_GV42.T("err.usuarioLoginDuplicado"), login));
+
+            nombre = Validaciones_GV42.NormalizarEspacios(nombre);
+            apellido = Validaciones_GV42.NormalizarEspacios(apellido);
+            VerificarMismaPersonaQuePasajero(dni, nombre, apellido);
 
             string contrasenaCifrada = Encriptador_GV42.Instancia.EncriptarContrasena(contrasenaPlana);
 
@@ -375,6 +382,34 @@ namespace BLL
             catch { }
 
             return usuarios;
+        }
+
+        // Login y contraseña inicial = primer nombre en minúsculas, sin tildes ni signos, + últimos 3 del DNI.
+        // Antes se usaba el nombre tal cual: "María José" generaba el login "maría josé544", que la pantalla
+        // de login rechaza (solo acepta letras, números y puntos), así que ese usuario nunca podía entrar.
+        private static string CredencialInicial(string nombre, string dni)
+        {
+            string primerNombre = Validaciones_GV42.NormalizarEspacios(nombre).Split(' ')[0];
+            string sinTildes = new string(primerNombre.ToLowerInvariant()
+                .Normalize(System.Text.NormalizationForm.FormD)
+                .Where(c => System.Globalization.CharUnicodeInfo.GetUnicodeCategory(c) != System.Globalization.UnicodeCategory.NonSpacingMark)
+                .Where(c => (c >= 'a' && c <= 'z') || c == 'ñ')
+                .Select(c => c == 'ñ' ? 'n' : c)
+                .ToArray());
+            if (sinTildes.Length == 0) sinTildes = "usuario";
+            string ultimos3 = dni.Length >= 3 ? dni.Substring(dni.Length - 3) : dni;
+            return sinTildes + ultimos3;
+        }
+
+        // El DNI identifica a una sola persona: si ya viajó (está en Pasajero), la cuenta que se crea
+        // tiene que ser a su mismo nombre y apellido.
+        private static void VerificarMismaPersonaQuePasajero(string dni, string nombre, string apellido)
+        {
+            BE.Pasajero_GV42 pasajero = new DAL.DALPasajero_GV42().BuscarPorDni(dni);
+            if (pasajero == null) return;
+            if (!Validaciones_GV42.MismoTexto(nombre, pasajero.Nombre) || !Validaciones_GV42.MismoTexto(apellido, pasajero.Apellido))
+                throw new Exception("El DNI " + dni + " ya está registrado como pasajero a nombre de " +
+                                    pasajero.Nombre + " " + pasajero.Apellido + ". Verificá el DNI o los datos.");
         }
 
         public enum ResultadoCambioContrasena

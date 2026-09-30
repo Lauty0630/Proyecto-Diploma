@@ -68,10 +68,10 @@ namespace BLL
                 throw new NegocioException_GV42("Faltan los datos del " + rol + ".");
 
             p.DNI = (p.DNI ?? string.Empty).Trim();
-            p.Nombre = (p.Nombre ?? string.Empty).Trim();
-            p.Apellido = (p.Apellido ?? string.Empty).Trim();
+            p.Nombre = Validaciones_GV42.NormalizarEspacios(p.Nombre);
+            p.Apellido = Validaciones_GV42.NormalizarEspacios(p.Apellido);
             p.Email = (p.Email ?? string.Empty).Trim();
-            p.Telefono = (p.Telefono ?? string.Empty).Trim();
+            p.Telefono = Validaciones_GV42.NormalizarEspacios(p.Telefono);
 
             if (!Validaciones_GV42.EsDniValido(p.DNI))
                 throw new NegocioException_GV42(rol + ": " + Validaciones_GV42.MENSAJE_DNI);
@@ -81,8 +81,8 @@ namespace BLL
                 throw new NegocioException_GV42(rol + ": " + Validaciones_GV42.MENSAJE_APELLIDO);
             if (!Validaciones_GV42.EsEmailValido(p.Email))
                 throw new NegocioException_GV42(rol + ": " + Validaciones_GV42.MENSAJE_EMAIL);
-            if (!Regex.IsMatch(p.Telefono, @"^[0-9+\-\s()]{6,20}$"))
-                throw new NegocioException_GV42(rol + ": el teléfono debe tener entre 6 y 20 caracteres (números, espacios, +, -, paréntesis).");
+            if (!Validaciones_GV42.EsTelefonoValido(p.Telefono))
+                throw new NegocioException_GV42(rol + ": " + Validaciones_GV42.MENSAJE_TELEFONO);
         }
     }
 }

@@ -1,4 +1,4 @@
-﻿﻿using BE;
+﻿using BE;
 using BLL;
 using Servicios;
 using System;
@@ -20,6 +20,26 @@ namespace PROYECTO_ING_DE_SOFTWARE
         private class DatosPasajero
         {
             public TextBox Dni, Nombre, Apellido, Email, Telefono;
+            public bool Autocompletado;          // los datos salieron de la base (DNI ya registrado)
+            public string UltimoDniBuscado = string.Empty;
+        }
+
+        // Largos máximos de los campos de persona (coinciden con las columnas de la base).
+        private static void LimitarCamposPersona(TextBox dni, TextBox nombre, TextBox apellido, TextBox email, TextBox telefono)
+        {
+            dni.MaxLength = 8;
+            nombre.MaxLength = Validaciones_GV42.MAX_NOMBRE;
+            apellido.MaxLength = Validaciones_GV42.MAX_NOMBRE;
+            email.MaxLength = Validaciones_GV42.MAX_EMAIL;
+            telefono.MaxLength = 20;
+            // En el DNI solo se aceptan dígitos (se ignora cualquier otra tecla, salvo borrar/pegar).
+            dni.KeyPress += (s, e) => { if (!char.IsControl(e.KeyChar) && !char.IsDigit(e.KeyChar)) e.Handled = true; };
+        }
+
+        private static void Bloquear(TextBox txt, bool bloquear)
+        {
+            txt.ReadOnly = bloquear;
+            txt.BackColor = bloquear ? Tema_GV42.Fondo : Color.White;
         }
 
         private readonly BLLReserva_GV42 _bll = new BLLReserva_GV42();
@@ -371,6 +391,19 @@ namespace PROYECTO_ING_DE_SOFTWARE
                 btnRegistrarCliente, lblAyuda
             });
 
+            LimitarCamposPersona(txtDniCliente, txtNombreCliente, txtApellidoCliente, txtEmailCliente, txtTelefonoCliente);
+            // Si se cambia el DNI después de buscar, hay que volver a buscar: antes se podía buscar un DNI,
+            // cambiarlo y registrar al cliente con el DNI nuevo pero con los datos precargados del anterior.
+            txtDniCliente.TextChanged += (s, e) =>
+            {
+                if (_clienteElegido == null && !btnRegistrarCliente.Visible) return;
+                _clienteElegido = null;
+                btnRegistrarCliente.Visible = false;
+                txtNombreCliente.Clear(); txtApellidoCliente.Clear(); txtEmailCliente.Clear(); txtTelefonoCliente.Clear();
+                PonerDatosClienteSoloLectura(true);
+            };
+            txtDniCliente.KeyDown += (s, e) => { if (e.KeyCode == Keys.Enter) { e.SuppressKeyPress = true; btnBuscarCliente_Click(s, e); } };
+
             PonerDatosClienteSoloLectura(true);
             return EnvolverEnCard(contenido);
         }
@@ -506,6 +539,17 @@ namespace PROYECTO_ING_DE_SOFTWARE
                 UbicarConEtiqueta(grupo, "Apellido", dp.Apellido, 280, 24, 140);
                 UbicarConEtiqueta(grupo, "Email", dp.Email, 430, 24, 180);
                 UbicarConEtiqueta(grupo, "Teléfono", dp.Telefono, 620, 24, 120);
+                LimitarCamposPersona(dp.Dni, dp.Nombre, dp.Apellido, dp.Email, dp.Telefono);
+
+                // Vendedor: al salir del DNI se buscan los datos registrados de esa persona (como pasajero
+                // o como usuario) y se completan bloqueados, para que no se pueda cargar un DNI existente
+                // con otro nombre. El cliente autogestionado no puede consultar datos de terceros: en su
+                // caso la validación se hace al pasar de paso, sin mostrar a nombre de quién está el DNI.
+                if (_esVendedor)
+                {
+                    DatosPasajero fila = dp;
+                    dp.Dni.Leave += (s, e) => AutocompletarPasajero(fila);
+                }
 
                 // El titular de la cuenta ya está identificado por su sesión: sus datos salen de ahí y no
                 // se le pide que los vuelva a tipear (ni que se "registre"). Para pasajeros adicionales sí se
@@ -517,16 +561,10 @@ namespace PROYECTO_ING_DE_SOFTWARE
                     dp.Email.Text = titular.Email; dp.Telefono.Text = titular.Telefono;
 
                     foreach (var txt in new[] { dp.Dni, dp.Nombre, dp.Apellido, dp.Email })
-                    {
-                        txt.ReadOnly = true;
-                        txt.BackColor = Tema_GV42.Fondo;
-                    }
+                        Bloquear(txt, true);
                     // Usuario no guarda teléfono: solo se pide si nunca reservó antes.
                     if (!string.IsNullOrWhiteSpace(titular.Telefono))
-                    {
-                        dp.Telefono.ReadOnly = true;
-                        dp.Telefono.BackColor = Tema_GV42.Fondo;
-                    }
+                        Bloquear(dp.Telefono, true);
                     grupo.Text = "Pasajero 1 (vos)";
                 }
 
@@ -547,15 +585,77 @@ namespace PROYECTO_ING_DE_SOFTWARE
             padre.Controls.Add(txt);
         }
 
+        private void AutocompletarPasajero(DatosPasajero dp)
+        {
+            string dni = dp.Dni.Text.Trim();
+            if (dni == dp.UltimoDniBuscado) return;
+            dp.UltimoDniBuscado = dni;
+
+            // Si antes se había autocompletado con otro DNI, esos datos ya no corresponden.
+            if (dp.Autocompletado)
+            {
+                foreach (var txt in new[] { dp.Nombre, dp.Apellido, dp.Email, dp.Telefono })
+                {
+                    txt.Clear();
+                    Bloquear(txt, false);
+                }
+                dp.Autocompletado = false;
+            }
+
+            if (!Validaciones_GV42.EsDniValido(dni)) return;
+
+            try
+            {
+                Pasajero_GV42 registrado = _bll.BuscarPasajero(dni);
+                bool esPasajero = registrado != null;
+                if (registrado == null) registrado = _bll.PrecargarDesdeUsuario(dni);
+                if (registrado == null) return;   // persona nueva: se cargan los datos a mano
+
+                dp.Nombre.Text = registrado.Nombre;
+                dp.Apellido.Text = registrado.Apellido;
+                dp.Email.Text = registrado.Email;
+                dp.Telefono.Text = registrado.Telefono;
+                Bloquear(dp.Nombre, true);
+                Bloquear(dp.Apellido, true);
+                Bloquear(dp.Email, true);
+                // Un usuario sin viajes previos no tiene teléfono guardado: se completa acá.
+                Bloquear(dp.Telefono, esPasajero && !string.IsNullOrWhiteSpace(registrado.Telefono));
+                dp.Autocompletado = true;
+            }
+            catch (NegocioException_GV42)
+            {
+                // Sin permiso de búsqueda o DNI inválido: se valida igual al pasar de paso.
+            }
+        }
+
+        private List<Pasajero_GV42> PasajerosEnPantalla()
+        {
+            return _pasajeros.Select(p => new Pasajero_GV42
+            {
+                DNI = p.Dni.Text.Trim(),
+                Nombre = p.Nombre.Text.Trim(),
+                Apellido = p.Apellido.Text.Trim(),
+                Email = p.Email.Text.Trim(),
+                Telefono = p.Telefono.Text.Trim()
+            }).ToList();
+        }
+
         private void ValidarYAvanzarPasajeros()
         {
-            foreach (var p in _pasajeros)
+            for (int i = 0; i < _pasajeros.Count; i++)
             {
+                var p = _pasajeros[i];
                 if (string.IsNullOrWhiteSpace(p.Dni.Text) || string.IsNullOrWhiteSpace(p.Nombre.Text) ||
                     string.IsNullOrWhiteSpace(p.Apellido.Text) || string.IsNullOrWhiteSpace(p.Email.Text) ||
                     string.IsNullOrWhiteSpace(p.Telefono.Text))
-                    throw new NegocioException_GV42("Completá los datos de todos los pasajeros.");
+                    throw new NegocioException_GV42("Completá todos los datos del pasajero " + (i + 1) + ".");
             }
+
+            // Formato de cada campo, DNI repetido entre pasajeros y DNI ya registrado a nombre de otra persona.
+            if (_esVendedor)
+                foreach (var p in _pasajeros) AutocompletarPasajero(p);
+            _bll.ValidarPasajerosParaReserva(PasajerosEnPantalla());
+
             _asientoPorPasajero.Clear();
             _indicePasajeroActivo = 0;
             IrAPaso(_pasoActual + 1);
@@ -648,7 +748,9 @@ namespace PROYECTO_ING_DE_SOFTWARE
         {
             var lblAyuda = new Label
             {
-                Text = "Tildá los servicios que pida el cliente e indicá cantidad y costo unitario de cada uno.",
+                Text = _esVendedor
+                    ? "Tildá los servicios que pida el cliente e indicá la cantidad. El costo unitario viene del catálogo y se puede ajustar."
+                    : "Tildá los servicios que quieras agregar e indicá la cantidad. El costo es el precio de lista de cada servicio.",
                 Location = new Point(0, 0), Size = new Size(600, 20), Font = Tema_GV42.FuenteSubtitulo, ForeColor = Tema_GV42.Texto
             };
             pnlAdicionales.Controls.Add(lblAyuda);
@@ -664,8 +766,10 @@ namespace PROYECTO_ING_DE_SOFTWARE
 
                 var lblCosto = new Label { Text = "Costo unitario", Location = new Point(270, y), AutoSize = true, Font = new Font("Segoe UI", 8F) };
                 var costo = new NumericUpDown { Location = new Point(270, y + 16), Size = new Size(90, 24), Minimum = 0, Maximum = 999999, DecimalPlaces = 2, Increment = 100, Enabled = false };
+                costo.Value = Math.Min(costo.Maximum, Math.Max(costo.Minimum, tipo.PrecioUnitario));
 
-                chk.CheckedChanged += (s, e) => { cant.Enabled = chk.Checked; costo.Enabled = chk.Checked; };
+                // El cliente autogestionado no elige el precio (la BLL igual lo fuerza al de lista).
+                chk.CheckedChanged += (s, e) => { cant.Enabled = chk.Checked; costo.Enabled = chk.Checked && _esVendedor; };
 
                 pnlAdicionales.Controls.Add(chk);
                 pnlAdicionales.Controls.Add(lblCant);
@@ -722,17 +826,7 @@ namespace PROYECTO_ING_DE_SOFTWARE
                 FechaRegreso = cmbTipoViaje.SelectedIndex == 1 ? (DateTime?)dtRegreso.Value.Date : null
             };
 
-            foreach (var p in _pasajeros)
-            {
-                borrador.Pasajeros.Add(new Pasajero_GV42
-                {
-                    DNI = p.Dni.Text.Trim(),
-                    Nombre = p.Nombre.Text.Trim(),
-                    Apellido = p.Apellido.Text.Trim(),
-                    Email = p.Email.Text.Trim(),
-                    Telefono = p.Telefono.Text.Trim()
-                });
-            }
+            borrador.Pasajeros.AddRange(PasajerosEnPantalla());
 
             for (int i = 0; i < _pasajeros.Count; i++)
                 borrador.AsientosPorPasajero.Add(new AsientoPasajero_GV42(_pasajeros[i].Dni.Text.Trim(), _asientoPorPasajero[i]));

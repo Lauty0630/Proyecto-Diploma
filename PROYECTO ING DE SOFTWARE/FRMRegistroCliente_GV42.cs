@@ -1,4 +1,4 @@
-﻿﻿using BE;
+﻿using BE;
 using BLL;
 using System;
 using System.Drawing;
@@ -67,6 +67,16 @@ namespace PROYECTO_ING_DE_SOFTWARE
             txtLogin     = AgregarCampo(card, "Usuario (login)", ref y);
             txtContrasena = AgregarCampo(card, "Contraseña", ref y, esPassword: true);
             txtConfirmar  = AgregarCampo(card, "Confirmar contraseña", ref y, esPassword: true);
+
+            txtDni.MaxLength = 8;
+            txtDni.KeyPress += (s, e) => { if (!char.IsControl(e.KeyChar) && !char.IsDigit(e.KeyChar)) e.Handled = true; };
+            txtNombre.MaxLength = Servicios.Validaciones_GV42.MAX_NOMBRE;
+            txtApellido.MaxLength = Servicios.Validaciones_GV42.MAX_NOMBRE;
+            txtEmail.MaxLength = Servicios.Validaciones_GV42.MAX_EMAIL;
+            txtTelefono.MaxLength = 20;
+            txtLogin.MaxLength = Servicios.Validaciones_GV42.MAX_LOGIN;
+            txtContrasena.MaxLength = 50;
+            txtConfirmar.MaxLength = 50;
 
             btnRegistrarme = new Button
             {

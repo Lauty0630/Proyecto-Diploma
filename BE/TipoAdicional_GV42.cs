@@ -8,6 +8,10 @@ namespace BE
         public int Id { get; set; }
         public string Nombre { get; set; }
 
+        // Precio de lista por unidad. En autogestión se cobra siempre este precio;
+        // el vendedor lo ve precargado y puede ajustarlo.
+        public decimal PrecioUnitario { get; set; }
+
         public override string ToString() { return Nombre ?? string.Empty; }
     }
 }

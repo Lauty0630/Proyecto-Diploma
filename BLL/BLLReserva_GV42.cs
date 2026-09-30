@@ -1,4 +1,4 @@
-﻿﻿﻿using BE;
+﻿using BE;
 using DAL;
 using Servicios;
 using System;
@@ -93,6 +93,7 @@ namespace BLL
         // Devuelve null si el DNI no está registrado como pasajero.
         public Pasajero_GV42 BuscarPasajero(string dni)
         {
+            ExigirVendedorParaBuscarPersonas();
             dni = (dni ?? string.Empty).Trim();
             if (!Servicios.Validaciones_GV42.EsDniValido(dni))
                 throw new NegocioException_GV42(Servicios.Validaciones_GV42.MENSAJE_DNI);
@@ -103,10 +104,55 @@ namespace BLL
         // (sin teléfono) para precargar el formulario de alta. Null si tampoco tiene cuenta.
         public Pasajero_GV42 PrecargarDesdeUsuario(string dni)
         {
+            ExigirVendedorParaBuscarPersonas();
             dni = (dni ?? string.Empty).Trim();
             if (!Servicios.Validaciones_GV42.EsDniValido(dni))
                 throw new NegocioException_GV42(Servicios.Validaciones_GV42.MENSAJE_DNI);
             return _dalPasajero.BuscarDatosEnUsuario(dni);
+        }
+
+        // Buscar personas por DNI devuelve datos personales (email, teléfono) de terceros:
+        // solo lo puede hacer quien vende para terceros, nunca un cliente autogestionado.
+        private static void ExigirVendedorParaBuscarPersonas()
+        {
+            if (!PatentesActuales().Contains("Reservas.Generar"))
+                throw new NegocioException_GV42("No tenés permiso para buscar personas por DNI.");
+        }
+
+        // ---- Identidad de las personas ----
+        // Un DNI identifica a UNA persona en todo el sistema: puede estar en Usuario (tiene cuenta),
+        // en Pasajero (reservó o viajó) o en las dos. Usuario y Pasajero siguen siendo tablas distintas
+        // (hay usuarios que nunca viajaron y pasajeros sin cuenta), pero si el DNI ya existe en
+        // cualquiera de las dos, el nombre y apellido cargados tienen que coincidir con los registrados.
+        // Antes esto no se controlaba: se podía cargar como pasajero un DNI existente con otro nombre
+        // y, al confirmar, la reserva PISABA los datos de esa persona en la tabla Pasajero.
+
+        // Datos registrados para un DNI: primero Pasajero y, si no está, la cuenta de Usuario.
+        private Pasajero_GV42 PersonaRegistrada(string dni, out bool esPasajero)
+        {
+            Pasajero_GV42 p = _dalPasajero.BuscarPorDni(dni);
+            esPasajero = p != null;
+            return p ?? _dalPasajero.BuscarDatosEnUsuario(dni);
+        }
+
+        // Lanza excepción si el DNI ya pertenece a otra persona. 'mostrarRegistrado' indica si el
+        // mensaje puede decir a nombre de quién está (vendedor sí; cliente autogestionado no, para no
+        // exponer datos de terceros a partir de un DNI).
+        private void VerificarIdentidad(Persona_GV42 p, string rol, bool mostrarRegistrado)
+        {
+            Pasajero_GV42 registrado = PersonaRegistrada(p.DNI, out bool _);
+            if (registrado == null) return;
+
+            bool coincide = Servicios.Validaciones_GV42.MismoTexto(p.Nombre, registrado.Nombre) &&
+                            Servicios.Validaciones_GV42.MismoTexto(p.Apellido, registrado.Apellido);
+            if (coincide) return;
+
+            if (mostrarRegistrado)
+                throw new NegocioException_GV42(rol + ": el DNI " + p.DNI + " ya está registrado a nombre de " +
+                    registrado.Nombre + " " + registrado.Apellido + ". Verificá el DNI o usá los datos registrados.");
+
+            throw new NegocioException_GV42(rol + ": el DNI " + p.DNI + " ya está registrado en el sistema con otro " +
+                "nombre y apellido. Verificá que el DNI y los datos sean correctos.");
         }
 
         public void RegistrarPasajero(Pasajero_GV42 pasajero)
@@ -115,6 +161,9 @@ namespace BLL
 
             if (_dalPasajero.ExisteDni(pasajero.DNI))
                 throw new NegocioException_GV42("Ya existe una persona registrada con el DNI " + pasajero.DNI + ".");
+
+            // Si tiene cuenta de usuario, el nombre y apellido deben ser los de esa cuenta.
+            VerificarIdentidad(pasajero, "Cliente", true);
 
             _dalPasajero.Insertar(pasajero);
 
@@ -133,10 +182,14 @@ namespace BLL
             if (contrasenaPlana != confirmarContrasena)
                 throw new NegocioException_GV42("Las contraseñas no coinciden.");
 
-            if (_dalPasajero.ExisteDni(cliente.DNI))
-                throw new NegocioException_GV42("Ya existe una persona registrada con el DNI " + cliente.DNI + ".");
+            // Alguien que ya viajó (lo cargó un vendedor) puede crear su cuenta: se reutiliza su fila de
+            // Pasajero siempre que el nombre y apellido coincidan. Si ya tiene cuenta, lo rechaza el alta
+            // del usuario (DNI duplicado en Usuario).
+            VerificarIdentidad(cliente, "Cliente", false);
+            bool yaEraPasajero = _dalPasajero.ExisteDni(cliente.DNI);
 
-            _dalPasajero.Insertar(cliente);
+            if (!yaEraPasajero)
+                _dalPasajero.Insertar(cliente);
 
             try
             {
@@ -146,8 +199,12 @@ namespace BLL
             }
             catch (Exception)
             {
-                // Compensación: sin usuario no hay cómo loguearse, así que no dejamos el cliente huérfano.
-                try { _dalPasajero.Eliminar(cliente.DNI); } catch { }
+                // Compensación: sin usuario no hay cómo loguearse, así que no dejamos el cliente huérfano
+                // (solo si lo acabamos de crear; un pasajero que ya existía queda como estaba).
+                if (!yaEraPasajero)
+                {
+                    try { _dalPasajero.Eliminar(cliente.DNI); } catch { }
+                }
                 throw;
             }
         }
@@ -265,8 +322,8 @@ namespace BLL
                     throw new NegocioException_GV42("El cliente no está registrado. Regístrelo antes de generar la reserva.");
             }
 
-            ValidarPasajeros(borrador.Pasajeros);
-            ValidarAdicionales(borrador.Adicionales);
+            ValidarPasajerosParaReserva(borrador.Pasajeros);
+            ValidarAdicionales(borrador.Adicionales, canal);
 
             // El precio y la disponibilidad se toman siempre de la base, no de lo que traiga la pantalla.
             VueloClase_GV42 vc = _dalVuelo.BuscarVueloClase(borrador.VueloClase.Vuelo.Id, borrador.VueloClase.Clase);
@@ -347,32 +404,73 @@ namespace BLL
                 throw new NegocioException_GV42("El pasajero con DNI " + dniRepetido.Key + " tiene más de un asiento asignado.");
         }
 
-        private void ValidarPasajeros(List<Pasajero_GV42> pasajeros)
+        // Pública para que la pantalla valide al pasar del paso "Pasajeros" (antes solo se controlaba
+        // que no hubiera campos vacíos y los errores recién aparecían al confirmar, después de elegir asientos).
+        // GenerarReserva la vuelve a ejecutar igual: la pantalla no es la única barrera.
+        public void ValidarPasajerosParaReserva(List<Pasajero_GV42> pasajeros)
         {
             if (pasajeros == null || pasajeros.Count == 0)
                 throw new NegocioException_GV42("Debe registrar al menos un pasajero.");
+            if (pasajeros.Count > MAX_PASAJEROS_POR_RESERVA)
+                throw new NegocioException_GV42("Una reserva puede tener como máximo " + MAX_PASAJEROS_POR_RESERVA + " pasajeros.");
 
-            foreach (Pasajero_GV42 p in pasajeros)
-                BLLNegocioUtil_GV42.ValidarPersona(p, "Pasajero");
+            for (int i = 0; i < pasajeros.Count; i++)
+                BLLNegocioUtil_GV42.ValidarPersona(pasajeros[i], "Pasajero " + (i + 1));
 
             var repetido = pasajeros.GroupBy(p => p.DNI).FirstOrDefault(g => g.Count() > 1);
             if (repetido != null)
-                throw new NegocioException_GV42("El pasajero con DNI " + repetido.Key + " está cargado más de una vez.");
+                throw new NegocioException_GV42("El DNI " + repetido.Key + " está cargado en más de un pasajero.");
+
+            bool esVendedor = PatentesActuales().Contains("Reservas.Generar");
+            string dniSesion = DniSesion();
+            for (int i = 0; i < pasajeros.Count; i++)
+            {
+                Pasajero_GV42 p = pasajeros[i];
+                // El titular autogestionado ya está identificado por su sesión (sus datos salen de ahí).
+                if (!esVendedor && string.Equals(p.DNI, dniSesion, StringComparison.OrdinalIgnoreCase))
+                    continue;
+                VerificarIdentidad(p, "Pasajero " + (i + 1), esVendedor);
+            }
         }
 
-        private void ValidarAdicionales(List<AdicionalReserva_GV42> adicionales)
+        public const int MAX_PASAJEROS_POR_RESERVA = 9;
+
+        public const int MAX_CANTIDAD_ADICIONAL = 20;
+        public const decimal MAX_COSTO_ADICIONAL = 999999m;
+
+        // El tipo tiene que existir y estar activo, sin repetir. El precio sale del catálogo
+        // (TipoAdicional.PrecioUnitario): el cliente autogestionado no puede cambiarlo (antes podía
+        // cargar cualquier costo, incluso $0); el vendedor puede ajustarlo, pero debe ser mayor a 0.
+        private void ValidarAdicionales(List<AdicionalReserva_GV42> adicionales, CanalVenta_GV42 canal)
         {
             if (adicionales == null) return;
+
+            Dictionary<int, TipoAdicional_GV42> catalogo = _dalTipoAdicional.ListarActivos().ToDictionary(t => t.Id);
 
             foreach (AdicionalReserva_GV42 a in adicionales)
             {
                 if (a.TipoAdicional == null || a.TipoAdicional.Id <= 0)
                     throw new NegocioException_GV42("Cada servicio adicional debe tener un tipo.");
-                if (a.Cantidad < 1)
-                    throw new NegocioException_GV42("La cantidad de '" + a.TipoNombre + "' debe ser al menos 1.");
-                if (a.CostoUnitario < 0)
-                    throw new NegocioException_GV42("El costo unitario de '" + a.TipoNombre + "' no puede ser negativo.");
+                if (!catalogo.TryGetValue(a.TipoAdicional.Id, out TipoAdicional_GV42 tipo))
+                    throw new NegocioException_GV42("El servicio adicional '" + a.TipoNombre + "' no existe o ya no está disponible.");
+                a.TipoAdicional = tipo;
+
+                if (a.Cantidad < 1 || a.Cantidad > MAX_CANTIDAD_ADICIONAL)
+                    throw new NegocioException_GV42("La cantidad de '" + tipo.Nombre + "' debe estar entre 1 y " + MAX_CANTIDAD_ADICIONAL + ".");
+
+                if (canal == CanalVenta_GV42.Autogestion)
+                    a.CostoUnitario = tipo.PrecioUnitario;
+
+                a.CostoUnitario = Math.Round(a.CostoUnitario, 2);
+                if (a.CostoUnitario <= 0)
+                    throw new NegocioException_GV42("El costo unitario de '" + tipo.Nombre + "' debe ser mayor a $ 0.");
+                if (a.CostoUnitario > MAX_COSTO_ADICIONAL)
+                    throw new NegocioException_GV42("El costo unitario de '" + tipo.Nombre + "' es demasiado alto.");
             }
+
+            var repetido = adicionales.GroupBy(a => a.TipoAdicional.Id).FirstOrDefault(g => g.Count() > 1);
+            if (repetido != null)
+                throw new NegocioException_GV42("El servicio '" + repetido.First().TipoNombre + "' está cargado más de una vez.");
         }
 
         // Devuelve null si el número de reserva no existe.
