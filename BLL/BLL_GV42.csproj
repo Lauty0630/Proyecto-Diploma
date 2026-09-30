@@ -42,6 +42,11 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="BLLBitacora_GV42.cs" />
+    <Compile Include="BLLBoleto_GV42.cs" />
+    <Compile Include="Code128_GV42.cs" />
+    <Compile Include="DisenioBoleto_GV42.cs" />
+    <Compile Include="ILienzo_GV42.cs" />
+    <Compile Include="LienzoPdf_GV42.cs" />
     <Compile Include="BLLInstalador_GV42.cs" />
     <Compile Include="BLLPermisos_GV42.cs" />
     <Compile Include="BLLUsuario_GV42.cs" />

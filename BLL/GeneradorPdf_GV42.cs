@@ -401,6 +401,45 @@ namespace BLL
             556, 556, 333, 500, 278, 556, 500, 722, 500, 500, 500, 334, 260, 334, 584
         };
 
+        // Escribe un PDF con páginas ya dibujadas (contenido de cada página en operadores PDF).
+        // Lo usa LienzoPdf_GV42 para los boletos; mismo tamaño de página y fuentes que el resto.
+        internal void EscribirDocumento(string ruta, IList<string> paginas)
+        {
+            _buffer = new MemoryStream();
+            _offsetsObjetos = new List<long>();
+            int total = Math.Max(1, paginas.Count);
+            int idCatalog = 1, idPages = 2, primerIdPagina = 3;
+            int idFont = primerIdPagina + total;
+            int idFontBold = idFont + 1;
+            int primerIdContents = idFontBold + 1;
+
+            EscribirHeader();
+            EscribirObjeto(idCatalog, $"<</Type/Catalog/Pages {idPages} 0 R>>");
+            string kids = string.Join(" ", Enumerable.Range(0, total).Select(i => $"{primerIdPagina + i} 0 R"));
+            EscribirObjeto(idPages, $"<</Type/Pages/Kids[{kids}]/Count {total}>>");
+            for (int p = 0; p < total; p++)
+                EscribirObjeto(primerIdPagina + p,
+                    $"<</Type/Page/Parent {idPages} 0 R/MediaBox[0 0 {ANCHO_PAGINA} {ALTO_PAGINA}]" +
+                    $"/Resources<</Font<</F1 {idFont} 0 R/F2 {idFontBold} 0 R>>>>/Contents {primerIdContents + p} 0 R>>");
+            EscribirObjeto(idFont, "<</Type/Font/Subtype/Type1/BaseFont/Helvetica/Encoding/WinAnsiEncoding>>");
+            EscribirObjeto(idFontBold, "<</Type/Font/Subtype/Type1/BaseFont/Helvetica-Bold/Encoding/WinAnsiEncoding>>");
+            for (int p = 0; p < total; p++)
+                EscribirStreamObjeto(primerIdContents + p, p < paginas.Count ? paginas[p] : "");
+
+            long xrefOffset = _buffer.Position;
+            EscribirXref();
+            EscribirTrailer(idCatalog, xrefOffset);
+            File.WriteAllBytes(ruta, _buffer.ToArray());
+        }
+
+        internal const float ANCHO_PAGINA_PT = ANCHO_PAGINA;
+        internal const float ALTO_PAGINA_PT = ALTO_PAGINA;
+
+        internal static float MedirHelvetica(string texto, float tam, bool negrita) => AnchoTexto(texto, tam, negrita);
+
+        internal static string EscaparPdf(string s) =>
+            (s ?? "").Replace("\\", "\\\\").Replace("(", "\\(").Replace(")", "\\)");
+
         private void EscribirHeader()
         {
             EscribirBytes("%PDF-1.4\n");

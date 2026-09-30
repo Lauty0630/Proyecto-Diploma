@@ -37,6 +37,7 @@ namespace PROYECTO_ING_DE_SOFTWARE
         private TextBox txtBusqueda;
         private DataGridView dgv;
         private Button btnCancelar;
+        private Button btnVerBoletos;
         private List<Reserva_GV42> _reservas = new List<Reserva_GV42>();
 
         public FRMConsultarReservas_GV42()
@@ -73,7 +74,7 @@ namespace PROYECTO_ING_DE_SOFTWARE
             // Zonas acopladas: título/búsqueda arriba, botón abajo y la grilla ocupa el resto
             // (antes, con tamaños fijos y anclajes, la grilla y el botón quedaban cortados).
             var pnlArriba = new Panel { Dock = DockStyle.Top };
-            var pnlAbajo = new Panel { Dock = DockStyle.Bottom, Height = 50, Visible = _puedeCancelar };
+            var pnlAbajo = new Panel { Dock = DockStyle.Bottom, Height = 50 };
             pnlArriba.Controls.Add(lblTitulo);
 
             int yBajoTitulo = 45;
@@ -112,10 +113,20 @@ namespace PROYECTO_ING_DE_SOFTWARE
             dgv.Columns.Add(new DataGridViewTextBoxColumn { DataPropertyName = "ImporteTotal", HeaderText = "Importe", DefaultCellStyle = new DataGridViewCellStyle { Format = "C2" } });
             dgv.SelectionChanged += (s, e) => ActualizarBotonCancelar();
 
+            // Boletos: solo para reservas confirmadas (pagas).
+            btnVerBoletos = new Button { Text = "Ver boletos", Location = new Point(0, 10), Size = new Size(160, 36), Enabled = false };
+            Tema_GV42.EstilizarBotonPrimario(btnVerBoletos);
+            btnVerBoletos.Click += (s, e) =>
+            {
+                Reserva_GV42 sel = ObtenerSeleccionada();
+                if (sel != null) FRMBoletos_GV42.Mostrar(this, sel.NumeroReserva);
+            };
+            pnlAbajo.Controls.Add(btnVerBoletos);
+
             btnCancelar = new Button
             {
                 Text = _esVendedor ? "Cancelar reserva seleccionada" : "Cancelar mi reserva",
-                Location = new Point(0, 10),
+                Location = new Point(170, 10),
                 Size = new Size(240, 36),
                 Visible = _puedeCancelar
             };
@@ -169,8 +180,9 @@ namespace PROYECTO_ING_DE_SOFTWARE
 
         private void ActualizarBotonCancelar()
         {
-            if (!_puedeCancelar) { btnCancelar.Visible = false; return; }
             Reserva_GV42 sel = ObtenerSeleccionada();
+            btnVerBoletos.Enabled = sel != null && sel.Estado == EstadoReserva_GV42.Confirmada;
+            if (!_puedeCancelar) { btnCancelar.Visible = false; return; }
             btnCancelar.Enabled = sel != null && sel.Estado != EstadoReserva_GV42.Cancelada;
         }
 

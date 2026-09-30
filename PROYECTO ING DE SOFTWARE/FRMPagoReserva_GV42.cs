@@ -21,6 +21,7 @@ namespace PROYECTO_ING_DE_SOFTWARE
         private ComboBox cmbMedioPago;
         private TextBox txtImporte, txtNumeroTransaccion;
         private Button btnConfirmarPago;
+        private Button btnVerBoletos;
         private Label lblBoletos;
 
         public FRMPagoReserva_GV42(string numeroReservaInicial = null)
@@ -75,12 +76,16 @@ namespace PROYECTO_ING_DE_SOFTWARE
             Tema_GV42.EstilizarBotonPrimario(btnConfirmarPago);
             btnConfirmarPago.Click += btnConfirmarPago_Click;
 
+            btnVerBoletos = new Button { Text = "Ver boletos", Location = new Point(260, 460), Size = new Size(220, 40), Enabled = false };
+            Tema_GV42.EstilizarBotonSecundario(btnVerBoletos);
+            btnVerBoletos.Click += (s, e) => { if (_reserva != null) FRMBoletos_GV42.Mostrar(this, _reserva.NumeroReserva); };
+
             lblBoletos = new Label { Location = new Point(20, 510), Size = new Size(460, 60), Font = Tema_GV42.FuenteSubtitulo, ForeColor = Tema_GV42.Acento };
 
             card.Controls.AddRange(new Control[] {
                 lblTitulo, lblNumero, txtNumeroReserva, btnBuscar, lblDetalle,
                 lblMedio, cmbMedioPago, lblImporte, txtImporte, lblTransaccion, txtNumeroTransaccion,
-                btnConfirmarPago, lblBoletos
+                btnConfirmarPago, btnVerBoletos, lblBoletos
             });
         }
 
@@ -105,6 +110,8 @@ namespace PROYECTO_ING_DE_SOFTWARE
 
                 txtImporte.Text = _reserva.ImporteTotal.ToString("N2");
                 btnConfirmarPago.Enabled = _reserva.Estado == EstadoReserva_GV42.PendienteDePago;
+                btnVerBoletos.Enabled = _reserva.Estado == EstadoReserva_GV42.Confirmada;
+                lblBoletos.Text = "";
 
                 if (_reserva.Estado != EstadoReserva_GV42.PendienteDePago)
                     MessageBox.Show("Esta reserva ya no está pendiente de pago (" + _reserva.EstadoTexto + ").",
@@ -133,7 +140,10 @@ namespace PROYECTO_ING_DE_SOFTWARE
                     string.Join("\n", boletos.Select(b => "  " + b.NumeroBoleto + " — " + b.PasajeroNombre));
 
                 btnConfirmarPago.Enabled = false;
-                MessageBox.Show("Pago registrado y reserva confirmada.", "Listo", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                btnVerBoletos.Enabled = true;
+                if (MessageBox.Show("Pago registrado y reserva confirmada.\n\n¿Desea ver los boletos emitidos?", "Listo",
+                                    MessageBoxButtons.YesNo, MessageBoxIcon.Information) == DialogResult.Yes)
+                    FRMBoletos_GV42.Mostrar(this, _reserva.NumeroReserva);
             }
             catch (NegocioException_GV42 ex)
             {

@@ -55,6 +55,7 @@
     <Compile Include="AsientoPasajero_GV42.cs" />
     <Compile Include="Asiento_GV42.cs" />
     <Compile Include="Boleto_GV42.cs" />
+    <Compile Include="BoletoElectronico_GV42.cs" />
     <Compile Include="CargoExcesoEquipaje_GV42.cs" />
     <Compile Include="CheckIn_GV42.cs" />
     <Compile Include="CriterioBusquedaVuelo_GV42.cs" />
