@@ -1,4 +1,4 @@
-using BLL;
+﻿using BLL;
 using Servicios;
 using System;
 using System.Drawing;
@@ -121,7 +121,7 @@ namespace PROYECTO_ING_DE_SOFTWARE
             this.Cursor = Cursors.WaitCursor;
             try
             {
-                string ruta = _bll.HacerBackupAutomatico();
+                string ruta = _bll.HacerBackupManual();
                 MessageBox.Show(
                     string.Format(IdiomaManager_GV42.T("backup.crearExito"), ruta),
                     IdiomaManager_GV42.T("general.exito"),
@@ -165,7 +165,7 @@ namespace PROYECTO_ING_DE_SOFTWARE
                 this.Cursor = Cursors.WaitCursor;
                 try
                 {
-                    _bll.RestaurarBackupDesdeRuta(ofd.FileName);
+                    _bll.RestaurarBackupManual(ofd.FileName);
                     MessageBox.Show(
                         IdiomaManager_GV42.T("backup.restaurarExito"),
                         IdiomaManager_GV42.T("general.exito"),

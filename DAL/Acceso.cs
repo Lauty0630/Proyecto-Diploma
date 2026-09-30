@@ -193,7 +193,9 @@ namespace DAL
             }
             catch (SqlException ex)
             {
-                Console.WriteLine("Error al ejecutar ExecuteScalar: " + ex.Message);
+                // Antes se tragaba el error y se devolvía null: por ejemplo, "¿existe el DNI?" daba
+                // false ante un error de base y se salteaba el control de duplicados.
+                throw new Exception("Error en LeerEscalar: " + ex.Message, ex);
             }
             finally
             {

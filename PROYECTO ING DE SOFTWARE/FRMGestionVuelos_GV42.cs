@@ -248,10 +248,13 @@ namespace PROYECTO_ING_DE_SOFTWARE
             dtSalida.Value = _seleccionado.FechaHoraSalida;
             dtLlegada.Value = _seleccionado.FechaHoraLlegada;
             txtPuerta.Text = _seleccionado.PuertaEmbarque;
-            numCosto.Value = _seleccionado.CostoKiloExceso;
+            numCosto.Value = Math.Min(numCosto.Maximum, Math.Max(numCosto.Minimum, _seleccionado.CostoKiloExceso));
 
-            btnBaja.Enabled = !_seleccionado.BorradoLogico;
-            btnReactivar.Enabled = _seleccionado.BorradoLogico;
+            // Un vuelo que ya salió o que está dado de baja no se edita (la BLL también lo rechaza).
+            bool yaSalio = _seleccionado.FechaHoraSalida <= DateTime.Now;
+            btnGuardar.Enabled = !_seleccionado.BorradoLogico && !yaSalio;
+            btnBaja.Enabled = !_seleccionado.BorradoLogico && !yaSalio;
+            btnReactivar.Enabled = _seleccionado.BorradoLogico && !yaSalio;
         }
 
         private static DateTime SinSegundos(DateTime d)

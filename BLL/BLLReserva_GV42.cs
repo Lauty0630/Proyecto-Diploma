@@ -188,6 +188,18 @@ namespace BLL
             VerificarIdentidad(cliente, "Cliente", false);
             bool yaEraPasajero = _dalPasajero.ExisteDni(cliente.DNI);
 
+            // Si ya viajó (lo cargó un vendedor), además del nombre tiene que coincidir el email que
+            // dejó registrado: si no, cualquiera que conozca DNI, nombre y apellido podría crear la
+            // cuenta de otra persona y ver o cancelar sus reservas.
+            if (yaEraPasajero)
+            {
+                Pasajero_GV42 registrado = _dalPasajero.BuscarPorDni(cliente.DNI);
+                if (registrado != null && !string.IsNullOrWhiteSpace(registrado.Email) &&
+                    !string.Equals(registrado.Email.Trim(), (cliente.Email ?? "").Trim(), StringComparison.OrdinalIgnoreCase))
+                    throw new NegocioException_GV42("El DNI " + cliente.DNI + " ya tiene reservas a su nombre. Para crear la cuenta " +
+                        "usá el mismo email que dejaste al reservar (o pedile al vendedor que lo actualice).");
+            }
+
             if (!yaEraPasajero)
                 _dalPasajero.Insertar(cliente);
 
@@ -253,6 +265,7 @@ namespace BLL
 
         // Consultar todas las reservas (vendedor). Sin esta patente solo ve las propias.
         public bool PuedeConsultarTodas() { return PatentesActuales().Contains("Reservas.Consultar"); }
+        public bool PuedeRegistrarPagoDeTerceros() { return PatentesActuales().Contains("Pagos.Registrar"); }
 
         public bool PuedeCancelar()
         {
@@ -387,6 +400,12 @@ namespace BLL
             {
                 if (ap.Asiento == null || ap.Asiento.Id <= 0)
                     throw new NegocioException_GV42("Falta el asiento de uno de los pasajeros.");
+                // Se confirma contra la base que el asiento exista y sea de este vuelo y de esta clase
+                // (no se confía en los datos que trae la pantalla).
+                Asiento_GV42 enBase = _dalAsiento.BuscarPorId(ap.Asiento.Id);
+                if (enBase == null || enBase.IdVuelo != vc.Vuelo.Id)
+                    throw new NegocioException_GV42("Uno de los asientos elegidos no pertenece al vuelo seleccionado.");
+                ap.Asiento = enBase;
                 if (!dnisPasajeros.Contains(ap.DniPasajero))
                     throw new NegocioException_GV42("El asiento " + ap.Asiento.NumeroAsiento + " no corresponde a ningún pasajero de esta reserva.");
                 if (ap.Asiento.Clase != vc.Clase)
@@ -509,18 +528,36 @@ namespace BLL
                 throw new NegocioException_GV42("Solo podés pagar tus propias reservas.");
             if (reserva.Estado != EstadoReserva_GV42.PendienteDePago)
                 throw new NegocioException_GV42("La reserva " + reserva.NumeroReserva + " ya está " + reserva.EstadoTexto.ToLower() + ".");
+            if (reserva.Vuelo.FechaHoraSalida <= DateTime.Now)
+                throw new NegocioException_GV42("El vuelo de la reserva " + reserva.NumeroReserva + " ya salió: no se puede registrar el pago.");
+
+            // El efectivo lo cobra un vendedor en el mostrador: el cliente autogestionado no puede
+            // declararse pagado en efectivo (quedaba confirmado sin haber pagado nada).
+            if (!pagaCualquiera && medioPago == MedioPago_GV42.Efectivo)
+                throw new NegocioException_GV42("El pago en efectivo solo lo puede registrar un vendedor. Elegí tarjeta o transferencia.");
 
             if (Math.Round(importeAbonado, 2) != reserva.ImporteTotal)
                 throw new NegocioException_GV42("El importe abonado (" + BLLNegocioUtil_GV42.Dinero(importeAbonado) +
                     ") debe coincidir con el total de la reserva (" + BLLNegocioUtil_GV42.Dinero(reserva.ImporteTotal) + ").");
 
             numeroTransaccion = (numeroTransaccion ?? string.Empty).Trim();
-            if (numeroTransaccion.Length == 0)
+            if (medioPago == MedioPago_GV42.Efectivo)
             {
-                if (medioPago == MedioPago_GV42.Efectivo)
-                    numeroTransaccion = "EFE-" + DateTime.Now.ToString("yyyyMMddHHmmssfff");
-                else
-                    throw new NegocioException_GV42("Debe indicar el número de transacción del pago.");
+                // En efectivo no hay número externo: se genera uno interno.
+                numeroTransaccion = "EFE-" + DateTime.Now.ToString("yyyyMMddHHmmssfff");
+            }
+            else if (numeroTransaccion.Length == 0)
+            {
+                throw new NegocioException_GV42("Debe indicar el número de transacción del pago.");
+            }
+            else if (medioPago == MedioPago_GV42.Transferencia)
+            {
+                if (!System.Text.RegularExpressions.Regex.IsMatch(numeroTransaccion, Validaciones_GV42.REGEX_TX_TRANSFERENCIA))
+                    throw new NegocioException_GV42("El número de operación de la transferencia debe tener entre 6 y 40 letras, números o guiones.");
+            }
+            else if (!System.Text.RegularExpressions.Regex.IsMatch(numeroTransaccion, Validaciones_GV42.REGEX_TX_TARJETA))
+            {
+                throw new NegocioException_GV42("El código de autorización de la tarjeta debe tener entre 6 y 20 dígitos.");
             }
 
             var pago = new Pago_GV42
@@ -604,8 +641,13 @@ namespace BLL
 
             if (reserva.Vuelo.FechaHoraSalida <= DateTime.Now)
                 throw new NegocioException_GV42("El vuelo ya salió: la reserva no se puede cancelar.");
+            if (_dalReserva.TieneCheckInRealizado(reserva.Id))
+                throw new NegocioException_GV42("Algún pasajero ya hizo el check-in: la reserva no se puede cancelar.");
 
-            decimal porcentaje = CalcularPorcentajePenalidad(reserva.Vuelo.FechaHoraSalida);
+            // Una reserva pendiente de pago no cobró nada: se cancela sin penalidad.
+            decimal porcentaje = reserva.Estado == EstadoReserva_GV42.PendienteDePago
+                ? 0m
+                : CalcularPorcentajePenalidad(reserva.Vuelo.FechaHoraSalida);
             decimal monto = Math.Round(reserva.ImporteTotal * porcentaje, 2);
 
             Reserva_GV42 cancelada = _dalReserva.Cancelar(reserva.Id, monto);

@@ -44,6 +44,22 @@ namespace DAL
             return resultado != null && Convert.ToInt32(resultado) > 0;
         }
 
+        // ¿Otro usuario (distinto de dniExcluido) ya usa ese email? El email se guarda cifrado con
+        // clave fija (mismo texto = mismo cifrado); algunas filas viejas lo tienen en texto plano.
+        public bool ExisteEmail(string email, string dniExcluido)
+        {
+            string limpio = (email ?? string.Empty).Trim();
+            if (limpio.Length == 0) return false;
+            string query = "SELECT COUNT(1) FROM Usuario WHERE (Email = @Cif OR Email = @Plano) AND DNI <> @DNI";
+            SqlParameter[] p = {
+                new SqlParameter("@Cif", EncriptadorReversible_GV42.Instancia.Encriptar(limpio)),
+                new SqlParameter("@Plano", limpio),
+                new SqlParameter("@DNI", dniExcluido ?? string.Empty)
+            };
+            object r = _acceso.leerEscalar(query, p);
+            return r != null && Convert.ToInt32(r) > 0;
+        }
+
         public Usuario_GV42 BuscarPorLogin(string login)
         {
             string query = SELECT_BASE + " WHERE U.UserName = @UserName";

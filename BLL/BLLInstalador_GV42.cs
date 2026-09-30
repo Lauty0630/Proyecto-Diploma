@@ -51,6 +51,23 @@ namespace BLL
             return InstaladorBD_GV42.GenerarVuelosFaltantes(instancia, DIAS_VUELOS_DISPONIBLES);
         }
 
+        // Ejecuta las tareas pendientes que dejó la actualización de la base (una sola vez).
+        public static void EjecutarTareasPendientes(string instancia)
+        {
+            List<string> tareas = InstaladorBD_GV42.TareasPendientes(instancia);
+            if (tareas.Count == 0) return;
+
+            ConfigurarConexion(instancia);
+            var integridad = new BLLIntegridad_GV42();
+            foreach (string tarea in tareas)
+            {
+                const string RECALCULAR = "RecalcularDV:";
+                if (tarea.StartsWith(RECALCULAR))
+                    integridad.RecalcularTabla(tarea.Substring(RECALCULAR.Length));
+                InstaladorBD_GV42.QuitarTarea(instancia, tarea);
+            }
+        }
+
         public static void ConfigurarConexion(string instancia)
         {
             Acceso.InstanciaActual = instancia;

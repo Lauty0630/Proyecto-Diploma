@@ -41,6 +41,12 @@ namespace BLL
             if (cambio.Act)
                 throw new NegocioException_GV42("Ese registro ya es el activo del vuelo " + cambio.CodigoVuelo + ".");
 
+            // Activar una versión vieja es un cambio más del vuelo: pasa por las mismas reglas que
+            // "Modificar" (antes se restauraba cualquier versión, incluso con la salida en el pasado).
+            var bllVuelo = new BLLVuelo_GV42();
+            bllVuelo.ValidarCambio(bllVuelo.BuscarActual(cambio.IdVuelo), cambio.CodigoVuelo, cambio.Aerolinea, cambio.Nombre,
+                                   cambio.FechaHoraSalida, cambio.FechaHoraLlegada, cambio.CostoKiloExceso);
+
             string codigo = _dal.ActivarVersion(cambio.Id);
 
             BLLNegocioUtil_GV42.Auditar(BLLNegocioUtil_GV42.MODULO_VUELOS, "Version de vuelo activada",

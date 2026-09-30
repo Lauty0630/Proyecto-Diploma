@@ -19,7 +19,7 @@ namespace DAL
         private const string NOMBRE_SCRIPT_ACTUALIZACION = "ActualizacionBD.sql";
 
         // Subir este número cuando se agregue un bloque nuevo al final de ActualizacionBD.sql.
-        public const int VERSION_ACTUAL = 1;
+        public const int VERSION_ACTUAL = 2;
 
         // Tablas y columnas que necesita esta versión del sistema. Si falta alguna, la base es de
         // una versión muy anterior y no se puede actualizar conservando los datos.
@@ -138,6 +138,35 @@ namespace DAL
                     cmd.Parameters.AddWithValue("@Dias", dias);
                     object r = cmd.ExecuteScalar();
                     return r == null || r == DBNull.Value ? 0 : Convert.ToInt32(r);
+                }
+            }
+        }
+
+        // Tareas que dejó ActualizacionBD.sql para que las haga el sistema (por ejemplo, recalcular el
+        // dígito verificador de una tabla cuya fórmula cambió).
+        public static List<string> TareasPendientes(string instancia)
+        {
+            var tareas = new List<string>();
+            using (var conn = new SqlConnection(ConexionBase(instancia)))
+            {
+                conn.Open();
+                using (var cmd = new SqlCommand(
+                    "IF OBJECT_ID('dbo.TareaPendiente_GV42', 'U') IS NOT NULL SELECT Nombre FROM dbo.TareaPendiente_GV42", conn))
+                using (var rd = cmd.ExecuteReader())
+                    while (rd.Read()) tareas.Add(rd.GetString(0));
+            }
+            return tareas;
+        }
+
+        public static void QuitarTarea(string instancia, string nombre)
+        {
+            using (var conn = new SqlConnection(ConexionBase(instancia)))
+            {
+                conn.Open();
+                using (var cmd = new SqlCommand("DELETE FROM dbo.TareaPendiente_GV42 WHERE Nombre = @n", conn))
+                {
+                    cmd.Parameters.AddWithValue("@n", nombre);
+                    cmd.ExecuteNonQuery();
                 }
             }
         }

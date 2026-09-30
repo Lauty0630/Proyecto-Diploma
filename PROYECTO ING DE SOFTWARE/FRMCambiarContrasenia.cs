@@ -1,4 +1,4 @@
-using BLL;
+﻿using BLL;
 using Servicios;
 using System;
 using System.Collections.Generic;
@@ -31,7 +31,19 @@ namespace PROYECTO_ING_DE_SOFTWARE
             Program.CerrarAplicacionAlSerUltimaVentana(this);
 
             ActualizarIdioma();
+
+            txtContrasenia.MaxLength = Validaciones_GV42.MAX_CONTRASENA;
+            txtNuevaconstrasenia.MaxLength = Validaciones_GV42.MAX_CONTRASENA;
+            txtConfirmarContrasenia.MaxLength = Validaciones_GV42.MAX_CONTRASENA;
+
+            // Primer ingreso: si se cierra sin cambiar la contraseña, se cierra la sesión (y queda en la bitácora).
+            this.FormClosing += (s, e) =>
+            {
+                if (_primerLogin && !_cambioRealizado) BLLUsuario_GV42.CerrarSesión();
+            };
         }
+
+        private bool _cambioRealizado;
 
         public void ActualizarIdioma()
         {
@@ -46,10 +58,12 @@ namespace PROYECTO_ING_DE_SOFTWARE
 
         private void btnAceptar_Click(object sender, EventArgs e)
         {
+            // Las contraseñas no se recortan: se comparan tal cual se escribieron (antes el login y el
+            // registro las trataban distinto y una clave con espacio final nunca servía).
             string login = txtUsuario.Text.Trim();
-            string contrasenaActual = txtContrasenia.Text.Trim();
-            string nuevaContrasena = txtNuevaconstrasenia.Text.Trim();
-            string confirmar = txtConfirmarContrasenia.Text.Trim();
+            string contrasenaActual = txtContrasenia.Text;
+            string nuevaContrasena = txtNuevaconstrasenia.Text;
+            string confirmar = txtConfirmarContrasenia.Text;
 
             if (string.IsNullOrEmpty(login) || string.IsNullOrEmpty(contrasenaActual) ||
                 string.IsNullOrEmpty(nuevaContrasena) || string.IsNullOrEmpty(confirmar))
@@ -62,19 +76,32 @@ namespace PROYECTO_ING_DE_SOFTWARE
 
             if (!Validaciones_GV42.EsContrasenaValida(nuevaContrasena))
             {
-                MessageBox.Show(Validaciones_GV42.MENSAJE_CONTRASENA,
-                                IdiomaManager_GV42.T("general.advertencia"),
-                                MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                txtNuevaconstrasenia.Focus();
+                Tema_GV42.MostrarError(txtNuevaconstrasenia, Validaciones_GV42.MENSAJE_CONTRASENA);
+                return;
+            }
+            if (nuevaContrasena != confirmar)
+            {
+                Tema_GV42.MostrarError(txtConfirmarContrasenia, IdiomaManager_GV42.T("cambiarClave.noCoinciden"));
                 return;
             }
 
-            ResultadoCambioContrasena resultado =
-                _bll.CambiarContrasena(login, contrasenaActual, nuevaContrasena, confirmar);
+            ResultadoCambioContrasena resultado;
+            try
+            {
+                resultado = _bll.CambiarContrasena(login, contrasenaActual, nuevaContrasena, confirmar);
+            }
+            catch (Exception ex)
+            {
+                Tema_GV42.MostrarErrorInesperado("cambiar la contraseña", ex);
+                return;
+            }
 
             switch (resultado)
             {
                 case ResultadoCambioContrasena.Exitoso:
+                    _cambioRealizado = true;
+                    Usuario_GV42 enSesion = SessionManager_GV42.Instancia.ObtenerUsuarioActual();
+                    if (enSesion != null) enSesion.DebeCambiarContrasena = false;
                     MessageBox.Show(IdiomaManager_GV42.T("cambiarClave.exito"),
                                     IdiomaManager_GV42.T("general.exito"),
                                     MessageBoxButtons.OK, MessageBoxIcon.Information);
@@ -82,9 +109,14 @@ namespace PROYECTO_ING_DE_SOFTWARE
                     this.Close();
                     break;
                 case ResultadoCambioContrasena.ContrasenaActualIncorrecta:
+                    Tema_GV42.MarcarInvalido(txtContrasenia);
                     MessageBox.Show(IdiomaManager_GV42.T("cambiarClave.actualIncorrecta"),
                                     IdiomaManager_GV42.T("general.error"),
                                     MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    txtContrasenia.Focus();
+                    break;
+                case ResultadoCambioContrasena.NoCumplePolitica:
+                    Tema_GV42.MostrarError(txtNuevaconstrasenia, Validaciones_GV42.MENSAJE_CONTRASENA);
                     break;
                 case ResultadoCambioContrasena.ContrasenasNoCoinciden:
                     MessageBox.Show(IdiomaManager_GV42.T("cambiarClave.noCoinciden"),

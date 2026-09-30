@@ -76,7 +76,8 @@ namespace BLL
                     FranquiciaEquipajeKg = reserva.VueloClase.FranquiciaEquipajeKg,
                     TipoViaje = reserva.TipoViaje.Texto(),
                     TarifaPasajero = Math.Round(reserva.ImporteBase / cantidad, 2),
-                    ImpuestosPasajero = Math.Round(reserva.Impuestos / cantidad, 2),
+                    // Impuesto de la tarifa del pasajero (los adicionales y su impuesto se ven en el total de la reserva).
+                    ImpuestosPasajero = Math.Round(Math.Round(reserva.ImporteBase / cantidad, 2) * BLLReserva_GV42.TASA_IMPUESTOS, 2),
                     TotalReserva = reserva.ImporteTotal,
                     ServiciosAdicionales = servicios,
                     FormaPago = reserva.Pago != null ? reserva.Pago.MedioPagoTexto : "-",

@@ -107,8 +107,31 @@ namespace PROYECTO_ING_DE_SOFTWARE
             return txt;
         }
 
+        // Valida en pantalla campo por campo y marca el que está mal (la BLL vuelve a validar todo).
+        private bool ValidarCampos()
+        {
+            if (!Servicios.Validaciones_GV42.EsDniValido(txtDni.Text.Trim()))
+            { Tema_GV42.MostrarError(txtDni, Servicios.Validaciones_GV42.MENSAJE_DNI); return false; }
+            if (!Servicios.Validaciones_GV42.EsNombreValido(Servicios.Validaciones_GV42.NormalizarEspacios(txtNombre.Text)))
+            { Tema_GV42.MostrarError(txtNombre, Servicios.Validaciones_GV42.MENSAJE_NOMBRE); return false; }
+            if (!Servicios.Validaciones_GV42.EsApellidoValido(Servicios.Validaciones_GV42.NormalizarEspacios(txtApellido.Text)))
+            { Tema_GV42.MostrarError(txtApellido, Servicios.Validaciones_GV42.MENSAJE_APELLIDO); return false; }
+            if (!Servicios.Validaciones_GV42.EsEmailValido(txtEmail.Text.Trim()))
+            { Tema_GV42.MostrarError(txtEmail, Servicios.Validaciones_GV42.MENSAJE_EMAIL); return false; }
+            if (!Servicios.Validaciones_GV42.EsTelefonoValido(txtTelefono.Text.Trim()))
+            { Tema_GV42.MostrarError(txtTelefono, Servicios.Validaciones_GV42.MENSAJE_TELEFONO); return false; }
+            if (!Servicios.Validaciones_GV42.EsLoginValido(txtLogin.Text.Trim()))
+            { Tema_GV42.MostrarError(txtLogin, Servicios.Validaciones_GV42.MENSAJE_LOGIN); return false; }
+            if (!Servicios.Validaciones_GV42.EsContrasenaValida(txtContrasena.Text))
+            { Tema_GV42.MostrarError(txtContrasena, Servicios.Validaciones_GV42.MENSAJE_CONTRASENA); return false; }
+            if (txtContrasena.Text != txtConfirmar.Text)
+            { Tema_GV42.MostrarError(txtConfirmar, "Las contraseñas no coinciden."); return false; }
+            return true;
+        }
+
         private void btnRegistrarme_Click(object sender, EventArgs e)
         {
+            if (!ValidarCampos()) return;
             try
             {
                 var cliente = new Pasajero_GV42

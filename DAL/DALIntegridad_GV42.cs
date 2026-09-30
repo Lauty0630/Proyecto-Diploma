@@ -75,8 +75,11 @@ namespace DAL
         // base (sin pasar por la capa de negocio), la verificación de integridad lo detecta.
         private Dictionary<string, string> DVHsReserva()
         {
+            // Versión 2: también cubre fechas, canal, vendedor y la penalidad de cancelación (antes se
+            // podían alterar directamente en la base sin que la verificación lo detectara).
             string q = "SELECT Id, DniCliente, IdVuelo, IdClase, CantidadPasajeros, " +
-                       "       ImporteBase, SubtotalAdicionales, Impuestos, ImporteTotal, IdEstadoReserva " +
+                       "       ImporteBase, SubtotalAdicionales, Impuestos, ImporteTotal, IdEstadoReserva, " +
+                       "       FechaRealizacion, LoginVendedor, IdCanalVenta, FechaRegreso, FechaCancelacion, MontoPenalidadCancelacion " +
                        "FROM Reserva";
             DataTable dt = _acceso.leer(q, null);
             var dict = new Dictionary<string, string>();
@@ -85,7 +88,9 @@ namespace DAL
                 string id = Convert.ToString(r["Id"]);
                 dict[id] = CalculadorIntegridad_GV42.CalcularDVH(
                     r["Id"], r["DniCliente"], r["IdVuelo"], r["IdClase"], r["CantidadPasajeros"],
-                    r["ImporteBase"], r["SubtotalAdicionales"], r["Impuestos"], r["ImporteTotal"], r["IdEstadoReserva"]);
+                    r["ImporteBase"], r["SubtotalAdicionales"], r["Impuestos"], r["ImporteTotal"], r["IdEstadoReserva"],
+                    r["FechaRealizacion"], r["LoginVendedor"], r["IdCanalVenta"], r["FechaRegreso"],
+                    r["FechaCancelacion"], r["MontoPenalidadCancelacion"]);
             }
             return dict;
         }
@@ -106,7 +111,9 @@ namespace DAL
 
         private Dictionary<string, string> DVHsUsuario()
         {
-            string q = "SELECT DNI, Apellido, Nombre, UserName, Email, " +
+            // Versión 2: incluye la contraseña (hash). Antes se podía reemplazar el hash de cualquier
+            // usuario en la base por el de una clave conocida y la verificación no lo detectaba.
+            string q = "SELECT DNI, Apellido, Nombre, UserName, Contrasena, Email, " +
                        "       IdRol, Activo, Bloqueo, IntentosFallidos, DebeCambiarContrasena " +
                        "FROM Usuario";
             DataTable dt = _acceso.leer(q, null);
@@ -115,7 +122,7 @@ namespace DAL
             {
                 string id = Convert.ToString(r["DNI"]);
                 dict[id] = CalculadorIntegridad_GV42.CalcularDVH(
-                    r["DNI"], r["Apellido"], r["Nombre"], r["UserName"], r["Email"],
+                    r["DNI"], r["Apellido"], r["Nombre"], r["UserName"], r["Contrasena"], r["Email"],
                     r["IdRol"], r["Activo"], r["Bloqueo"], r["IntentosFallidos"], r["DebeCambiarContrasena"]);
             }
             return dict;

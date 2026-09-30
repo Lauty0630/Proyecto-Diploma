@@ -202,7 +202,7 @@ namespace PROYECTO_ING_DE_SOFTWARE
 
             Columna("NumeroReserva", "N° reserva");
             Columna("FechaReserva", "Fecha reserva", "dd/MM/yyyy HH:mm");
-            Columna("Pasajero", "Pasajero");
+            Columna("Pasajero", "Titular");
             Columna("Dni", "DNI");
             Columna("Email", "Email");
             Columna("Telefono", "Teléfono");

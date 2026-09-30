@@ -1,4 +1,4 @@
-using DAL;
+﻿using DAL;
 using Servicios;
 using System;
 using System.Collections.Generic;
@@ -55,6 +55,68 @@ namespace BLL
             catch { }
         }
 
+        // ---- Reglas de protección -------------------------------------------------------------
+        // Un "administrador" es quien puede gestionar roles y modificar usuarios: siempre tiene que
+        // quedar al menos uno activo y no bloqueado, si no nadie más puede administrar el sistema.
+        public const string PATENTE_ADMIN_ROLES = "Permisos.Roles";
+        public const string PATENTE_ADMIN_USUARIOS = "Usuarios.Modificar";
+
+        // Roles que el sistema usa por nombre (el autoregistro busca "Cliente"): no se renombran ni se borran.
+        private static readonly string[] ROLES_DE_SISTEMA = { "Admin", "Cliente" };
+
+        public static bool EsRolDeSistema(string nombre) =>
+            nombre != null && ROLES_DE_SISTEMA.Any(r => r.Equals(nombre.Trim(), StringComparison.OrdinalIgnoreCase));
+
+        private static bool EsAdministrador(Func<string, bool> tiene) =>
+            tiene(PATENTE_ADMIN_ROLES) && tiene(PATENTE_ADMIN_USUARIOS);
+
+        // ¿Queda al menos un usuario activo, no bloqueado y con patentes de administrador?
+        // Permite simular el cambio antes de hacerlo: excluir un usuario, cambiarle el rol a uno,
+        // o reemplazar las patentes efectivas de un rol.
+        public bool QuedaAlgunAdministrador(string dniExcluido = null, string dniConNuevoRol = null, int nuevoRolId = 0,
+                                            int rolSimuladoId = 0, HashSet<string> clavesRolSimulado = null)
+        {
+            var cache = new Dictionary<int, bool>();
+            foreach (Usuario_GV42 u in new DALUsuario_GV42().ListarTodos())
+            {
+                if (u == null || !u.Activo || u.Bloqueo || u.Rol == null) continue;
+                if (dniExcluido != null && u.DNI == dniExcluido) continue;
+
+                int idRol = (dniConNuevoRol != null && u.DNI == dniConNuevoRol) ? nuevoRolId : u.Rol.Id;
+                bool esAdmin;
+                if (!cache.TryGetValue(idRol, out esAdmin))
+                {
+                    if (clavesRolSimulado != null && idRol == rolSimuladoId)
+                        esAdmin = EsAdministrador(clavesRolSimulado.Contains);
+                    else
+                    {
+                        Rol_GV42 arbol = _dalRol.ObtenerArbol(idRol);
+                        esAdmin = arbol != null && EsAdministrador(arbol.TienePermiso);
+                    }
+                    cache[idRol] = esAdmin;
+                }
+                if (esAdmin) return true;
+            }
+            return false;
+        }
+
+        private HashSet<string> ClavesDePatentes(IEnumerable<int> idsPatentes)
+        {
+            var ids = new HashSet<int>(idsPatentes);
+            return new HashSet<string>(_dalPatente.ListarTodas().Where(p => ids.Contains(p.Id)).Select(p => p.DataKey ?? ""));
+        }
+
+        private static string NormalizarNombre(string nombre, int maximo)
+        {
+            nombre = Validaciones_GV42.NormalizarEspacios(nombre);
+            if (!Validaciones_GV42.EsNombrePerfilValido(nombre, maximo))
+                throw new Exception(Validaciones_GV42.MENSAJE_NOMBRE_PERFIL + " Máximo " + maximo + " caracteres.");
+            return nombre;
+        }
+
+        private static bool MismoNombre(string a, string b) =>
+            string.Equals(Validaciones_GV42.NormalizarEspacios(a), Validaciones_GV42.NormalizarEspacios(b), StringComparison.OrdinalIgnoreCase);
+
         public List<Patente_GV42> ListarPatentes() => _dalPatente.ListarTodas();
         public List<Familia_GV42> ListarFamilias() => _dalFamilia.ListarTodasPlanas();
         public List<Rol_GV42> ListarRoles()      => _dalRol.ListarTodos();
@@ -64,10 +126,12 @@ namespace BLL
 
         public int CrearFamilia(string nombre, List<int> idsPatentes, List<int> idsSubfamilias)
         {
+            BLLNegocioUtil_GV42.ExigirPatente("Permisos.Familias", "No tiene permiso para gestionar familias.");
             if (string.IsNullOrWhiteSpace(nombre))
                 throw new Exception(IdiomaManager_GV42.T("err.nombreFamiliaObligatorio"));
+            nombre = NormalizarNombre(nombre, Validaciones_GV42.MAX_NOMBRE_FAMILIA);
 
-            if (_dalFamilia.ListarTodasPlanas().Any(f => f.Nombre.Equals(nombre, StringComparison.OrdinalIgnoreCase)))
+            if (_dalFamilia.ListarTodasPlanas().Any(f => MismoNombre(f.Nombre, nombre)))
                 throw new Exception(string.Format(IdiomaManager_GV42.T("err.familiaNombreDuplicado"), nombre));
 
             idsPatentes    = (idsPatentes ?? new List<int>()).Distinct().OrderBy(i => i).ToList();
@@ -274,6 +338,7 @@ namespace BLL
 
         public void EliminarFamilia(int idFamilia)
         {
+            BLLNegocioUtil_GV42.ExigirPatente("Permisos.Familias", "No tiene permiso para gestionar familias.");
             List<string> rolesQueLaUsan = _dalFamilia.NombresRolesQueUsan(idFamilia);
             if (rolesQueLaUsan.Count > 0)
             {
@@ -297,10 +362,12 @@ namespace BLL
 
         public int CrearRol(string nombre, List<int> idsPatentes, List<int> idsFamilias)
         {
+            BLLNegocioUtil_GV42.ExigirPatente(PATENTE_ADMIN_ROLES, "No tiene permiso para gestionar roles.");
             if (string.IsNullOrWhiteSpace(nombre))
                 throw new Exception(IdiomaManager_GV42.T("err.nombreRolObligatorio"));
+            nombre = NormalizarNombre(nombre, Validaciones_GV42.MAX_NOMBRE_ROL);
 
-            if (_dalRol.ListarTodos().Any(r => r.Nombre.Equals(nombre, StringComparison.OrdinalIgnoreCase)))
+            if (_dalRol.ListarTodos().Any(r => MismoNombre(r.Nombre, nombre)))
                 throw new Exception(string.Format(IdiomaManager_GV42.T("err.rolNombreDuplicado"), nombre));
 
             idsPatentes = (idsPatentes ?? new List<int>()).Distinct().ToList();
@@ -397,6 +464,13 @@ namespace BLL
 
         public void EliminarRol(int idRol)
         {
+            BLLNegocioUtil_GV42.ExigirPatente(PATENTE_ADMIN_ROLES, "No tiene permiso para gestionar roles.");
+            Rol_GV42 existente = _dalRol.ListarTodos().FirstOrDefault(r => r.Id == idRol);
+            if (existente == null)
+                throw new Exception("El rol ya no existe.");
+            if (EsRolDeSistema(existente.Nombre))
+                throw new Exception("El rol '" + existente.Nombre + "' lo usa el sistema y no se puede eliminar.");
+
             int cantUsuarios = _dalRol.CantidadUsuariosConRol(idRol);
             if (cantUsuarios > 0)
             {
@@ -416,11 +490,13 @@ namespace BLL
 
         public void ModificarFamilia(int idFamilia, string nombre, List<int> idsPatentes, List<int> idsSubfamilias)
         {
+            BLLNegocioUtil_GV42.ExigirPatente("Permisos.Familias", "No tiene permiso para gestionar familias.");
             if (string.IsNullOrWhiteSpace(nombre))
                 throw new Exception(IdiomaManager_GV42.T("err.nombreFamiliaObligatorio"));
+            nombre = NormalizarNombre(nombre, Validaciones_GV42.MAX_NOMBRE_FAMILIA);
 
             if (_dalFamilia.ListarTodasPlanas()
-                .Any(f => f.Id != idFamilia && f.Nombre.Equals(nombre, StringComparison.OrdinalIgnoreCase)))
+                .Any(f => f.Id != idFamilia && MismoNombre(f.Nombre, nombre)))
                 throw new Exception(string.Format(IdiomaManager_GV42.T("err.familiaOtroNombreDuplicado"), nombre));
 
             idsPatentes    = (idsPatentes ?? new List<int>()).Distinct().OrderBy(i => i).ToList();
@@ -452,11 +528,20 @@ namespace BLL
                 throw new Exception(string.Format(IdiomaManager_GV42.T("err.familiaOtraComposicionDuplicada"), equivalente.Nombre));
 
 
-            if (equivalente != null)
-                throw new Exception(
-                    $"Ya existe otra familia con la misma composición efectiva de patentes: '{equivalente.Nombre}'.");
+            // Composición anterior, para volver atrás si el cambio deja al sistema sin administradores
+            // (la familia puede estar dentro del rol Admin, directa o indirectamente).
+            Familia_GV42 anterior = _dalFamilia.ObtenerArbol(idFamilia);
 
             _dalFamilia.Modificar(idFamilia, nombre, idsPatentes, idsSubfamilias);
+
+            if (anterior != null && !QuedaAlgunAdministrador())
+            {
+                _dalFamilia.Modificar(idFamilia, anterior.Nombre,
+                    anterior.Hijos.OfType<Patente_GV42>().Select(h => h.Id).ToList(),
+                    anterior.Hijos.OfType<Familia_GV42>().Select(h => h.Id).ToList());
+                throw new Exception("El cambio dejaría al sistema sin ningún usuario administrador activo " +
+                                    "(con las patentes '" + PATENTE_ADMIN_ROLES + "' y '" + PATENTE_ADMIN_USUARIOS + "'). No se aplicó.");
+            }
             Auditar("Familia modificada",
                     $"IdFamilia: {idFamilia}, Nombre: '{nombre}', Patentes: {idsPatentes.Count}, Subfamilias: {idsSubfamilias.Count}",
                     "Media");
@@ -465,11 +550,19 @@ namespace BLL
 
         public void ModificarRol(int idRol, string nombre, List<int> idsPatentes, List<int> idsFamilias)
         {
+            BLLNegocioUtil_GV42.ExigirPatente(PATENTE_ADMIN_ROLES, "No tiene permiso para gestionar roles.");
             if (string.IsNullOrWhiteSpace(nombre))
                 throw new Exception(IdiomaManager_GV42.T("err.nombreRolObligatorio"));
+            nombre = NormalizarNombre(nombre, Validaciones_GV42.MAX_NOMBRE_ROL);
+
+            Rol_GV42 actual = _dalRol.ListarTodos().FirstOrDefault(r => r.Id == idRol);
+            if (actual == null)
+                throw new Exception("El rol ya no existe.");
+            if (EsRolDeSistema(actual.Nombre) && !MismoNombre(actual.Nombre, nombre))
+                throw new Exception("El rol '" + actual.Nombre + "' lo usa el sistema: se pueden cambiar sus permisos, pero no su nombre.");
 
             if (_dalRol.ListarTodos()
-                .Any(r => r.Id != idRol && r.Nombre.Equals(nombre, StringComparison.OrdinalIgnoreCase)))
+                .Any(r => r.Id != idRol && MismoNombre(r.Nombre, nombre)))
                 throw new Exception(string.Format(IdiomaManager_GV42.T("err.rolOtroNombreDuplicado"), nombre));
 
             idsPatentes = (idsPatentes ?? new List<int>()).Distinct().ToList();
@@ -484,6 +577,10 @@ namespace BLL
             Rol_GV42 equivalente = BuscarRolConMismasPatentesEfectivas(efectivasNuevo, excluirId: idRol);
             if (equivalente != null)
                 throw new Exception(string.Format(IdiomaManager_GV42.T("err.rolOtraComposicionDuplicada"), equivalente.Nombre));
+
+            if (!QuedaAlgunAdministrador(rolSimuladoId: idRol, clavesRolSimulado: ClavesDePatentes(efectivasNuevo)))
+                throw new Exception("El cambio dejaría al sistema sin ningún usuario administrador activo " +
+                                    "(con las patentes '" + PATENTE_ADMIN_ROLES + "' y '" + PATENTE_ADMIN_USUARIOS + "').");
 
             _dalRol.Modificar(idRol, nombre, idsPatentes, idsFamilias);
             Auditar("Rol modificado",

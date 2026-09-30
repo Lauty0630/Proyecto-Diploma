@@ -1,4 +1,4 @@
-using Servicios;
+﻿using Servicios;
 using System;
 using System.Collections.Generic;
 using System.Data;
@@ -86,72 +86,53 @@ namespace DAL
 
         public int Crear(string nombre, List<int> idsPatentes, List<int> idsSubfamilias)
         {
-
-            string qIns = "INSERT INTO Familia (Nombre) VALUES (@Nombre); SELECT CAST(SCOPE_IDENTITY() AS INT);";
-            var p = new[] { new SqlParameter("@Nombre", nombre) };
-            object res = _acceso.leerEscalar(qIns, p);
-
-            if (res == null || res == DBNull.Value)
-                throw new Exception(IdiomaManager_GV42.T("err.familiaSinIdCreada"));
-
-            int idFamilia = Convert.ToInt32(res);
-
-            foreach (int idPat in idsPatentes ?? new List<int>())
+            return _acceso.EjecutarEnTransaccion(tx =>
             {
-                _acceso.escribir(
-                    "INSERT INTO FamiliaPatente (IdFamilia, IdPatente) VALUES (@F, @P)",
+                object res = _acceso.leerEscalar(tx,
+                    "INSERT INTO Familia (Nombre) VALUES (@Nombre); SELECT CAST(SCOPE_IDENTITY() AS INT);",
+                    new[] { new SqlParameter("@Nombre", nombre) });
+                if (res == null || res == DBNull.Value)
+                    throw new Exception(IdiomaManager_GV42.T("err.familiaSinIdCreada"));
+
+                int idFamilia = Convert.ToInt32(res);
+                InsertarHijos(tx, idFamilia, idsPatentes, idsSubfamilias);
+                return idFamilia;
+            });
+        }
+
+        private void InsertarHijos(SqlTransaction tx, int idFamilia, List<int> idsPatentes, List<int> idsSubfamilias)
+        {
+            foreach (int idPat in idsPatentes ?? new List<int>())
+                _acceso.escribir(tx, "INSERT INTO FamiliaPatente (IdFamilia, IdPatente) VALUES (@F, @P)",
                     new[] { new SqlParameter("@F", idFamilia), new SqlParameter("@P", idPat) });
-            }
 
             foreach (int idSub in idsSubfamilias ?? new List<int>())
-            {
-                _acceso.escribir(
-                    "INSERT INTO FamiliaIntegrada (IdFamiliaPadre, IdFamiliaHija) VALUES (@P, @H)",
+                _acceso.escribir(tx, "INSERT INTO FamiliaIntegrada (IdFamiliaPadre, IdFamiliaHija) VALUES (@P, @H)",
                     new[] { new SqlParameter("@P", idFamilia), new SqlParameter("@H", idSub) });
-            }
-
-            return idFamilia;
         }
 
         public void Eliminar(int idFamilia)
         {
-            _acceso.escribir(
-                "DELETE FROM FamiliaPatente WHERE IdFamilia = @Id",
-                new[] { new SqlParameter("@Id", idFamilia) });
-            _acceso.escribir(
-                "DELETE FROM FamiliaIntegrada WHERE IdFamiliaPadre = @Id OR IdFamiliaHija = @Id",
-                new[] { new SqlParameter("@Id", idFamilia) });
-            _acceso.escribir(
-                "DELETE FROM Familia WHERE Id = @Id",
-                new[] { new SqlParameter("@Id", idFamilia) });
+            _acceso.EjecutarEnTransaccion(tx =>
+            {
+                _acceso.escribir(tx, "DELETE FROM FamiliaPatente WHERE IdFamilia = @Id", new[] { new SqlParameter("@Id", idFamilia) });
+                _acceso.escribir(tx, "DELETE FROM FamiliaIntegrada WHERE IdFamiliaPadre = @Id OR IdFamiliaHija = @Id",
+                    new[] { new SqlParameter("@Id", idFamilia) });
+                return _acceso.escribir(tx, "DELETE FROM Familia WHERE Id = @Id", new[] { new SqlParameter("@Id", idFamilia) });
+            });
         }
 
         public void Modificar(int idFamilia, string nombre, List<int> idsPatentes, List<int> idsSubfamilias)
         {
-            _acceso.escribir(
-                "UPDATE Familia SET Nombre = @Nombre WHERE Id = @Id",
-                new[] { new SqlParameter("@Nombre", nombre), new SqlParameter("@Id", idFamilia) });
-
-            _acceso.escribir(
-                "DELETE FROM FamiliaPatente WHERE IdFamilia = @Id",
-                new[] { new SqlParameter("@Id", idFamilia) });
-            _acceso.escribir(
-                "DELETE FROM FamiliaIntegrada WHERE IdFamiliaPadre = @Id",
-                new[] { new SqlParameter("@Id", idFamilia) });
-
-            foreach (int idPat in idsPatentes ?? new List<int>())
+            _acceso.EjecutarEnTransaccion(tx =>
             {
-                _acceso.escribir(
-                    "INSERT INTO FamiliaPatente (IdFamilia, IdPatente) VALUES (@F, @P)",
-                    new[] { new SqlParameter("@F", idFamilia), new SqlParameter("@P", idPat) });
-            }
-
-            foreach (int idSub in idsSubfamilias ?? new List<int>())
-            {
-                _acceso.escribir(
-                    "INSERT INTO FamiliaIntegrada (IdFamiliaPadre, IdFamiliaHija) VALUES (@P, @H)",
-                    new[] { new SqlParameter("@P", idFamilia), new SqlParameter("@H", idSub) });
-            }
+                _acceso.escribir(tx, "UPDATE Familia SET Nombre = @Nombre WHERE Id = @Id",
+                    new[] { new SqlParameter("@Nombre", nombre), new SqlParameter("@Id", idFamilia) });
+                _acceso.escribir(tx, "DELETE FROM FamiliaPatente WHERE IdFamilia = @Id", new[] { new SqlParameter("@Id", idFamilia) });
+                _acceso.escribir(tx, "DELETE FROM FamiliaIntegrada WHERE IdFamiliaPadre = @Id", new[] { new SqlParameter("@Id", idFamilia) });
+                InsertarHijos(tx, idFamilia, idsPatentes, idsSubfamilias);
+                return 0;
+            });
         }
 
         public int CantidadRolesQueUsan(int idFamilia)

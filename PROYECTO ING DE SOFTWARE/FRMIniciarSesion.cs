@@ -22,6 +22,8 @@ namespace PROYECTO_ING_DE_SOFTWARE
         public FRMIniciarSesion()
         {
             InitializeComponent();
+            txtLogIn.MaxLength = Validaciones_GV42.MAX_LOGIN;
+            txtContrasena.MaxLength = Validaciones_GV42.MAX_CONTRASENA;
             _bllUsuario = new BLLUsuario_GV42();
 
             IdiomaManager_GV42.Instancia.Suscribir(this);
@@ -67,9 +69,9 @@ namespace PROYECTO_ING_DE_SOFTWARE
         private void btnIngresar_Click(object sender, EventArgs e)
         {
             string login = txtLogIn.Text.Trim();
-            string contrasena = txtContrasena.Text.Trim();
+            string contrasena = txtContrasena.Text;   // la contraseña no se recorta: se compara tal cual
 
-            if (string.IsNullOrEmpty(login) || string.IsNullOrEmpty(contrasena))
+            if (string.IsNullOrEmpty(login) || string.IsNullOrWhiteSpace(contrasena))
             {
                 MessageBox.Show(IdiomaManager_GV42.T("general.completarCampos"),
                                 IdiomaManager_GV42.T("general.advertencia"),
@@ -77,12 +79,11 @@ namespace PROYECTO_ING_DE_SOFTWARE
                 return;
             }
 
-            if (!Validaciones_GV42.EsLoginValido(login))
+            // Al ingresar solo se controla largo y caracteres (el formato completo se exige al crear el
+            // usuario; así un usuario viejo cuyo login no cumpla la regla nueva igual puede entrar).
+            if (login.Length > Validaciones_GV42.MAX_LOGIN || login.Any(c => !(char.IsLetterOrDigit(c) || c == '.')))
             {
-                MessageBox.Show(Validaciones_GV42.MENSAJE_LOGIN,
-                                IdiomaManager_GV42.T("general.advertencia"),
-                                MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                txtLogIn.Focus();
+                Tema_GV42.MostrarError(txtLogIn, Validaciones_GV42.MENSAJE_LOGIN);
                 return;
             }
 

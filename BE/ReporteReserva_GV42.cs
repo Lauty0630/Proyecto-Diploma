@@ -37,6 +37,8 @@ namespace BE
         public decimal Impuestos { get; set; }
         public decimal ImporteTotal { get; set; }
         public EstadoReserva_GV42 Estado { get; set; }
+        // Penalidad retenida si la reserva se canceló (0 si no corresponde).
+        public decimal MontoPenalidad { get; set; }
 
         public string PasajeroNombreCompleto => (PasajeroNombre + " " + PasajeroApellido).Trim();
         public string Origen => OrigenIata + " - " + OrigenCiudad;

@@ -106,11 +106,19 @@ namespace BLL
         // Registra el equipaje despachado y genera una etiqueta por bulto. Si el peso supera la franquicia
         // también registra el cargo por exceso y su cobro: en ese caso 'medioCobro' es obligatorio, y el
         // número de transacción lo es salvo en efectivo.
+        public const int MAX_BULTOS = 10;
+        public const decimal MAX_PESO_KG = 500m;
+
         public Equipaje_GV42 RegistrarEquipaje(int idCheckIn, int cantidadBultos, decimal pesoTotalKg,
                                                MedioPago_GV42? medioCobro, string numeroTransaccion)
         {
             if (cantidadBultos < 1)
                 throw new NegocioException_GV42("La cantidad de bultos debe ser al menos 1.");
+            // Topes razonables (y dentro de las columnas decimal(7,2) de la base).
+            if (cantidadBultos > MAX_BULTOS)
+                throw new NegocioException_GV42("Se pueden despachar como máximo " + MAX_BULTOS + " bultos por pasajero.");
+            if (pesoTotalKg > MAX_PESO_KG)
+                throw new NegocioException_GV42("El peso total no puede superar los " + MAX_PESO_KG + " kg.");
             if (pesoTotalKg <= 0)
                 throw new NegocioException_GV42("El peso total debe ser mayor a 0 kg.");
 
@@ -128,6 +136,8 @@ namespace BLL
                 numeroTransaccion = (numeroTransaccion ?? string.Empty).Trim();
                 if (numeroTransaccion.Length == 0 && medioCobro.Value != MedioPago_GV42.Efectivo)
                     throw new NegocioException_GV42("Debe indicar el número de transacción del cobro por exceso de equipaje.");
+                if (numeroTransaccion.Length > Servicios.Validaciones_GV42.MAX_NUMERO_TRANSACCION)
+                    throw new NegocioException_GV42("El número de transacción no puede superar los 40 caracteres.");
 
                 cargo.MedioPago = medioCobro;
                 cargo.NumeroTransaccion = numeroTransaccion.Length == 0 ? null : numeroTransaccion;

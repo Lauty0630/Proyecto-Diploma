@@ -92,9 +92,43 @@ namespace PROYECTO_ING_DE_SOFTWARE
             _esVendedor = _bll.PuedeGenerarParaTerceros();
 
             ConstruirUI();
-            CargarAeropuertos();
-            CargarAdicionales();
+            try
+            {
+                CargarAeropuertos();
+                CargarAdicionales();
+            }
+            catch (Exception ex)
+            {
+                Tema_GV42.MostrarErrorInesperado("cargar los aeropuertos y servicios", ex);
+            }
             IrAPaso(0);
+
+            // Si se cambia un filtro después de buscar, la lista deja de corresponder a lo pedido:
+            // se limpia para obligar a buscar de nuevo (antes se podía avanzar con 9 pasajeros sobre
+            // un vuelo buscado para 2 y el error recién aparecía al confirmar).
+            EventHandler invalidar = (s, e) => InvalidarBusqueda();
+            cmbOrigen.SelectedIndexChanged += invalidar;
+            cmbDestino.SelectedIndexChanged += invalidar;
+            dtSalida.ValueChanged += invalidar;
+            cmbTipoViaje.SelectedIndexChanged += invalidar;
+            dtRegreso.ValueChanged += invalidar;
+            numPasajeros.ValueChanged += invalidar;
+            cmbClaseFiltro.SelectedIndexChanged += invalidar;
+
+            // El regreso no puede ser anterior a la salida.
+            dtSalida.ValueChanged += (s, e) =>
+            {
+                if (dtRegreso.Value.Date < dtSalida.Value.Date) dtRegreso.Value = dtSalida.Value.Date;
+                dtRegreso.MinDate = dtSalida.Value.Date;
+            };
+        }
+
+        private void InvalidarBusqueda()
+        {
+            if (_resultados == null || _resultados.Count == 0) return;
+            _resultados = new List<VueloClase_GV42>();
+            dgvVuelos.DataSource = null;
+            _vueloElegido = null;
         }
 
         // ------------------------------------------------------------------ UI general
@@ -120,7 +154,12 @@ namespace PROYECTO_ING_DE_SOFTWARE
             var pnlNav = new Panel { Dock = DockStyle.Bottom, Height = 60, BackColor = Tema_GV42.Fondo };
             btnAtras = new Button { Text = "< Atrás", Size = new Size(120, 36), Location = new Point(20, 12) };
             Tema_GV42.EstilizarBotonSecundario(btnAtras);
-            btnAtras.Click += (s, e) => IrAPaso(_pasoActual - 1);
+            btnAtras.Click += (s, e) =>
+            {
+                try { IrAPaso(_pasoActual - 1); }
+                catch (NegocioException_GV42 ex) { MessageBox.Show(ex.Message, "Revisá los datos", MessageBoxButtons.OK, MessageBoxIcon.Warning); }
+                catch (Exception ex) { Tema_GV42.MostrarErrorInesperado("volver al paso anterior", ex); }
+            };
 
             btnSiguiente = new Button { Text = "Siguiente >", Size = new Size(140, 36) };
             Tema_GV42.EstilizarBotonPrimario(btnSiguiente);
@@ -351,6 +390,10 @@ namespace PROYECTO_ING_DE_SOFTWARE
                 _resultados = _bll.BuscarVuelosDisponibles(criterio);
                 dgvVuelos.DataSource = null;
                 dgvVuelos.DataSource = _resultados;
+                // Que el usuario elija el vuelo: antes quedaba seleccionada la primera fila y
+                // "Siguiente" avanzaba con un vuelo que no se había elegido.
+                dgvVuelos.ClearSelection();
+                dgvVuelos.CurrentCell = null;
 
                 if (_resultados.Count == 0)
                     MessageBox.Show("No hay vuelos disponibles para esa búsqueda.", "Sin resultados", MessageBoxButtons.OK, MessageBoxIcon.Information);
@@ -358,6 +401,10 @@ namespace PROYECTO_ING_DE_SOFTWARE
             catch (NegocioException_GV42 ex)
             {
                 MessageBox.Show(ex.Message, "Revisá los datos", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            }
+            catch (Exception ex)
+            {
+                Tema_GV42.MostrarErrorInesperado("buscar vuelos", ex);
             }
         }
 
@@ -650,9 +697,9 @@ namespace PROYECTO_ING_DE_SOFTWARE
                 Bloquear(dp.Telefono, esPasajero && !string.IsNullOrWhiteSpace(registrado.Telefono));
                 dp.Autocompletado = true;
             }
-            catch (NegocioException_GV42)
+            catch (Exception)
             {
-                // Sin permiso de búsqueda o DNI inválido: se valida igual al pasar de paso.
+                // Sin permiso de búsqueda, DNI inválido o error de conexión: se valida igual al pasar de paso.
             }
         }
 
@@ -725,6 +772,17 @@ namespace PROYECTO_ING_DE_SOFTWARE
             if (_vueloElegido == null) return;
             _mapaAsientos = _bll.ObtenerMapaAsientos(_vueloElegido.Vuelo.Id, _vueloElegido.Clase);
             _indicePasajeroActivo = 0;
+
+            // Si mientras tanto otra reserva tomó un asiento que ya se había elegido acá, se libera
+            // y se avisa (antes se seguía pintando como "tu selección" aunque estuviera ocupado).
+            var ocupados = new HashSet<int>(_mapaAsientos.Where(m => m.Ocupado).Select(m => m.Asiento.Id));
+            var perdidos = _asientoPorPasajero.Where(kv => ocupados.Contains(kv.Value.Id)).ToList();
+            foreach (var kv in perdidos) _asientoPorPasajero.Remove(kv.Key);
+            if (perdidos.Count > 0)
+                MessageBox.Show("Otro pasajero tomó " + (perdidos.Count == 1 ? "el asiento " : "los asientos ") +
+                                string.Join(", ", perdidos.Select(kv => kv.Value.NumeroAsiento)) +
+                                " mientras reservabas. Elegí " + (perdidos.Count == 1 ? "otro." : "otros."),
+                                "Asiento no disponible", MessageBoxButtons.OK, MessageBoxIcon.Information);
             RefrescarButacas();
         }
 
@@ -793,7 +851,7 @@ namespace PROYECTO_ING_DE_SOFTWARE
                 var cant = new NumericUpDown { Location = new Point(190, y + 16), Size = new Size(60, 24), Minimum = 1, Maximum = 20, Value = 1, Enabled = false };
 
                 var lblCosto = new Label { Text = "Costo unitario", Location = new Point(270, y), AutoSize = true, Font = new Font("Segoe UI", 8F) };
-                var costo = new NumericUpDown { Location = new Point(270, y + 16), Size = new Size(90, 24), Minimum = 0, Maximum = 999999, DecimalPlaces = 2, Increment = 100, Enabled = false };
+                var costo = new NumericUpDown { Location = new Point(270, y + 16), Size = new Size(90, 24), Minimum = 0.01m, Maximum = 999999, DecimalPlaces = 2, Increment = 100, Enabled = false };
                 costo.Value = Math.Min(costo.Maximum, Math.Max(costo.Minimum, tipo.PrecioUnitario));
 
                 // El cliente autogestionado no elige el precio (la BLL igual lo fuerza al de lista).

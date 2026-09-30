@@ -1,4 +1,4 @@
-using BLL;
+﻿using BLL;
 using Servicios;
 using System;
 using System.Collections.Generic;
@@ -106,10 +106,18 @@ namespace PROYECTO_ING_DE_SOFTWARE
 
         private void FRMBitacoraDeEventos_Load(object sender, EventArgs e)
         {
-            ConfigurarGrillaSoloLectura();
-            CargarCombos();
-            EstablecerFechasPorDefecto();
-            CargarGrillaPorDefecto();
+            if (txtLogin != null) txtLogin.MaxLength = Validaciones_GV42.MAX_LOGIN;
+            try
+            {
+                ConfigurarGrillaSoloLectura();
+                CargarCombos();
+                EstablecerFechasPorDefecto();
+                CargarGrillaPorDefecto();
+            }
+            catch (Exception ex)
+            {
+                Tema_GV42.MostrarErrorInesperado("cargar la bitácora", ex);
+            }
         }
 
         private void ConfigurarGrillaSoloLectura()
@@ -131,13 +139,15 @@ namespace PROYECTO_ING_DE_SOFTWARE
         private void EstablecerFechasPorDefecto()
         {
 
+            // Por defecto se muestran los últimos 3 días, pero se puede consultar cualquier fecha
+            // anterior (antes el MinDate impedía ver eventos de más de 3 días). No se permiten fechas futuras.
             DateTime hoy = DateTime.Now.Date;
             DateTime hace3Dias = hoy.AddDays(-3);
 
-            dtpFechaInicio.MinDate = hace3Dias;
+            dtpFechaInicio.MinDate = new DateTime(2000, 1, 1);
             dtpFechaInicio.MaxDate = hoy;
             dtpFechaInicio.Value = hace3Dias;
-            dtpFechaFin.MinDate = hace3Dias;
+            dtpFechaFin.MinDate = new DateTime(2000, 1, 1);
             dtpFechaFin.MaxDate = hoy;
             dtpFechaFin.Value = hoy;
         }
@@ -221,11 +231,17 @@ namespace PROYECTO_ING_DE_SOFTWARE
             string evento = ValorCombo(cboEvento);
             string criticidad = ValorCombo(cboCriticidad);
             DateTime fechaFinReal = dtpFechaFin.Value.Date.AddDays(1).AddSeconds(-1);
-            List<Bitacora_GV42> resultados = _bllBitacora.Filtrar(
-            login, modulo, evento, criticidad,
-            dtpFechaInicio.Value.Date, fechaFinReal);
-
-            CargarGrilla(resultados);
+            try
+            {
+                List<Bitacora_GV42> resultados = _bllBitacora.Filtrar(
+                    login, modulo, evento, criticidad,
+                    dtpFechaInicio.Value.Date, fechaFinReal);
+                CargarGrilla(resultados);
+            }
+            catch (Exception ex)
+            {
+                Tema_GV42.MostrarErrorInesperado("filtrar la bitácora", ex);
+            }
         }
 
         private void btnLimpiar_Click(object sender, EventArgs e)
@@ -235,7 +251,8 @@ namespace PROYECTO_ING_DE_SOFTWARE
             cboEvento.SelectedIndex = 0;
             cboCriticidad.SelectedIndex = 0;
             EstablecerFechasPorDefecto();
-            CargarGrillaPorDefecto();
+            try { CargarGrillaPorDefecto(); }
+            catch (Exception ex) { Tema_GV42.MostrarErrorInesperado("cargar la bitácora", ex); }
         }
         private void btnCancelar_Click(object sender, EventArgs e)
         {

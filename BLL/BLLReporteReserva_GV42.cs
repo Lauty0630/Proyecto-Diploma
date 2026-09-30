@@ -49,7 +49,7 @@ namespace BLL
 
             string[] headers =
             {
-                "Reserva / Fecha", "Pasajero / DNI", "Contacto", "Vuelo", "Origen / Destino",
+                "Reserva / Fecha", "Titular / DNI", "Contacto", "Vuelo", "Origen / Destino",
                 "Salida / Llegada", "Clase", "Pax", "Adicionales (tipo x cant. = costo)",
                 "Importe base ($)", "Impuestos ($)", "Total final ($)", "Estado"
             };
@@ -103,17 +103,23 @@ namespace BLL
         public List<string> Resumen(List<ReporteReserva_GV42> filas)
         {
             filas = filas ?? new List<ReporteReserva_GV42>();
-            var vigentes = filas.Where(f => f.Estado != EstadoReserva_GV42.Cancelada).ToList();
+            var confirmadas = filas.Where(f => f.Estado == EstadoReserva_GV42.Confirmada).ToList();
+            var pendientes = filas.Where(f => f.Estado == EstadoReserva_GV42.PendienteDePago).ToList();
+            var canceladas = filas.Where(f => f.Estado == EstadoReserva_GV42.Cancelada).ToList();
 
+            // Solo lo confirmado es dinero cobrado; lo pendiente todavía no se cobró y de lo cancelado
+            // queda solo la penalidad retenida (antes se sumaban pendientes como si fueran ingresos).
             return new List<string>
             {
                 "Reservas: " + filas.Count +
-                "  |  Confirmadas: " + filas.Count(f => f.Estado == EstadoReserva_GV42.Confirmada) +
-                "  |  Pendientes de pago: " + filas.Count(f => f.Estado == EstadoReserva_GV42.PendienteDePago) +
-                "  |  Canceladas: " + filas.Count(f => f.Estado == EstadoReserva_GV42.Cancelada),
-                "Pasajeros (sin canceladas): " + vigentes.Sum(f => f.CantidadPasajeros) +
-                "  |  Adicionales: " + Dinero(vigentes.Sum(f => f.SubtotalAdicionales)) +
-                "  |  Importe total (sin canceladas): " + Dinero(vigentes.Sum(f => f.ImporteTotal))
+                "  |  Confirmadas: " + confirmadas.Count +
+                "  |  Pendientes de pago: " + pendientes.Count +
+                "  |  Canceladas: " + canceladas.Count +
+                "  |  Pasajeros (sin canceladas): " + (confirmadas.Sum(f => f.CantidadPasajeros) + pendientes.Sum(f => f.CantidadPasajeros)),
+                "Cobrado (confirmadas): " + Dinero(confirmadas.Sum(f => f.ImporteTotal)) +
+                "  |  Pendiente de cobro: " + Dinero(pendientes.Sum(f => f.ImporteTotal)) +
+                "  |  Penalidades retenidas: " + Dinero(canceladas.Sum(f => f.MontoPenalidad)) +
+                "  |  Adicionales vendidos: " + Dinero(confirmadas.Sum(f => f.SubtotalAdicionales))
             };
         }
 

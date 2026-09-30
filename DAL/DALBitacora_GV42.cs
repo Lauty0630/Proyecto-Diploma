@@ -1,4 +1,4 @@
-using Servicios;
+﻿using Servicios;
 using System;
 using System.Collections.Generic;
 using System.Data;
@@ -65,19 +65,21 @@ namespace DAL
 
         public List<Bitacora_GV42> Filtrar(string login, string modulo, string tipoEvento, string criticidad, DateTime fechaInicio, DateTime fechaFin)
         {
+            // Rango por día completo: desde el inicio del primer día hasta ANTES del día siguiente al último
+            // (con BETWEEN ... 23:59:59 quedaban afuera los eventos del último segundo del día).
             StringBuilder sb = new StringBuilder(SELECT_BASE +
-                " WHERE E.FechaHora BETWEEN @FechaInicio AND @FechaFin");
+                " WHERE E.FechaHora >= @FechaInicio AND E.FechaHora < @FechaFin");
 
             List<SqlParameter> parametros = new List<SqlParameter>
             {
-                new SqlParameter("@FechaInicio", fechaInicio),
-                new SqlParameter("@FechaFin", fechaFin)
+                new SqlParameter("@FechaInicio", fechaInicio.Date),
+                new SqlParameter("@FechaFin", fechaFin.Date.AddDays(1))
             };
 
             if (!string.IsNullOrWhiteSpace(login))
             {
                 sb.Append(" AND E.UserName LIKE @Login");
-                parametros.Add(new SqlParameter("@Login", "%" + login + "%"));
+                parametros.Add(new SqlParameter("@Login", "%" + Validaciones_GV42.EscaparLike(login.Trim()) + "%"));
             }
 
             if (!string.IsNullOrWhiteSpace(modulo))
@@ -88,8 +90,10 @@ namespace DAL
 
             if (!string.IsNullOrWhiteSpace(tipoEvento))
             {
-                sb.Append(" AND T.Nombre LIKE @TipoEvento");
-                parametros.Add(new SqlParameter("@TipoEvento", tipoEvento + "%"));
+                // Igualdad exacta: con LIKE 'x%' elegir "Usuario bloqueado" traía también
+                // "Usuario bloqueado por intentos fallidos".
+                sb.Append(" AND T.Nombre = @TipoEvento");
+                parametros.Add(new SqlParameter("@TipoEvento", tipoEvento));
             }
 
             if (!string.IsNullOrWhiteSpace(criticidad))

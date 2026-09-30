@@ -170,6 +170,10 @@ namespace PROYECTO_ING_DE_SOFTWARE
             {
                 MessageBox.Show(ex.Message, "Revisá los datos", MessageBoxButtons.OK, MessageBoxIcon.Warning);
             }
+            catch (Exception ex)
+            {
+                Tema_GV42.MostrarErrorInesperado("cargar las reservas", ex);
+            }
         }
 
         private Reserva_GV42 ObtenerSeleccionada()
@@ -183,7 +187,9 @@ namespace PROYECTO_ING_DE_SOFTWARE
             Reserva_GV42 sel = ObtenerSeleccionada();
             btnVerBoletos.Enabled = sel != null && sel.Estado == EstadoReserva_GV42.Confirmada;
             if (!_puedeCancelar) { btnCancelar.Visible = false; return; }
-            btnCancelar.Enabled = sel != null && sel.Estado != EstadoReserva_GV42.Cancelada;
+            // No se ofrece cancelar si ya está cancelada o si el vuelo ya salió (la BLL igual lo controla).
+            btnCancelar.Enabled = sel != null && sel.Estado != EstadoReserva_GV42.Cancelada &&
+                                  sel.VueloClase.FechaHoraSalida > DateTime.Now;
         }
 
         private void btnCancelar_Click(object sender, EventArgs e)
@@ -191,13 +197,17 @@ namespace PROYECTO_ING_DE_SOFTWARE
             Reserva_GV42 sel = ObtenerSeleccionada();
             if (sel == null) return;
 
-            decimal porcentaje = _bll.CalcularPorcentajePenalidad(sel.VueloClase.FechaHoraSalida);
+            // Pendiente de pago: no se cobró nada, así que no hay penalidad (igual que en la BLL).
+            decimal porcentaje = sel.Estado == EstadoReserva_GV42.PendienteDePago
+                ? 0m : _bll.CalcularPorcentajePenalidad(sel.VueloClase.FechaHoraSalida);
             decimal estimado = Math.Round(sel.ImporteTotal * porcentaje, 2);
 
             string mensaje = "¿Cancelar la reserva " + sel.NumeroReserva + "?";
             mensaje += porcentaje > 0
                 ? "\n\nPor la cercanía del vuelo se aplica una penalidad estimada de " + estimado.ToString("C2") + " (" + (porcentaje * 100) + "% del total)."
-                : "\n\nTodavía falta tiempo para el vuelo: no se aplica penalidad.";
+                : (sel.Estado == EstadoReserva_GV42.PendienteDePago
+                    ? "\n\nLa reserva todavía no se pagó: se cancela sin penalidad."
+                    : "\n\nTodavía falta tiempo para el vuelo: no se aplica penalidad.");
 
             if (MessageBox.Show(mensaje, "Confirmar cancelación", MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes)
                 return;
@@ -211,6 +221,10 @@ namespace PROYECTO_ING_DE_SOFTWARE
             catch (NegocioException_GV42 ex)
             {
                 MessageBox.Show(ex.Message, "No se pudo cancelar", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            }
+            catch (Exception ex)
+            {
+                Tema_GV42.MostrarErrorInesperado("cancelar la reserva", ex);
             }
         }
     }

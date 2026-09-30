@@ -1,4 +1,5 @@
-﻿using System.Drawing;
+﻿using System;
+using System.Drawing;
 using System.Windows.Forms;
 
 namespace PROYECTO_ING_DE_SOFTWARE
@@ -20,6 +21,8 @@ namespace PROYECTO_ING_DE_SOFTWARE
         public static readonly Color Advertencia = Color.FromArgb(230, 126, 15);
         public static readonly Color Ocupado = Color.FromArgb(158, 158, 158);
         public static readonly Color AsignadoOtroPasajero = Color.FromArgb(255, 152, 0);
+
+        public static readonly Color FondoError = Color.FromArgb(255, 235, 238);
 
         public static readonly Font FuenteTitulo = new Font("Segoe UI Semibold", 16F, FontStyle.Bold);
         public static readonly Font FuenteSubtitulo = new Font("Segoe UI", 9.5F);
@@ -108,6 +111,49 @@ namespace PROYECTO_ING_DE_SOFTWARE
             g.DefaultCellStyle.SelectionBackColor = BordeGrilla;
             g.DefaultCellStyle.SelectionForeColor = Acento;
             g.DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleLeft;
+        }
+    
+        // Marca un campo inválido: lo pinta de rojo claro, le da el foco y muestra el motivo.
+        // El color se restaura solo apenas el usuario corrige el valor.
+        public static void MostrarError(Control campo, string mensaje, string titulo = "Revisá los datos")
+        {
+            if (campo != null)
+            {
+                MarcarInvalido(campo);
+                if (campo.CanFocus) campo.Focus();
+                var tb = campo as TextBox;
+                if (tb != null) tb.SelectAll();
+            }
+            MessageBox.Show(mensaje, titulo, MessageBoxButtons.OK, MessageBoxIcon.Warning);
+        }
+
+        public static void MarcarInvalido(Control campo)
+        {
+            if (campo == null || campo.BackColor == FondoError) return;
+            Color original = campo.BackColor;
+            campo.BackColor = FondoError;
+            EventHandler limpiar = null;
+            limpiar = (s, e) =>
+            {
+                campo.BackColor = original;
+                campo.TextChanged -= limpiar;
+                var nud = campo as NumericUpDown;
+                if (nud != null) nud.ValueChanged -= limpiar;
+                var cbo = campo as ComboBox;
+                if (cbo != null) cbo.SelectedIndexChanged -= limpiar;
+            };
+            campo.TextChanged += limpiar;
+            var n = campo as NumericUpDown;
+            if (n != null) n.ValueChanged += limpiar;
+            var c = campo as ComboBox;
+            if (c != null) c.SelectedIndexChanged += limpiar;
+        }
+
+        // Error inesperado (base de datos, archivo, etc.): mensaje claro en vez del diálogo de .NET.
+        public static void MostrarErrorInesperado(string accion, Exception ex)
+        {
+            MessageBox.Show("No se pudo " + accion + ".\n\n" + (ex.InnerException != null ? ex.InnerException.Message : ex.Message),
+                            "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
         }
     }
 }

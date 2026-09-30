@@ -1,4 +1,4 @@
-using DAL;
+﻿using DAL;
 using Servicios;
 using System;
 using System.Collections.Generic;
@@ -41,6 +41,12 @@ namespace BLL
         }
         public List<Bitacora_GV42> Filtrar(string login, string modulo, string tipoEvento, string criticidad, DateTime fechaInicio, DateTime fechaFin)
         {
+            if (fechaFin.Date < fechaInicio.Date)
+                throw new Exception(IdiomaManager_GV42.T("bitacora.fechaInvalida"));
+            if (fechaInicio.Date > DateTime.Today)
+                throw new Exception("La fecha de inicio no puede ser posterior a hoy.");
+            if (login != null && login.Trim().Length > 50)
+                throw new Exception("El usuario a buscar no puede superar los 50 caracteres.");
             return _DALBitacora.Filtrar(login, modulo, tipoEvento, criticidad, fechaInicio, fechaFin);
         }
 

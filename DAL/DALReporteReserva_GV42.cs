@@ -28,6 +28,7 @@ namespace DAL
             string query =
                 "SELECT R.Id, R.NumeroReserva, R.FechaRealizacion, R.IdClase, R.CantidadPasajeros," +
                 "       R.ImporteBase, R.SubtotalAdicionales, R.Impuestos, R.ImporteTotal, R.IdEstadoReserva," +
+                "       ISNULL(R.MontoPenalidadCancelacion, 0) AS MontoPenalidad," +
                 "       C.DNI, C.Nombre, C.Apellido, C.Email, C.Telefono," +
                 "       V.CodigoVuelo, V.FechaHoraSalida, V.FechaHoraLlegada," +
                 "       O.CodigoIata AS OrigenIata, O.Ciudad AS OrigenCiudad," +
@@ -64,7 +65,8 @@ namespace DAL
                     SubtotalAdicionales = DALUtil_GV42.Dec(r, "SubtotalAdicionales"),
                     Impuestos = DALUtil_GV42.Dec(r, "Impuestos"),
                     ImporteTotal = DALUtil_GV42.Dec(r, "ImporteTotal"),
-                    Estado = (EstadoReserva_GV42)DALUtil_GV42.Int(r, "IdEstadoReserva")
+                    Estado = (EstadoReserva_GV42)DALUtil_GV42.Int(r, "IdEstadoReserva"),
+                    MontoPenalidad = DALUtil_GV42.Dec(r, "MontoPenalidad")
                 };
                 lista.Add(fila);
                 porId[fila.IdReserva] = fila;

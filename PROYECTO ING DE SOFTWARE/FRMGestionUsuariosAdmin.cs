@@ -1,4 +1,4 @@
-using Servicios;
+﻿using Servicios;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -36,6 +36,12 @@ namespace PROYECTO_ING_DE_SOFTWARE
             ActualizarIdioma();
             AplicarPermisos();
 
+            // Largos máximos iguales a los de la base / reglas de negocio, y DNI solo con dígitos.
+            txtDni.MaxLength = 8;
+            txtNombre.MaxLength = Validaciones_GV42.MAX_NOMBRE;
+            txtApellido.MaxLength = Validaciones_GV42.MAX_NOMBRE;
+            txtEmail.MaxLength = Validaciones_GV42.MAX_EMAIL;
+            txtDni.KeyPress += (s, e) => { if (!char.IsControl(e.KeyChar) && !char.IsDigit(e.KeyChar)) e.Handled = true; };
         }
 
         private void AplicarPermisos()
@@ -55,6 +61,11 @@ namespace PROYECTO_ING_DE_SOFTWARE
                 btnDesbloquear.Visible = rolCompleto.TienePermiso("Usuarios.Desbloquear");
             if (btnActivarDesactivar != null)
                 btnActivarDesactivar.Visible = rolCompleto.TienePermiso("Usuarios.Activar");
+
+            // Serializar / des-serializar el maestro exige poder ver usuarios (también lo controla la BLL).
+            bool puedeVer = rolCompleto.TienePermiso("Usuarios.Ver");
+            if (btnSerializar != null) btnSerializar.Enabled = puedeVer;
+            if (btnDeserializar != null) btnDeserializar.Enabled = puedeVer;
         }
 
         private void ConfigurarAyudas()
@@ -114,13 +125,20 @@ namespace PROYECTO_ING_DE_SOFTWARE
 
         private void FRMPrincipalAdmin_Load(object sender, EventArgs e)
         {
-            ConfigurarGrillaSoloLectura();
-            CargarRoles();
-            ModoConsulta();
-            // Al marcar rbActivos se dispara rbActivos_CheckedChanged, que ya carga la grilla
-            // (antes la grilla se cargaba dos veces al abrir el formulario).
-            if (rbActivos.Checked) CargarGrilla(soloActivos: true);
-            else rbActivos.Checked = true;
+            try
+            {
+                ConfigurarGrillaSoloLectura();
+                CargarRoles();
+                ModoConsulta();
+                // Al marcar rbActivos se dispara rbActivos_CheckedChanged, que ya carga la grilla
+                // (antes la grilla se cargaba dos veces al abrir el formulario).
+                if (rbActivos.Checked) CargarGrilla(soloActivos: true);
+                else rbActivos.Checked = true;
+            }
+            catch (Exception ex)
+            {
+                Tema_GV42.MostrarErrorInesperado("cargar los usuarios", ex);
+            }
         }
 
         private void ConfigurarGrillaSoloLectura()
@@ -297,20 +315,31 @@ namespace PROYECTO_ING_DE_SOFTWARE
 
         private void btnAplicar_Click(object sender, EventArgs e)
         {
-            switch (_modo)
+            // Las reglas de la BLL (email repetido, último administrador, permisos, etc.) llegan como
+            // excepción con el motivo: se muestran como aviso en lugar del diálogo de error de .NET.
+            try
             {
-                case "Crear":
-                    Crear();
-                    break;
-                case "Modificar":
-                    Modificar();
-                    break;
-                case "Desbloquear":
-                    Desbloquear();
-                    break;
-                case "ActivarDesactivar":
-                    ActivarDesactivar();
-                    break;
+                switch (_modo)
+                {
+                    case "Crear":
+                        Crear();
+                        break;
+                    case "Modificar":
+                        Modificar();
+                        break;
+                    case "Desbloquear":
+                        Desbloquear();
+                        break;
+                    case "ActivarDesactivar":
+                        ActivarDesactivar();
+                        break;
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message, IdiomaManager_GV42.T("general.advertencia"),
+                                MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                try { ModoConsulta(); CargarGrilla(rbActivos.Checked); } catch { }
             }
         }
 
@@ -343,13 +372,16 @@ namespace PROYECTO_ING_DE_SOFTWARE
             if (_usuarioSeleccionado.Bloqueo == false)
             {
                 MessageBox.Show(IdiomaManager_GV42.T("usuarios.usuarioYaDesbloqueado"),
-                                IdiomaManager_GV42.T("general.error"),
-                                MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                                IdiomaManager_GV42.T("general.advertencia"),
+                                MessageBoxButtons.OK, MessageBoxIcon.Information);
+                ModoConsulta();
+                CargarGrilla(rbActivos.Checked);
                 return;
             }
 
-            _bll.Desbloquear(_usuarioSeleccionado.DNI, _usuarioSeleccionado.Login);
-            MessageBox.Show(string.Format(IdiomaManager_GV42.T("usuarios.usuarioDesbloqueado"), _usuarioSeleccionado.Login),
+            string temporal = _bll.Desbloquear(_usuarioSeleccionado.DNI, _usuarioSeleccionado.Login);
+            MessageBox.Show(string.Format(IdiomaManager_GV42.T("usuarios.usuarioDesbloqueado"), _usuarioSeleccionado.Login) +
+                            "\n\nContraseña temporal: " + temporal + "\n(se le pedirá cambiarla al ingresar)",
                             IdiomaManager_GV42.T("general.exito"),
                             MessageBoxButtons.OK, MessageBoxIcon.Information);
             ModoConsulta();
@@ -363,17 +395,12 @@ namespace PROYECTO_ING_DE_SOFTWARE
 
             if (!Validaciones_GV42.EsEmailValido(email))
             {
-                MessageBox.Show(Validaciones_GV42.MENSAJE_EMAIL,
-                                IdiomaManager_GV42.T("general.advertencia"),
-                                MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                txtEmail.Focus();
+                Tema_GV42.MostrarError(txtEmail, Validaciones_GV42.MENSAJE_EMAIL, IdiomaManager_GV42.T("general.advertencia"));
                 return;
             }
             if (rol == null)
             {
-                MessageBox.Show(IdiomaManager_GV42.T("usuarios.rolVacio"),
-                                IdiomaManager_GV42.T("general.advertencia"),
-                                MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                Tema_GV42.MostrarError(comboBox1, IdiomaManager_GV42.T("usuarios.rolVacio"), IdiomaManager_GV42.T("general.advertencia"));
                 return;
             }
 
@@ -404,53 +431,41 @@ namespace PROYECTO_ING_DE_SOFTWARE
                 return;
             }
 
+            string advertencia = IdiomaManager_GV42.T("general.advertencia");
             if (!Validaciones_GV42.EsDniValido(dni))
             {
-                MessageBox.Show(Validaciones_GV42.MENSAJE_DNI,
-                                IdiomaManager_GV42.T("general.advertencia"),
-                                MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                txtDni.Focus();
+                Tema_GV42.MostrarError(txtDni, Validaciones_GV42.MENSAJE_DNI, advertencia);
                 return;
             }
-
-            if (!Validaciones_GV42.EsApellidoValido(apellido))
+            if (!Validaciones_GV42.EsApellidoValido(Validaciones_GV42.NormalizarEspacios(apellido)))
             {
-                MessageBox.Show(Validaciones_GV42.MENSAJE_APELLIDO,IdiomaManager_GV42.T("general.advertencia"),MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                txtApellido.Focus();
+                Tema_GV42.MostrarError(txtApellido, Validaciones_GV42.MENSAJE_APELLIDO, advertencia);
                 return;
             }
-            if (!Validaciones_GV42.EsNombreValido(nombre))
+            if (!Validaciones_GV42.EsNombreValido(Validaciones_GV42.NormalizarEspacios(nombre)))
             {
-                MessageBox.Show(Validaciones_GV42.MENSAJE_NOMBRE,
-                                IdiomaManager_GV42.T("general.advertencia"),
-                                MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                txtNombre.Focus();
+                Tema_GV42.MostrarError(txtNombre, Validaciones_GV42.MENSAJE_NOMBRE, advertencia);
                 return;
             }
-
             if (!Validaciones_GV42.EsEmailValido(email))
             {
-                MessageBox.Show(Validaciones_GV42.MENSAJE_EMAIL,
-                                IdiomaManager_GV42.T("general.advertencia"),
-                                MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                txtEmail.Focus();
+                Tema_GV42.MostrarError(txtEmail, Validaciones_GV42.MENSAJE_EMAIL, advertencia);
                 return;
             }
-
             if (_bll.ExisteDNI(dni))
             {
-                MessageBox.Show($"{IdiomaManager_GV42.T("usuarios.dniDuplicado")} '{dni}'.",
-                                IdiomaManager_GV42.T("general.advertencia"),
-                                MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                txtDni.Focus();
+                Tema_GV42.MostrarError(txtDni, $"{IdiomaManager_GV42.T("usuarios.dniDuplicado")} '{dni}'.", advertencia);
                 return;
             }
 
             try
             {
-                _bll.CrearUsuario(dni, apellido, nombre, email, rol);
+                string loginCreado = _bll.CrearUsuario(dni, apellido, nombre, email, rol);
 
-                MessageBox.Show(IdiomaManager_GV42.T("usuarios.confirmarCreado"),
+                // El administrador necesita saber con qué credenciales entra la persona la primera vez.
+                MessageBox.Show(IdiomaManager_GV42.T("usuarios.confirmarCreado") + "\n\n" +
+                                "Usuario: " + loginCreado + "\nContraseña inicial: " + loginCreado +
+                                "\n(se le pedirá cambiarla en el primer ingreso)",
                                 IdiomaManager_GV42.T("general.exito"),
                                 MessageBoxButtons.OK, MessageBoxIcon.Information);
                 ModoConsulta();

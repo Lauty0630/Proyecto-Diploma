@@ -24,6 +24,7 @@ namespace DAL
             string query = SELECT_BASE +
                 " WHERE A.IdVuelo = @IdVuelo AND A.IdClase = @IdClase" +
                 "   AND NOT EXISTS (SELECT 1 FROM CheckIn CI WHERE CI.IdAsiento = A.Id)" +
+                "   AND NOT EXISTS (SELECT 1 FROM ReservaPasajero RP WHERE RP.IdAsiento = A.Id)" +
                 " ORDER BY A.Fila, A.Letra";
 
             DataTable dt = _acceso.leer(query, new[] {
@@ -58,9 +59,10 @@ namespace DAL
         {
             string query =
                 "SELECT A.Id, A.IdVuelo, A.Fila, A.Letra, A.NumeroAsiento, A.IdClase, A.Ubicacion, " +
-                "       CASE WHEN RP.IdAsiento IS NULL THEN 0 ELSE 1 END AS Ocupado " +
+                // Ocupado si lo eligió un pasajero al reservar o si quedó asignado en un check-in.
+                "       CASE WHEN EXISTS (SELECT 1 FROM ReservaPasajero RP WHERE RP.IdAsiento = A.Id) " +
+                "              OR EXISTS (SELECT 1 FROM CheckIn CI WHERE CI.IdAsiento = A.Id) THEN 1 ELSE 0 END AS Ocupado " +
                 "FROM Asiento A " +
-                "LEFT JOIN ReservaPasajero RP ON RP.IdAsiento = A.Id " +
                 "WHERE A.IdVuelo = @IdVuelo AND A.IdClase = @IdClase " +
                 "ORDER BY A.Fila, A.Letra";
 
@@ -86,7 +88,8 @@ namespace DAL
         // Ocupado a nivel reserva (elegido por un pasajero al reservar), no a nivel check-in.
         public bool EstaReservado(int idAsiento)
         {
-            object r = _acceso.leerEscalar("SELECT COUNT(1) FROM ReservaPasajero WHERE IdAsiento = @Id",
+            object r = _acceso.leerEscalar(
+                "SELECT (SELECT COUNT(1) FROM ReservaPasajero WHERE IdAsiento = @Id) + (SELECT COUNT(1) FROM CheckIn WHERE IdAsiento = @Id)",
                 new[] { new SqlParameter("@Id", idAsiento) });
             return r != null && Convert.ToInt32(r) > 0;
         }
@@ -105,7 +108,13 @@ namespace DAL
             try
             {
                 filas = _acceso.escribir(
-                    "UPDATE CheckIn SET IdAsiento = @IdAsiento WHERE Id = @IdCheckIn AND IdEstadoCheckIn = @Pendiente",
+                    // Se actualiza también el asiento de la reserva: así el mapa de asientos y el check-in
+                    // usan la misma información (antes el asiento viejo seguía figurando como ocupado).
+                    "UPDATE CheckIn SET IdAsiento = @IdAsiento WHERE Id = @IdCheckIn AND IdEstadoCheckIn = @Pendiente; " +
+                    "IF @@ROWCOUNT > 0 " +
+                    "    UPDATE RP SET IdAsiento = @IdAsiento FROM ReservaPasajero RP " +
+                    "    INNER JOIN CheckIn CI ON CI.IdReserva = RP.IdReserva AND CI.DniPasajero = RP.DniPasajero " +
+                    "    WHERE CI.Id = @IdCheckIn AND (RP.IdAsiento IS NULL OR RP.IdAsiento <> @IdAsiento);",
                     new[] {
                         new SqlParameter("@IdAsiento", idAsiento),
                         new SqlParameter("@IdCheckIn", idCheckIn),
@@ -115,7 +124,7 @@ namespace DAL
             catch (Exception ex)
             {
                 // El índice único filtrado UX_CheckIn_Asiento impide asignar el mismo asiento dos veces.
-                if (ex.Message.Contains("UX_CheckIn_Asiento"))
+                if (ex.Message.Contains("UX_CheckIn_Asiento") || ex.Message.Contains("UX_ReservaPasajero_Asiento"))
                     throw new NegocioException_GV42("El asiento ya fue asignado a otro pasajero.", ex);
                 throw;
             }

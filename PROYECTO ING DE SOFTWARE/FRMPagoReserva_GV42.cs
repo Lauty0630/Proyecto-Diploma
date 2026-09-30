@@ -27,6 +27,19 @@ namespace PROYECTO_ING_DE_SOFTWARE
         public FRMPagoReserva_GV42(string numeroReservaInicial = null)
         {
             ConstruirUI();
+
+            // Solo un vendedor cobra en efectivo (el cliente autogestionado paga con tarjeta o transferencia).
+            try
+            {
+                if (!_bll.PuedeRegistrarPagoDeTerceros())
+                    cmbMedioPago.Items.Remove(MedioPago_GV42.Efectivo);
+            }
+            catch { }
+            txtNumeroReserva.MaxLength = 20;
+            txtNumeroReserva.CharacterCasing = CharacterCasing.Upper;
+            txtNumeroTransaccion.MaxLength = Servicios.Validaciones_GV42.MAX_NUMERO_TRANSACCION;
+            btnConfirmarPago.Enabled = false;
+            txtNumeroReserva.KeyDown += (s, e) => { if (e.KeyCode == Keys.Enter) { e.SuppressKeyPress = true; btnBuscar_Click(s, e); } };
             if (!string.IsNullOrWhiteSpace(numeroReservaInicial))
             {
                 txtNumeroReserva.Text = numeroReservaInicial;
@@ -64,7 +77,11 @@ namespace PROYECTO_ING_DE_SOFTWARE
             cmbMedioPago = new ComboBox { DropDownStyle = ComboBoxStyle.DropDownList, Location = new Point(20, 310), Size = new Size(220, 24) };
             cmbMedioPago.Items.AddRange(new object[] { MedioPago_GV42.TarjetaDebito, MedioPago_GV42.TarjetaCredito, MedioPago_GV42.Transferencia, MedioPago_GV42.Efectivo });
             cmbMedioPago.SelectedIndexChanged += (s, e) =>
-                txtNumeroTransaccion.Enabled = !MedioPago_GV42.Efectivo.Equals(cmbMedioPago.SelectedItem);
+            {
+                bool efectivo = MedioPago_GV42.Efectivo.Equals(cmbMedioPago.SelectedItem);
+                txtNumeroTransaccion.Enabled = !efectivo;
+                if (efectivo) txtNumeroTransaccion.Clear();   // en efectivo el número lo genera el sistema
+            };
 
             var lblImporte = Tema_GV42.CrearLabel("Importe a abonar"); lblImporte.Location = new Point(20, 350);
             txtImporte = Tema_GV42.CrearTextBox(); txtImporte.Location = new Point(20, 370); txtImporte.Size = new Size(220, 24); txtImporte.ReadOnly = true;
@@ -91,6 +108,21 @@ namespace PROYECTO_ING_DE_SOFTWARE
 
         private void btnBuscar_Click(object sender, EventArgs e)
         {
+            // Se limpia el estado antes de buscar: si la búsqueda falla, no puede quedar habilitado
+            // el pago de la reserva anterior mientras la caja muestra otro número.
+            _reserva = null;
+            lblDetalle.Text = "";
+            lblBoletos.Text = "";
+            txtImporte.Clear();
+            btnConfirmarPago.Enabled = false;
+            if (btnVerBoletos != null) btnVerBoletos.Enabled = false;
+
+            if (string.IsNullOrWhiteSpace(txtNumeroReserva.Text))
+            {
+                Tema_GV42.MostrarError(txtNumeroReserva, "Ingresá el número de reserva (ej: RES-000123).");
+                return;
+            }
+
             try
             {
                 _reserva = _bll.BuscarReserva(txtNumeroReserva.Text.Trim());
@@ -109,45 +141,84 @@ namespace PROYECTO_ING_DE_SOFTWARE
                     "Importe total: " + _reserva.ImporteTotal.ToString("C2");
 
                 txtImporte.Text = _reserva.ImporteTotal.ToString("N2");
-                btnConfirmarPago.Enabled = _reserva.Estado == EstadoReserva_GV42.PendienteDePago;
+                bool yaSalio = _reserva.VueloClase.FechaHoraSalida <= DateTime.Now;
+                btnConfirmarPago.Enabled = _reserva.Estado == EstadoReserva_GV42.PendienteDePago && !yaSalio;
                 btnVerBoletos.Enabled = _reserva.Estado == EstadoReserva_GV42.Confirmada;
                 lblBoletos.Text = "";
 
                 if (_reserva.Estado != EstadoReserva_GV42.PendienteDePago)
                     MessageBox.Show("Esta reserva ya no está pendiente de pago (" + _reserva.EstadoTexto + ").",
                         "Sin acción", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                else if (yaSalio)
+                    MessageBox.Show("El vuelo de esta reserva ya salió: no se puede registrar el pago.",
+                        "Sin acción", MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
             catch (NegocioException_GV42 ex)
             {
+                _reserva = null;
                 MessageBox.Show(ex.Message, "Revisá los datos", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            }
+            catch (Exception ex)
+            {
+                _reserva = null;
+                Tema_GV42.MostrarErrorInesperado("buscar la reserva", ex);
             }
         }
 
         private void btnConfirmarPago_Click(object sender, EventArgs e)
         {
             if (_reserva == null) { MessageBox.Show("Buscá primero la reserva.", "Falta la reserva", MessageBoxButtons.OK, MessageBoxIcon.Warning); return; }
-            if (cmbMedioPago.SelectedItem == null) { MessageBox.Show("Elegí el medio de pago.", "Falta un dato", MessageBoxButtons.OK, MessageBoxIcon.Warning); return; }
+            if (cmbMedioPago.SelectedItem == null) { Tema_GV42.MostrarError(cmbMedioPago, "Elegí el medio de pago.", "Falta un dato"); return; }
+
+            MedioPago_GV42 medio = (MedioPago_GV42)cmbMedioPago.SelectedItem;
+            string tx = txtNumeroTransaccion.Text.Trim();
+            if (medio == MedioPago_GV42.Transferencia &&
+                !System.Text.RegularExpressions.Regex.IsMatch(tx, Servicios.Validaciones_GV42.REGEX_TX_TRANSFERENCIA))
+            {
+                Tema_GV42.MostrarError(txtNumeroTransaccion, "Ingresá el número de operación de la transferencia (6 a 40 letras, números o guiones).");
+                return;
+            }
+            if ((medio == MedioPago_GV42.TarjetaCredito || medio == MedioPago_GV42.TarjetaDebito) &&
+                !System.Text.RegularExpressions.Regex.IsMatch(tx, Servicios.Validaciones_GV42.REGEX_TX_TARJETA))
+            {
+                Tema_GV42.MostrarError(txtNumeroTransaccion, "Ingresá el código de autorización de la tarjeta (6 a 20 dígitos).");
+                return;
+            }
 
             try
             {
-                MedioPago_GV42 medio = (MedioPago_GV42)cmbMedioPago.SelectedItem;
-                decimal importe = decimal.Parse(txtImporte.Text);
-
-                _bll.RegistrarPago(_reserva.NumeroReserva, medio, importe, txtNumeroTransaccion.Text.Trim());
-
-                var boletos = _bll.ObtenerBoletos(_reserva.NumeroReserva);
-                lblBoletos.Text = "Pago registrado. Boletos emitidos:\n" +
-                    string.Join("\n", boletos.Select(b => "  " + b.NumeroBoleto + " — " + b.PasajeroNombre));
-
-                btnConfirmarPago.Enabled = false;
-                btnVerBoletos.Enabled = true;
-                if (MessageBox.Show("Pago registrado y reserva confirmada.\n\n¿Desea ver los boletos emitidos?", "Listo",
-                                    MessageBoxButtons.YesNo, MessageBoxIcon.Information) == DialogResult.Yes)
-                    FRMBoletos_GV42.Mostrar(this, _reserva.NumeroReserva);
+                // El importe es el total de la reserva (el campo es de solo lectura): se usa el valor
+                // numérico directamente en vez de volver a parsear el texto (dependía de la cultura).
+                _bll.RegistrarPago(_reserva.NumeroReserva, medio, _reserva.ImporteTotal, tx);
             }
             catch (NegocioException_GV42 ex)
             {
                 MessageBox.Show(ex.Message, "No se pudo registrar el pago", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+            catch (Exception ex)
+            {
+                Tema_GV42.MostrarErrorInesperado("registrar el pago", ex);
+                return;
+            }
+
+            // El pago ya quedó registrado: lo que sigue no puede decir "no se pudo registrar el pago".
+            btnConfirmarPago.Enabled = false;
+            btnVerBoletos.Enabled = true;
+            try
+            {
+                var boletos = _bll.ObtenerBoletos(_reserva.NumeroReserva);
+                lblBoletos.Text = "Pago registrado. Boletos emitidos:\n" +
+                    string.Join("\n", boletos.Select(b => "  " + b.NumeroBoleto + " — " + b.PasajeroNombre));
+
+                if (MessageBox.Show("Pago registrado y reserva confirmada.\n\n¿Desea ver los boletos emitidos?", "Listo",
+                                    MessageBoxButtons.YesNo, MessageBoxIcon.Information) == DialogResult.Yes)
+                    FRMBoletos_GV42.Mostrar(this, _reserva.NumeroReserva);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("El pago se registró correctamente, pero no se pudieron mostrar los boletos:\n" + ex.Message,
+                                "Pago registrado", MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
         }
     }

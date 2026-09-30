@@ -534,3 +534,86 @@ IF NOT EXISTS (SELECT 1 FROM dbo.VersionBD_GV42 WHERE Version = 1)
     INSERT INTO dbo.VersionBD_GV42 (Version, Descripcion)
     VALUES (1, N'Reservas RFN 1, vuelos, serialización XML, rol Gerente y reporte de reservas');
 GO
+
+/* =====================================================================================
+   VERSIÓN 2 - Revisión de validaciones e integridad
+   ===================================================================================== */
+
+/* ---------- 6) Bitácora: sin FK de EVENTOS.UserName a Usuario ----------
+   Los eventos del "sistema" y los intentos de login con usuarios inexistentes fallaban en
+   silencio por esa FK y nunca quedaban registrados. */
+DECLARE @Fk SYSNAME;
+SELECT @Fk = fk.name
+FROM sys.foreign_keys fk
+INNER JOIN sys.foreign_key_columns fc ON fc.constraint_object_id = fk.object_id
+INNER JOIN sys.columns c ON c.object_id = fc.parent_object_id AND c.column_id = fc.parent_column_id
+WHERE fk.parent_object_id = OBJECT_ID('dbo.EVENTOS') AND c.name = 'UserName';
+IF @Fk IS NOT NULL
+BEGIN
+    DECLARE @SqlFk NVARCHAR(300) = N'ALTER TABLE dbo.EVENTOS DROP CONSTRAINT ' + QUOTENAME(@Fk);
+    EXEC (@SqlFk);
+END
+GO
+
+/* ---------- 7) Tipo de evento "Backup restaurado" (44) con su dígito verificador ---------- */
+IF NOT EXISTS (SELECT 1 FROM dbo.TipoEvento WHERE Nombre = N'Backup restaurado')
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM dbo.TipoEvento WHERE Id = 44)
+    BEGIN
+        SET IDENTITY_INSERT dbo.TipoEvento ON;
+        INSERT INTO dbo.TipoEvento (Id, Nombre) VALUES (44, N'Backup restaurado');
+        SET IDENTITY_INSERT dbo.TipoEvento OFF;
+    END
+    ELSE
+        INSERT INTO dbo.TipoEvento (Nombre) VALUES (N'Backup restaurado');
+END
+
+DECLARE @IdEv INT = (SELECT Id FROM dbo.TipoEvento WHERE Nombre = N'Backup restaurado');
+DELETE FROM dbo.IntegridadDVH WHERE NombreTabla = N'TipoEvento' AND IdRegistro = CAST(@IdEv AS NVARCHAR(50));
+INSERT INTO dbo.IntegridadDVH (NombreTabla, IdRegistro, DVH)
+VALUES (N'TipoEvento', CAST(@IdEv AS NVARCHAR(50)),
+        LOWER(CONVERT(VARCHAR(64), HASHBYTES('SHA2_256', CAST(CONCAT(@IdEv, '|', N'Backup restaurado', '|') AS VARCHAR(400))), 2)));
+
+DECLARE @ConcatEv VARCHAR(MAX);
+SELECT @ConcatEv = STRING_AGG(CAST(DVH AS VARCHAR(MAX)), '') WITHIN GROUP (ORDER BY DVH COLLATE Latin1_General_BIN2)
+FROM dbo.IntegridadDVH WHERE NombreTabla = N'TipoEvento';
+DECLARE @DvvEv NVARCHAR(64) = LOWER(CONVERT(VARCHAR(64), HASHBYTES('SHA2_256', ISNULL(@ConcatEv, '')), 2));
+IF EXISTS (SELECT 1 FROM dbo.IntegridadDVV WHERE NombreTabla = N'TipoEvento')
+    UPDATE dbo.IntegridadDVV SET DVV = @DvvEv, FechaCalculo = GETDATE() WHERE NombreTabla = N'TipoEvento';
+ELSE
+    INSERT INTO dbo.IntegridadDVV (NombreTabla, DVV) VALUES (N'TipoEvento', @DvvEv);
+GO
+
+/* ---------- 8) Reglas de negocio en la base (última barrera) ----------
+   WITH NOCHECK: se aplican a los datos nuevos sin fallar por filas viejas. */
+IF OBJECT_ID('dbo.CK_VueloClase_Reservados', 'C') IS NULL
+    ALTER TABLE dbo.VueloClase WITH NOCHECK ADD CONSTRAINT CK_VueloClase_Reservados
+        CHECK (AsientosReservados >= 0 AND AsientosReservados <= CapacidadAsientos);
+IF OBJECT_ID('dbo.CK_ReservaAdicional_Valores', 'C') IS NULL
+    ALTER TABLE dbo.ReservaAdicional WITH NOCHECK ADD CONSTRAINT CK_ReservaAdicional_Valores
+        CHECK (Cantidad > 0 AND CostoUnitario > 0);
+IF OBJECT_ID('dbo.CK_Vuelo_Fechas', 'C') IS NULL
+    ALTER TABLE dbo.Vuelo WITH NOCHECK ADD CONSTRAINT CK_Vuelo_Fechas
+        CHECK (FechaHoraLlegada > FechaHoraSalida);
+IF OBJECT_ID('dbo.CK_Vuelo_Ruta', 'C') IS NULL
+    ALTER TABLE dbo.Vuelo WITH NOCHECK ADD CONSTRAINT CK_Vuelo_Ruta
+        CHECK (IdOrigen <> IdDestino);
+GO
+
+/* ---------- 9) Tareas que hace el sistema al iniciar ----------
+   El dígito verificador de Usuario (ahora incluye la contraseña) y de Reserva (ahora incluye
+   fechas, canal, vendedor y penalidad) cambió: el sistema los recalcula una vez al arrancar. */
+IF OBJECT_ID('dbo.TareaPendiente_GV42', 'U') IS NULL
+    CREATE TABLE dbo.TareaPendiente_GV42 (Nombre NVARCHAR(100) NOT NULL PRIMARY KEY);
+GO
+
+IF NOT EXISTS (SELECT 1 FROM dbo.VersionBD_GV42 WHERE Version = 2)
+BEGIN
+    INSERT INTO dbo.TareaPendiente_GV42 (Nombre)
+    SELECT X.T FROM (VALUES (N'RecalcularDV:Usuario'), (N'RecalcularDV:Reserva')) AS X(T)
+    WHERE NOT EXISTS (SELECT 1 FROM dbo.TareaPendiente_GV42 P WHERE P.Nombre = X.T);
+
+    INSERT INTO dbo.VersionBD_GV42 (Version, Descripcion)
+    VALUES (2, N'Revisión de validaciones: integridad de usuario y reserva, bitácora sin FK, reglas de negocio');
+END
+GO

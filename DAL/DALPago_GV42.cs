@@ -23,8 +23,10 @@ namespace DAL
                 return _acceso.EjecutarEnTransaccion(tx =>
                 {
                     int filas = _acceso.escribir(tx,
-                        "UPDATE Reserva SET IdEstadoReserva = @Confirmada " +
-                        "WHERE Id = @IdReserva AND IdEstadoReserva = @Pendiente",
+                        "UPDATE R SET IdEstadoReserva = @Confirmada FROM Reserva R " +
+                        "WHERE R.Id = @IdReserva AND R.IdEstadoReserva = @Pendiente " +
+                        // No se confirma el pago de un vuelo que ya salió.
+                        "AND EXISTS (SELECT 1 FROM Vuelo V WHERE V.Id = R.IdVuelo AND V.FechaHoraSalida > GETDATE())",
                         new[] {
                             new SqlParameter("@Confirmada", (int)EstadoReserva_GV42.Confirmada),
                             new SqlParameter("@Pendiente",  (int)EstadoReserva_GV42.PendienteDePago),
@@ -32,7 +34,7 @@ namespace DAL
                         });
 
                     if (filas == 0)
-                        throw new NegocioException_GV42("La reserva no está pendiente de pago.");
+                        throw new NegocioException_GV42("La reserva no está pendiente de pago o el vuelo ya salió.");
 
                     object idObj = _acceso.leerEscalar(tx,
                         "INSERT INTO Pago (IdReserva, ImporteTotalAbonado, IdMedioPago, NumeroTransaccion, LoginVendedor) " +
@@ -55,8 +57,10 @@ namespace DAL
                         pReserva);
 
                     _acceso.escribir(tx,
-                        "INSERT INTO CheckIn (IdReserva, DniPasajero) " +
-                        "SELECT IdReserva, DniPasajero FROM ReservaPasajero WHERE IdReserva = @IdReserva",
+                        // El check-in arranca con el asiento que el pasajero eligió al reservar
+                        // (antes nacía sin asiento y el check-in podía darle uno que ya era de otro).
+                        "INSERT INTO CheckIn (IdReserva, DniPasajero, IdAsiento) " +
+                        "SELECT IdReserva, DniPasajero, IdAsiento FROM ReservaPasajero WHERE IdReserva = @IdReserva",
                         new[] { new SqlParameter("@IdReserva", pago.IdReserva) });
 
                     DataTable dt = _acceso.leer(tx,

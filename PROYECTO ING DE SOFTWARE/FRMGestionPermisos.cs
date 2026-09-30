@@ -1,4 +1,4 @@
-using BLL;
+﻿using BLL;
 using Servicios;
 using System;
 using System.Collections.Generic;
@@ -168,9 +168,19 @@ namespace PROYECTO_ING_DE_SOFTWARE
 
         private void FRMGestionPermisos_Load(object sender, EventArgs e)
         {
-            AplicarPermisosTabs();
-            RecargarTodo();
-            ActualizarIdioma();
+            // Largo máximo = columnas Roles.Nombre (50) y Familia.Nombre (100).
+            txtNombreFamilia.MaxLength = Validaciones_GV42.MAX_NOMBRE_FAMILIA;
+            txtNombreRol.MaxLength = Validaciones_GV42.MAX_NOMBRE_ROL;
+            try
+            {
+                AplicarPermisosTabs();
+                RecargarTodo();
+                ActualizarIdioma();
+            }
+            catch (Exception ex)
+            {
+                Tema_GV42.MostrarErrorInesperado("cargar los permisos", ex);
+            }
         }
 
         private void AplicarPermisosTabs()
@@ -368,8 +378,10 @@ namespace PROYECTO_ING_DE_SOFTWARE
 
         private void EliminarFamilia()
         {
-            Familia_GV42 fam = dgvFamilias.CurrentRow?.DataBoundItem as Familia_GV42;
-            if (fam == null) return;
+            // Se usa el Id guardado al entrar en modo Eliminar (no la fila actual: si la grilla se recargó,
+            // por ejemplo al cambiar el idioma, CurrentRow podía ser otra familia).
+            Familia_GV42 fam = _bll.ListarFamilias().FirstOrDefault(f => f.Id == _idFamiliaEdicion);
+            if (fam == null) { VolverAModoCrearFamilia(); return; }
 
             DialogResult r = MessageBox.Show(
                 $"{IdiomaManager_GV42.T("permisos.confirmEliminarFamilia")} '{fam.Nombre}'?",
@@ -406,7 +418,9 @@ namespace PROYECTO_ING_DE_SOFTWARE
             Familia_GV42 fam = dgvFamilias.CurrentRow.DataBoundItem as Familia_GV42;
             if (fam == null) return;
 
-            Familia_GV42 arbol = _bll.ObtenerArbolFamilia(fam.Id);
+            Familia_GV42 arbol;
+            try { arbol = _bll.ObtenerArbolFamilia(fam.Id); }
+            catch (Exception ex) { Tema_GV42.MostrarErrorInesperado("leer la familia", ex); return; }
             if (arbol == null) return;
 
             txtNombreFamilia.Text = arbol.Nombre;
@@ -582,8 +596,8 @@ namespace PROYECTO_ING_DE_SOFTWARE
 
         private void EliminarRol()
         {
-            Rol_GV42 rol = dgvRoles.CurrentRow?.DataBoundItem as Rol_GV42;
-            if (rol == null) return;
+            Rol_GV42 rol = _bll.ListarRoles().FirstOrDefault(x => x.Id == _idRolEdicion);
+            if (rol == null) { VolverAModoCrearRol(); return; }
 
             DialogResult r = MessageBox.Show(
                 $"{IdiomaManager_GV42.T("permisos.confirmEliminarRol")} '{rol.Nombre}'?",
@@ -713,8 +727,11 @@ namespace PROYECTO_ING_DE_SOFTWARE
             if (btnGuardarRol != null) btnGuardarRol.Text = IdiomaManager_GV42.T("permisos.guardar");
             if (btnLimpiarRol != null) btnLimpiarRol.Text = IdiomaManager_GV42.T("permisos.limpiar");
 
-            if (dgvPatentes != null && dgvPatentes.Columns.Count > 0)
-                RecargarTodo();
+            // No se recarga en medio de una edición: vaciaba los checklists que se estaban modificando.
+            if (dgvPatentes != null && dgvPatentes.Columns.Count > 0 && _idFamiliaEdicion == 0 && _idRolEdicion == 0)
+            {
+                try { RecargarTodo(); } catch (Exception ex) { Tema_GV42.MostrarErrorInesperado("recargar los permisos", ex); }
+            }
         }
 
         
@@ -737,7 +754,9 @@ namespace PROYECTO_ING_DE_SOFTWARE
             Rol_GV42 rol = dgvRoles.CurrentRow.DataBoundItem as Rol_GV42;
             if (rol == null) return;
 
-            Rol_GV42 arbol = _bll.ObtenerArbolRol(rol.Id);
+            Rol_GV42 arbol;
+            try { arbol = _bll.ObtenerArbolRol(rol.Id); }
+            catch (Exception ex) { Tema_GV42.MostrarErrorInesperado("leer el rol", ex); return; }
             if (arbol == null) return;
 
             txtNombreRol.Text = arbol.Nombre;

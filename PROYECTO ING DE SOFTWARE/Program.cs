@@ -19,6 +19,12 @@ namespace PROYECTO_ING_DE_SOFTWARE
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
 
+            // Red de seguridad: un error no previsto en cualquier pantalla muestra un mensaje claro
+            // y la aplicación sigue funcionando (antes aparecía el diálogo de .NET y se cerraba).
+            Application.SetUnhandledExceptionMode(UnhandledExceptionMode.CatchException);
+            Application.ThreadException += (s, e) => MostrarErrorNoControlado(e.Exception);
+            AppDomain.CurrentDomain.UnhandledException += (s, e) => MostrarErrorNoControlado(e.ExceptionObject as Exception);
+
             IdiomaManager_GV42.Instancia.CambiarIdioma(IdiomaManager_GV42.IDIOMA_POR_DEFECTO);
 
             if (!ConfigurarConexionBD()) return;
@@ -100,6 +106,18 @@ namespace PROYECTO_ING_DE_SOFTWARE
             }
         }
 
+        private static void MostrarErrorNoControlado(Exception ex)
+        {
+            try
+            {
+                string detalle = ex == null ? "Error desconocido." :
+                    (ex.InnerException != null ? ex.InnerException.Message : ex.Message);
+                MessageBox.Show("Ocurrió un error inesperado. La operación no se completó.\n\n" + detalle,
+                                "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+            catch { }
+        }
+
         // Deja la base lista para esta versión del sistema, en cualquier computadora:
         //  1) Si es demasiado vieja (le faltan tablas del negocio) ofrece reinstalarla.
         //  2) Si es de una versión anterior, la actualiza conservando los datos.
@@ -147,6 +165,17 @@ namespace PROYECTO_ING_DE_SOFTWARE
                 MessageBox.Show("No se pudo preparar la base de datos.\n\n" + ex.Message, "Error",
                                 MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return false;
+            }
+
+            // Tareas que dejó la actualización (por ejemplo, recalcular dígitos verificadores cuya fórmula cambió).
+            try
+            {
+                BLLInstalador_GV42.EjecutarTareasPendientes(instancia);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("No se pudieron completar las tareas de actualización de la base.\n\n" + ex.Message,
+                                "Actualización", MessageBoxButtons.OK, MessageBoxIcon.Warning);
             }
 
             // Vuelos: si falla no se bloquea el ingreso (el resto del sistema funciona igual).

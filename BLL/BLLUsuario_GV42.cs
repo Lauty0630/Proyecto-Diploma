@@ -40,11 +40,36 @@ namespace BLL
             Error
         }
 
+        // La bitácora nunca interrumpe la operación: antes, si fallaba al registrar (por ejemplo un login
+        // inexistente), el login devolvía "Error" o el alta decía "error" aunque el usuario se había creado.
         private void Auditar(string login, string modulo, string tipoEvento, string detalle, string criticidad)
         {
+            try
+            {
+                BLLBitacora_GV42.Instancia.RegistrarEvento(login, modulo, tipoEvento, detalle, criticidad);
+            }
+            catch { }
+        }
 
-            BLLBitacora_GV42.Instancia.RegistrarEvento(login, modulo, tipoEvento, detalle, criticidad);
+        private static string LoginSesion()
+        {
+            Usuario_GV42 actual = SessionManager_GV42.Instancia.ObtenerUsuarioActual();
+            return actual != null ? actual.Login : "sistema";
+        }
 
+        // Valida y normaliza los datos personales de un usuario (también se validan en la pantalla,
+        // pero la regla vive acá para que ninguna otra pantalla pueda saltearla).
+        private static void ValidarDatosPersonales(ref string dni, ref string nombre, ref string apellido, ref string email)
+        {
+            dni = (dni ?? string.Empty).Trim();
+            nombre = Validaciones_GV42.NormalizarEspacios(nombre);
+            apellido = Validaciones_GV42.NormalizarEspacios(apellido);
+            email = (email ?? string.Empty).Trim();
+
+            if (!Validaciones_GV42.EsDniValido(dni)) throw new Exception(Validaciones_GV42.MENSAJE_DNI);
+            if (!Validaciones_GV42.EsNombreValido(nombre)) throw new Exception(Validaciones_GV42.MENSAJE_NOMBRE);
+            if (!Validaciones_GV42.EsApellidoValido(apellido)) throw new Exception(Validaciones_GV42.MENSAJE_APELLIDO);
+            if (!Validaciones_GV42.EsEmailValido(email)) throw new Exception(Validaciones_GV42.MENSAJE_EMAIL);
         }
 
         public ResultadoLogin IntentarLogin(string login, string contrasena)
@@ -184,57 +209,97 @@ namespace BLL
             }
         }
 
-        public void Desbloquear(string dni, string login)
+        // Devuelve la contraseña temporal con la que el usuario vuelve a entrar.
+        public string Desbloquear(string dni, string login)
         {
+            BLLNegocioUtil_GV42.ExigirPatente("Usuarios.Desbloquear", "No tiene permiso para desbloquear usuarios.");
             Usuario_GV42 usuario = _DALUsuario.BuscarPorLogin(login);
+            if (usuario == null || usuario.DNI != dni)
+                throw new Exception("El usuario ya no existe.");
+            if (!usuario.Bloqueo)
+                throw new Exception("El usuario " + login + " no está bloqueado.");
 
             string contrasenaPlana = CredencialInicial(usuario.Nombre, dni);
             string contrasenaCifrada = Encriptador_GV42.Instancia.EncriptarContrasena(contrasenaPlana);
             _DALUsuario.Desbloquear(dni, contrasenaCifrada);
-            Auditar(SessionManager_GV42.Instancia.ObtenerUsuarioActual().Login, "Admin", "Usuario desbloqueado", $"Usuario {login} desbloqueado y contraseña reseteada", "Media");
+            Auditar(LoginSesion(), "Admin", "Usuario desbloqueado", $"Usuario {login} desbloqueado y contraseña reseteada", "Media");
             RecalcularUsuario();
+            return contrasenaPlana;
         }
 
         public void ActivarDesactivar(string dni, bool activo)
         {
+            BLLNegocioUtil_GV42.ExigirPatente("Usuarios.Activar", "No tiene permiso para activar o desactivar usuarios.");
+            if (!activo)
+            {
+                Usuario_GV42 actual = SessionManager_GV42.Instancia.ObtenerUsuarioActual();
+                if (actual != null && actual.DNI == dni)
+                    throw new Exception("No podés desactivar tu propio usuario.");
+                if (!new BLLPermisos_GV42().QuedaAlgunAdministrador(dniExcluido: dni))
+                    throw new Exception("No se puede desactivar: es el último usuario administrador activo del sistema.");
+            }
             _DALUsuario.ActivarDesactivar(dni, activo);
             string accion = activo ? "Usuario activado" : "Usuario desactivado";
-            Auditar(SessionManager_GV42.Instancia.ObtenerUsuarioActual().Login, "Admin", accion, $"DNI: {dni}", "Media");
+            Auditar(LoginSesion(), "Admin", accion, $"DNI: {dni}", "Media");
             RecalcularUsuario();
         }
 
         public void ModificarEmail(string dni, string email)
         {
+            BLLNegocioUtil_GV42.ExigirPatente("Usuarios.Modificar", "No tiene permiso para modificar usuarios.");
+            email = (email ?? string.Empty).Trim();
+            if (!Validaciones_GV42.EsEmailValido(email))
+                throw new Exception(Validaciones_GV42.MENSAJE_EMAIL);
+            if (_DALUsuario.ExisteEmail(email, dni))
+                throw new Exception("El email " + email + " ya lo usa otro usuario.");
             _DALUsuario.ModificarEmail(dni, email);
-            Auditar(SessionManager_GV42.Instancia.ObtenerUsuarioActual().Login, "Admin", "Email modificado", $"DNI: {dni}", "Media");
+            Auditar(LoginSesion(), "Admin", "Email modificado", $"DNI: {dni}", "Media");
             RecalcularUsuario();
         }
 
         public void ModificarRol(string dni, Rol_GV42 rol)
         {
+            BLLNegocioUtil_GV42.ExigirPatente("Usuarios.Modificar", "No tiene permiso para modificar usuarios.");
             if (rol == null) throw new Exception(IdiomaManager_GV42.T("err.rolValido"));
+            Usuario_GV42 actual = SessionManager_GV42.Instancia.ObtenerUsuarioActual();
+            if (actual != null && actual.DNI == dni && (actual.Rol == null || actual.Rol.Id != rol.Id))
+                throw new Exception("No podés cambiar tu propio rol (lo tiene que hacer otro administrador).");
+            if (!new BLLPermisos_GV42().QuedaAlgunAdministrador(dniConNuevoRol: dni, nuevoRolId: rol.Id))
+                throw new Exception("No se puede cambiar el rol: el sistema se quedaría sin ningún usuario administrador activo.");
             _DALUsuario.ModificarRol(dni, rol.Id);
-            Auditar(SessionManager_GV42.Instancia.ObtenerUsuarioActual().Login, "Admin","Rol modificado", $"DNI {dni} -> rol {rol.Nombre}", "Media");
+            Auditar(LoginSesion(), "Admin","Rol modificado", $"DNI {dni} -> rol {rol.Nombre}", "Media");
             RecalcularUsuario();
         }
-        public void CrearUsuario(string dni, string apellido, string nombre, string email, Rol_GV42 rol)
+        // Devuelve el login generado (la contraseña inicial es la misma y se pide cambiarla al entrar).
+        public string CrearUsuario(string dni, string apellido, string nombre, string email, Rol_GV42 rol)
         {
+            BLLNegocioUtil_GV42.ExigirPatente("Usuarios.Crear", "No tiene permiso para crear usuarios.");
             if (rol == null)
                 throw new Exception(IdiomaManager_GV42.T("err.rolSeleccionar"));
 
+            ValidarDatosPersonales(ref dni, ref nombre, ref apellido, ref email);
+
             if (_DALUsuario.ExisteDNI(dni))
                 throw new Exception(string.Format(IdiomaManager_GV42.T("err.dniDuplicado"), dni));
+            if (_DALUsuario.ExisteEmail(email, dni))
+                throw new Exception("El email " + email + " ya lo usa otro usuario.");
 
-            nombre = Validaciones_GV42.NormalizarEspacios(nombre);
-            apellido = Validaciones_GV42.NormalizarEspacios(apellido);
             VerificarMismaPersonaQuePasajero(dni, nombre, apellido);
 
             string contrasenaPlana = CredencialInicial(nombre, dni);
             string contrasenaCifrada = Encriptador_GV42.Instancia.EncriptarContrasena(contrasenaPlana);
-            string login = contrasenaPlana;
 
-            if (_DALUsuario.BuscarPorLogin(login) != null)
-                throw new Exception(string.Format(IdiomaManager_GV42.T("err.usuarioLoginDuplicado"), login));
+            // Si dos personas generan el mismo login (mismo nombre y mismos 3 últimos dígitos del DNI),
+            // antes el alta fallaba sin remedio; ahora se agrega un número: juan678, juan6782, juan6783...
+            string login = contrasenaPlana;
+            for (int n = 2; _DALUsuario.BuscarPorLogin(login) != null; n++)
+            {
+                if (n > 99) throw new Exception(string.Format(IdiomaManager_GV42.T("err.usuarioLoginDuplicado"), contrasenaPlana));
+                login = contrasenaPlana + n;
+            }
+            // La contraseña inicial es igual al login (también cuando se le agregó un número).
+            contrasenaPlana = login;
+            contrasenaCifrada = Encriptador_GV42.Instancia.EncriptarContrasena(contrasenaPlana);
 
             Usuario_GV42 u = new Usuario_GV42
             {
@@ -250,8 +315,9 @@ namespace BLL
             int filas = _DALUsuario.AgregarUsuario(u);
             if (filas == 0)
                 throw new Exception(IdiomaManager_GV42.T("err.insertFallido"));
-            Auditar(SessionManager_GV42.Instancia.ObtenerUsuarioActual().Login, "Admin","Usuario creado", $"Login: {login}", "Baja");
+            Auditar(LoginSesion(), "Admin","Usuario creado", $"Login: {login}", "Baja");
             RecalcularUsuario();
+            return login;
         }
 
         // Alta de la cuenta de un cliente autogestionado (RFN 1: el cliente se registra y reserva
@@ -264,10 +330,14 @@ namespace BLL
             if (rolCliente == null)
                 throw new Exception("No existe el rol 'Cliente'. Ejecute el script de negocio antes de habilitar el autoregistro.");
 
+            login = (login ?? string.Empty).Trim();
             if (!Validaciones_GV42.EsLoginValido(login))
                 throw new Exception(Validaciones_GV42.MENSAJE_LOGIN);
             if (!Validaciones_GV42.EsContrasenaValida(contrasenaPlana))
                 throw new Exception(Validaciones_GV42.MENSAJE_CONTRASENA);
+            ValidarDatosPersonales(ref dni, ref nombre, ref apellido, ref email);
+            if (_DALUsuario.ExisteEmail(email, dni))
+                throw new Exception("El email " + email + " ya lo usa otro usuario.");
 
             if (_DALUsuario.ExisteDNI(dni))
                 throw new Exception(string.Format(IdiomaManager_GV42.T("err.dniDuplicado"), dni));
@@ -310,6 +380,7 @@ namespace BLL
 
         public int SerializarUsuarios(List<Usuario_GV42> usuarios, string rutaArchivo)
         {
+            BLLNegocioUtil_GV42.ExigirPatente("Usuarios.Ver", "No tiene permiso para exportar el maestro de usuarios.");
             if (usuarios == null || usuarios.Count == 0)
                 throw new Exception(IdiomaManager_GV42.T("serializacion.sinDatos"));
             if (string.IsNullOrWhiteSpace(rutaArchivo))
@@ -366,6 +437,7 @@ namespace BLL
 
         public List<Usuario_GV42> DeserializarUsuarios(string rutaArchivo)
         {
+            BLLNegocioUtil_GV42.ExigirPatente("Usuarios.Ver", "No tiene permiso para importar el maestro de usuarios.");
             if (string.IsNullOrWhiteSpace(rutaArchivo))
                 throw new Exception(IdiomaManager_GV42.T("serializacion.sinArchivo"));
             if (!System.IO.File.Exists(rutaArchivo))
@@ -431,7 +503,8 @@ namespace BLL
             ContrasenaActualIncorrecta,
             ContrasenasNoCoinciden,
             UsuarioInexistente,
-            NuevaIgualActual
+            NuevaIgualActual,
+            NoCumplePolitica
         }
 
         public ResultadoCambioContrasena CambiarContrasena(string login, string contrasenaActual, string nuevaContrasena, string confirmarContrasena)
@@ -442,6 +515,8 @@ namespace BLL
                     return ResultadoCambioContrasena.ContrasenasNoCoinciden;
                 if (nuevaContrasena == contrasenaActual)
                     return ResultadoCambioContrasena.NuevaIgualActual;
+                if (!Validaciones_GV42.EsContrasenaValida(nuevaContrasena))
+                    return ResultadoCambioContrasena.NoCumplePolitica;
 
                 Usuario_GV42 usuario = _DALUsuario.BuscarPorLogin(login);
                 if (usuario == null)
@@ -460,9 +535,10 @@ namespace BLL
                 Auditar(login, "Usuario", "Contraseña cambiada exitosamente", "Cambio de contraseña", "Baja");
                 return ResultadoCambioContrasena.Exitoso;
             }
-            catch
+            catch (Exception ex)
             {
-                throw new Exception(IdiomaManager_GV42.T("err.errorGenerico"));
+                // Se conserva el motivo real (antes solo decía "Error").
+                throw new Exception(IdiomaManager_GV42.T("err.errorGenerico") + " " + ex.Message, ex);
             }
         }
 

@@ -28,7 +28,10 @@ namespace DAL
                 int filas = _acceso.escribir(tx,
                     "UPDATE VueloClase SET AsientosReservados = AsientosReservados + @Cant " +
                     "WHERE IdVuelo = @IdVuelo AND IdClase = @IdClase " +
-                    "AND (CapacidadAsientos - AsientosReservados) >= @Cant",
+                    "AND (CapacidadAsientos - AsientosReservados) >= @Cant " +
+                    // El vuelo tiene que seguir activo y sin salir en el momento exacto de reservar
+                    // (la BLL lo valida antes, pero fuera de esta transacción).
+                    "AND EXISTS (SELECT 1 FROM Vuelo V WHERE V.Id = @IdVuelo AND V.BorradoLogico = 0 AND V.FechaHoraSalida > GETDATE())",
                     new[] {
                         new SqlParameter("@Cant",    r.CantidadPasajeros),
                         new SqlParameter("@IdVuelo", r.Vuelo.Id),
@@ -36,14 +39,15 @@ namespace DAL
                     });
 
                 if (filas == 0)
-                    throw new NegocioException_GV42("No hay asientos disponibles suficientes en esa clase para la cantidad de pasajeros indicada.");
+                    throw new NegocioException_GV42("No se pudo reservar: no hay asientos suficientes en esa clase, " +
+                                                    "o el vuelo ya salió o fue dado de baja.");
 
                 // 2) Cabecera de la reserva.
                 object idObj = _acceso.leerEscalar(tx,
                     "INSERT INTO Reserva (DniCliente, IdVuelo, IdClase, IdTipoViaje, FechaRegreso, CantidadPasajeros, " +
-                    "                     ImporteBase, SubtotalAdicionales, Impuestos, ImporteTotal, IdEstadoReserva, LoginVendedor) " +
+                    "                     ImporteBase, SubtotalAdicionales, Impuestos, ImporteTotal, IdEstadoReserva, LoginVendedor, IdCanalVenta) " +
                     "VALUES (@DniCliente, @IdVuelo, @IdClase, @IdTipoViaje, @FechaRegreso, @Cantidad, " +
-                    "        @ImporteBase, @Subtotal, @Impuestos, @Total, @IdEstado, @Login); " +
+                    "        @ImporteBase, @Subtotal, @Impuestos, @Total, @IdEstado, @Login, @IdCanal); " +
                     "SELECT CAST(SCOPE_IDENTITY() AS INT);",
                     new[] {
                         new SqlParameter("@DniCliente",  r.Cliente.DNI),
@@ -57,7 +61,9 @@ namespace DAL
                         new SqlParameter("@Impuestos",   r.Impuestos),
                         new SqlParameter("@Total",       r.ImporteTotal),
                         new SqlParameter("@IdEstado",    (int)r.Estado),
-                        new SqlParameter("@Login",       r.LoginVendedor)
+                        new SqlParameter("@Login",       r.LoginVendedor),
+                        // Antes no se guardaba: todas las reservas quedaban como "Presencial" (default 1).
+                        new SqlParameter("@IdCanal",     (int)r.CanalVenta)
                     });
                 int idReserva = Convert.ToInt32(idObj);
 
@@ -128,8 +134,12 @@ namespace DAL
             }
             catch (SqlException ex)
             {
-                if (ex.Number == 2601 || ex.Number == 2627)
+                if ((ex.Number == 2601 || ex.Number == 2627) && ex.Message.Contains("UX_ReservaPasajero_Asiento"))
                     throw new NegocioException_GV42("Uno de los asientos elegidos ya fue tomado por otro pasajero. Volvé a elegir el asiento.", ex);
+                if (ex.Number == 2601 || ex.Number == 2627)
+                    throw new NegocioException_GV42("Otro usuario registró al mismo tiempo a uno de los pasajeros. Volvé a confirmar la reserva.", ex);
+                if (ex.Number == 547)
+                    throw new NegocioException_GV42("Los datos de la reserva no cumplen una regla de la base (cupo, importes o vuelo). Revisalos y volvé a intentar.", ex);
                 throw;
             }
         }
@@ -240,7 +250,7 @@ namespace DAL
             if (!string.IsNullOrWhiteSpace(textoLibre))
             {
                 query += " WHERE R.NumeroReserva LIKE @Texto OR C.DNI LIKE @Texto OR C.Apellido LIKE @Texto";
-                p = new[] { new SqlParameter("@Texto", "%" + textoLibre.Trim() + "%") };
+                p = new[] { new SqlParameter("@Texto", "%" + Servicios.Validaciones_GV42.EscaparLike(textoLibre.Trim()) + "%") };
             }
             query += " ORDER BY R.FechaRealizacion DESC";
 
@@ -268,22 +278,31 @@ namespace DAL
                 int idClase = DALUtil_GV42.Int(dtRes.Rows[0], "IdClase");
                 int cantidad = DALUtil_GV42.Int(dtRes.Rows[0], "CantidadPasajeros");
 
-                _acceso.escribir(tx,
+                // Condicional: si otra operación la canceló (o confirmó) entre la lectura y este UPDATE,
+                // no se descuenta el cupo dos veces.
+                int filas = _acceso.escribir(tx,
                     "UPDATE Reserva SET IdEstadoReserva = @Cancelada, FechaCancelacion = GETDATE(), MontoPenalidadCancelacion = @Monto " +
-                    "WHERE Id = @Id",
+                    "WHERE Id = @Id AND IdEstadoReserva = @EstadoLeido",
                     new[] {
                         new SqlParameter("@Cancelada", (int)EstadoReserva_GV42.Cancelada),
                         new SqlParameter("@Monto",     montoPenalidad),
-                        new SqlParameter("@Id",        idReserva)
+                        new SqlParameter("@Id",        idReserva),
+                        new SqlParameter("@EstadoLeido", DALUtil_GV42.Int(dtRes.Rows[0], "IdEstadoReserva"))
                     });
+                if (filas == 0)
+                    throw new NegocioException_GV42("La reserva cambió de estado mientras se cancelaba. Volvé a consultarla.");
 
-                // Libera los asientos que tenían los pasajeros de esta reserva.
+                // Libera los asientos que tenían los pasajeros de esta reserva (también los del check-in).
                 _acceso.escribir(tx,
                     "UPDATE ReservaPasajero SET IdAsiento = NULL WHERE IdReserva = @Id",
                     new[] { new SqlParameter("@Id", idReserva) });
+                _acceso.escribir(tx,
+                    "UPDATE CheckIn SET IdAsiento = NULL WHERE IdReserva = @Id",
+                    new[] { new SqlParameter("@Id", idReserva) });
 
                 _acceso.escribir(tx,
-                    "UPDATE VueloClase SET AsientosReservados = AsientosReservados - @Cant " +
+                    "UPDATE VueloClase SET AsientosReservados = CASE WHEN AsientosReservados >= @Cant " +
+                    "       THEN AsientosReservados - @Cant ELSE 0 END " +
                     "WHERE IdVuelo = @IdVuelo AND IdClase = @IdClase",
                     new[] {
                         new SqlParameter("@Cant",    cantidad),
@@ -294,6 +313,15 @@ namespace DAL
                 DataTable dt = _acceso.leer(tx, SELECT_LISTADO + " WHERE R.Id = @Id", new[] { new SqlParameter("@Id", idReserva) });
                 return MapearListado(dt.Rows[0]);
             });
+        }
+
+        // ¿Algún pasajero de la reserva ya hizo el check-in? (entonces ya no se puede cancelar)
+        public bool TieneCheckInRealizado(int idReserva)
+        {
+            object r = _acceso.leerEscalar(
+                "SELECT COUNT(1) FROM CheckIn WHERE IdReserva = @Id AND IdEstadoCheckIn = @Realizado",
+                new[] { new SqlParameter("@Id", idReserva), new SqlParameter("@Realizado", (int)EstadoCheckIn_GV42.Realizado) });
+            return r != null && Convert.ToInt32(r) > 0;
         }
 
         public List<Pasajero_GV42> ListarPasajeros(int idReserva)

@@ -1,4 +1,4 @@
-using DAL;
+﻿using DAL;
 using Servicios;
 using System;
 using System.Collections.Generic;
@@ -142,6 +142,22 @@ namespace BLL
             return rutaCompleta;
         }
 
+        // Backup pedido por el usuario desde "Backup manual": exige la patente y queda en la bitácora
+        // (antes usaba el backup automático y no registraba nada).
+        public string HacerBackupManual()
+        {
+            BLLNegocioUtil_GV42.ExigirPatente("Backup.Crear", "No tiene permiso para generar backups.");
+            string ruta = HacerBackupAutomatico();
+            BLLNegocioUtil_GV42.Auditar("Admin", "Backup manual generado", "Ruta: " + ruta, "Media");
+            return ruta;
+        }
+
+        public void RestaurarBackupManual(string rutaArchivoBak)
+        {
+            BLLNegocioUtil_GV42.ExigirPatente("Integridad.Restore", "No tiene permiso para restaurar backups.");
+            RestaurarBackupDesdeRuta(rutaArchivoBak);
+        }
+
         public string ObtenerUltimoBackup()
         {
             if (!Directory.Exists(CARPETA_BACKUPS)) return null;
@@ -190,10 +206,7 @@ namespace BLL
 
             _dal.HacerBackupSQL(CONN_MASTER, NOMBRE_BD, rutaArchivoBak);
 
-            BLLBitacora_GV42.Instancia.RegistrarEvento(
-                SessionManager_GV42.Instancia.ObtenerUsuarioActual()?.Login ?? "SISTEMA",
-                "Admin", "Backup manual generado",
-                $"Ruta: {rutaArchivoBak}", "Media");
+            BLLNegocioUtil_GV42.Auditar("Admin", "Backup manual generado", $"Ruta: {rutaArchivoBak}", "Media");
         }
 
         public void RestaurarBackupDesdeRuta(string rutaArchivoBak)
@@ -204,6 +217,9 @@ namespace BLL
                 throw new Exception(string.Format(IdiomaManager_GV42.T("err.backupArchivoNoExiste"), rutaArchivoBak));
 
             _dal.RestaurarBackupSQL(CONN_MASTER, NOMBRE_BD, rutaArchivoBak);
+
+            // Se registra en la base ya restaurada (si el backup es anterior a este tipo de evento, no se graba).
+            BLLNegocioUtil_GV42.Auditar("Admin", "Backup restaurado", "Archivo: " + Path.GetFileName(rutaArchivoBak), "Alta");
         }
 
         public void IniciarBackupsProgramados()

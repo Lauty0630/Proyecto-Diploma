@@ -1,4 +1,4 @@
-using Servicios;
+﻿using Servicios;
 using System;
 using System.Collections.Generic;
 using System.Data;
@@ -81,30 +81,30 @@ namespace DAL
 
         public int Crear(string nombre, List<int> idsPatentes, List<int> idsFamilias)
         {
-
-            string qIns = "INSERT INTO Roles (Nombre) VALUES (@Nombre); SELECT CAST(SCOPE_IDENTITY() AS INT);";
-            object res = _acceso.leerEscalar(qIns, new[] { new SqlParameter("@Nombre", nombre) });
-
-            if (res == null || res == DBNull.Value)
-                throw new Exception(IdiomaManager_GV42.T("err.rolSinIdCreado"));
-
-            int idRol = Convert.ToInt32(res);
-
-            foreach (int idPat in idsPatentes ?? new List<int>())
+            // Todo en una transacción: si falla un INSERT no queda un rol a medio crear.
+            return _acceso.EjecutarEnTransaccion(tx =>
             {
-                _acceso.escribir(
-                    "INSERT INTO RolPatente (IdRol, IdPatente) VALUES (@R, @P)",
+                object res = _acceso.leerEscalar(tx,
+                    "INSERT INTO Roles (Nombre) VALUES (@Nombre); SELECT CAST(SCOPE_IDENTITY() AS INT);",
+                    new[] { new SqlParameter("@Nombre", nombre) });
+                if (res == null || res == DBNull.Value)
+                    throw new Exception(IdiomaManager_GV42.T("err.rolSinIdCreado"));
+
+                int idRol = Convert.ToInt32(res);
+                InsertarHijos(tx, idRol, idsPatentes, idsFamilias);
+                return idRol;
+            });
+        }
+
+        private void InsertarHijos(SqlTransaction tx, int idRol, List<int> idsPatentes, List<int> idsFamilias)
+        {
+            foreach (int idPat in idsPatentes ?? new List<int>())
+                _acceso.escribir(tx, "INSERT INTO RolPatente (IdRol, IdPatente) VALUES (@R, @P)",
                     new[] { new SqlParameter("@R", idRol), new SqlParameter("@P", idPat) });
-            }
 
             foreach (int idFam in idsFamilias ?? new List<int>())
-            {
-                _acceso.escribir(
-                    "INSERT INTO RolFamilia (IdRol, IdFamilia) VALUES (@R, @F)",
+                _acceso.escribir(tx, "INSERT INTO RolFamilia (IdRol, IdFamilia) VALUES (@R, @F)",
                     new[] { new SqlParameter("@R", idRol), new SqlParameter("@F", idFam) });
-            }
-
-            return idRol;
         }
 
         public bool EstaEnUso(int idRol)
@@ -123,38 +123,27 @@ namespace DAL
 
         public void Eliminar(int idRol)
         {
-            _acceso.escribir("DELETE FROM RolPatente WHERE IdRol = @Id",
-                new[] { new SqlParameter("@Id", idRol) });
-            _acceso.escribir("DELETE FROM RolFamilia WHERE IdRol = @Id",
-                new[] { new SqlParameter("@Id", idRol) });
-            _acceso.escribir("DELETE FROM Roles WHERE Id = @Id",
-                new[] { new SqlParameter("@Id", idRol) });
+            _acceso.EjecutarEnTransaccion(tx =>
+            {
+                _acceso.escribir(tx, "DELETE FROM RolPatente WHERE IdRol = @Id", new[] { new SqlParameter("@Id", idRol) });
+                _acceso.escribir(tx, "DELETE FROM RolFamilia WHERE IdRol = @Id", new[] { new SqlParameter("@Id", idRol) });
+                return _acceso.escribir(tx, "DELETE FROM Roles WHERE Id = @Id", new[] { new SqlParameter("@Id", idRol) });
+            });
         }
 
         public void Modificar(int idRol, string nombre, List<int> idsPatentes, List<int> idsFamilias)
         {
-            _acceso.escribir(
-                "UPDATE Roles SET Nombre = @Nombre WHERE Id = @Id",
-                new[] { new SqlParameter("@Nombre", nombre), new SqlParameter("@Id", idRol) });
-
-            _acceso.escribir("DELETE FROM RolPatente WHERE IdRol = @Id",
-                new[] { new SqlParameter("@Id", idRol) });
-            _acceso.escribir("DELETE FROM RolFamilia WHERE IdRol = @Id",
-                new[] { new SqlParameter("@Id", idRol) });
-
-            foreach (int idPat in idsPatentes ?? new List<int>())
+            // Antes cada sentencia iba en su propia transacción: si fallaba un INSERT, el rol
+            // (por ejemplo Admin) quedaba sin patentes. Ahora es todo o nada.
+            _acceso.EjecutarEnTransaccion(tx =>
             {
-                _acceso.escribir(
-                    "INSERT INTO RolPatente (IdRol, IdPatente) VALUES (@R, @P)",
-                    new[] { new SqlParameter("@R", idRol), new SqlParameter("@P", idPat) });
-            }
-
-            foreach (int idFam in idsFamilias ?? new List<int>())
-            {
-                _acceso.escribir(
-                    "INSERT INTO RolFamilia (IdRol, IdFamilia) VALUES (@R, @F)",
-                    new[] { new SqlParameter("@R", idRol), new SqlParameter("@F", idFam) });
-            }
+                _acceso.escribir(tx, "UPDATE Roles SET Nombre = @Nombre WHERE Id = @Id",
+                    new[] { new SqlParameter("@Nombre", nombre), new SqlParameter("@Id", idRol) });
+                _acceso.escribir(tx, "DELETE FROM RolPatente WHERE IdRol = @Id", new[] { new SqlParameter("@Id", idRol) });
+                _acceso.escribir(tx, "DELETE FROM RolFamilia WHERE IdRol = @Id", new[] { new SqlParameter("@Id", idRol) });
+                InsertarHijos(tx, idRol, idsPatentes, idsFamilias);
+                return 0;
+            });
         }
 
         public List<int> IdsPatentesDirectas(int idRol)
