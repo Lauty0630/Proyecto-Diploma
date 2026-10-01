@@ -5,6 +5,8 @@ namespace BE
 {
     public class Equipaje_GV42
     {
+        #region Propiedades
+
         public int Id { get; set; }
         public int IdCheckIn { get; set; }
         public int CantidadBultos { get; set; }
@@ -16,5 +18,7 @@ namespace BE
 
         // Null cuando el peso no supera la franquicia.
         public CargoExcesoEquipaje_GV42 CargoExceso { get; set; }
+
+        #endregion
     }
 }

@@ -1,4 +1,4 @@
-﻿﻿using BE;
+﻿using BE;
 using System;
 using System.Data;
 using System.Data.SqlClient;
@@ -7,12 +7,22 @@ namespace DAL
 {
     public class DALCliente_GV42
     {
+        #region Campos
+
         private readonly Acceso _acceso;
+
+        #endregion
+
+        #region Constructor
 
         public DALCliente_GV42()
         {
             _acceso = Acceso.Instancia;
         }
+
+        #endregion
+
+        #region Métodos públicos
 
         public bool ExisteDni(string dni)
         {
@@ -54,5 +64,7 @@ namespace DAL
             };
             _acceso.escribir(query, p);
         }
+
+        #endregion
     }
 }

@@ -10,9 +10,26 @@ namespace BLL
 {
     public class BLLIntegridad_GV42
     {
-        private readonly DALIntegridad_GV42 _dal;
+        #region Constantes
 
         private const string NOMBRE_BD = "Gestion Usuario";
+
+        private const string CARPETA_BACKUPS = @"C:\Backups\GestionUsuario";
+        private const int CANTIDAD_BACKUPS_A_CONSERVAR = 5;
+        public const int INTERVALO_BACKUP_HORAS = 3;
+
+        #endregion
+
+        #region Campos
+
+        private readonly DALIntegridad_GV42 _dal;
+
+        private static Timer _timerBackup;
+        private static readonly object _lockTimer = new object();
+
+        #endregion
+
+        #region Propiedades
 
         private static string CONN_MASTER
         {
@@ -27,23 +44,24 @@ namespace BLL
             }
         }
 
-        private const string CARPETA_BACKUPS = @"C:\Backups\GestionUsuario";
-        private const int CANTIDAD_BACKUPS_A_CONSERVAR = 5;
-        public const int INTERVALO_BACKUP_HORAS = 3;
+        public static bool IntegridadConocidamenteRota
+        {
+            get { return DALIntegridad_GV42.IntegridadConocidamenteRota; }
+            set { DALIntegridad_GV42.IntegridadConocidamenteRota = value; }
+        }
 
-        private static Timer _timerBackup;
-        private static readonly object _lockTimer = new object();
+        #endregion
+
+        #region Constructor
 
         public BLLIntegridad_GV42()
         {
             _dal = new DALIntegridad_GV42();
         }
 
-        public static bool IntegridadConocidamenteRota
-        {
-            get { return DALIntegridad_GV42.IntegridadConocidamenteRota; }
-            set { DALIntegridad_GV42.IntegridadConocidamenteRota = value; }
-        }
+        #endregion
+
+        #region Verificación y recálculo
 
         public ResultadoIntegridad Verificar()
         {
@@ -61,7 +79,7 @@ namespace BLL
             foreach (var tabla in DALIntegridad_GV42.TABLAS_PROTEGIDAS)
             {
                 Dictionary<string, string> dvhsAhora = _dal.CalcularDVHsTabla(tabla);
-                Dictionary<string, string> dvhsBd    = _dal.ObtenerDVHsAlmacenados(tabla);
+                Dictionary<string, string> dvhsBd = _dal.ObtenerDVHsAlmacenados(tabla);
 
                 bool comprometida = false;
 
@@ -71,7 +89,9 @@ namespace BLL
                     {
                         resultado.Detalles.Add(new DetalleTampering
                         {
-                            Tabla = tabla, IdRegistro = kv.Key, Tipo = TipoTampering.Insertado
+                            Tabla = tabla,
+                            IdRegistro = kv.Key,
+                            Tipo = TipoTampering.Insertado
                         });
                         comprometida = true;
                     }
@@ -79,7 +99,9 @@ namespace BLL
                     {
                         resultado.Detalles.Add(new DetalleTampering
                         {
-                            Tabla = tabla, IdRegistro = kv.Key, Tipo = TipoTampering.Modificado
+                            Tabla = tabla,
+                            IdRegistro = kv.Key,
+                            Tipo = TipoTampering.Modificado
                         });
                         comprometida = true;
                     }
@@ -91,7 +113,9 @@ namespace BLL
                     {
                         resultado.Detalles.Add(new DetalleTampering
                         {
-                            Tabla = tabla, IdRegistro = kv.Key, Tipo = TipoTampering.Eliminado
+                            Tabla = tabla,
+                            IdRegistro = kv.Key,
+                            Tipo = TipoTampering.Eliminado
                         });
                         comprometida = true;
                     }
@@ -100,7 +124,7 @@ namespace BLL
                 if (!comprometida)
                 {
                     string dvvAhora = CalculadorIntegridad_GV42.CalcularDVV(dvhsAhora.Values);
-                    string dvvBd    = _dal.ObtenerDVVAlmacenado(tabla);
+                    string dvvBd = _dal.ObtenerDVVAlmacenado(tabla);
                     if (dvvAhora != dvvBd) comprometida = true;
                 }
 
@@ -128,6 +152,10 @@ namespace BLL
             _dal.GuardarDVV(nombreTabla, dvv);
         }
 
+        #endregion
+
+        #region Backup y restore
+
         public string HacerBackupAutomatico()
         {
             if (!Directory.Exists(CARPETA_BACKUPS))
@@ -146,7 +174,7 @@ namespace BLL
         // (antes usaba el backup automático y no registraba nada).
         public string HacerBackupManual()
         {
-            BLLNegocioUtil_GV42.ExigirPatente("Backup.Crear", "No tiene permiso para generar backups.");
+            BLLNegocioUtil_GV42.ExigirPatente("Backup.Crear", IdiomaManager_GV42.T("neg.integridad.sinPermisoBackup"));
             string ruta = HacerBackupAutomatico();
             BLLNegocioUtil_GV42.Auditar("Admin", "Backup manual generado", "Ruta: " + ruta, "Media");
             return ruta;
@@ -154,7 +182,7 @@ namespace BLL
 
         public void RestaurarBackupManual(string rutaArchivoBak)
         {
-            BLLNegocioUtil_GV42.ExigirPatente("Integridad.Restore", "No tiene permiso para restaurar backups.");
+            BLLNegocioUtil_GV42.ExigirPatente("Integridad.Restore", IdiomaManager_GV42.T("neg.integridad.sinPermisoRestore"));
             RestaurarBackupDesdeRuta(rutaArchivoBak);
         }
 
@@ -222,6 +250,10 @@ namespace BLL
             BLLNegocioUtil_GV42.Auditar("Admin", "Backup restaurado", "Archivo: " + Path.GetFileName(rutaArchivoBak), "Alta");
         }
 
+        #endregion
+
+        #region Backups programados
+
         public void IniciarBackupsProgramados()
         {
             lock (_lockTimer)
@@ -277,7 +309,11 @@ namespace BLL
             }
             catch { }
         }
+
+        #endregion
     }
+
+    #region Tipos del resultado de la verificación
 
     public class ResultadoIntegridad
     {
@@ -300,4 +336,6 @@ namespace BLL
         public string IdRegistro { get; set; }
         public TipoTampering Tipo { get; set; }
     }
+
+    #endregion
 }

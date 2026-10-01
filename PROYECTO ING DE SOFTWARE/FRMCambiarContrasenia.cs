@@ -1,28 +1,27 @@
 ﻿using BLL;
 using Servicios;
 using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
-using System.Drawing;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows.Forms;
 using static BLL.BLLUsuario_GV42;
 
 namespace PROYECTO_ING_DE_SOFTWARE
 {
-
     public partial class FRMCambiarContrasenia : Form, IObservadorIdioma_GV42
     {
+        #region Campos
+
         private readonly BLLUsuario_GV42 _bll;
         private readonly bool _primerLogin;
+        private bool _cambioRealizado;
+
+        #endregion
+
+        #region Constructor
 
         public FRMCambiarContrasenia(bool primerLogin = false)
         {
             InitializeComponent();
-            txtUsuario.Text = SessionManager_GV42.Instancia.ObtenerUsuarioActual().Login;
+            txtUsuario.Text = SessionManager_GV42.Instancia.ObtenerUsuarioActual()?.Login;
             _bll = new BLLUsuario_GV42();
             _primerLogin = primerLogin;
 
@@ -43,18 +42,37 @@ namespace PROYECTO_ING_DE_SOFTWARE
             };
         }
 
-        private bool _cambioRealizado;
+        #endregion
+
+        #region Idioma (Observer)
 
         public void ActualizarIdioma()
         {
             this.Text = IdiomaManager_GV42.T("cambiarClave.titulo");
-            if (lblTitulo != null) lblTitulo.Text = IdiomaManager_GV42.T("cambiarClave.titulo");
-            if (label1 != null) label1.Text = IdiomaManager_GV42.T("cambiarClave.usuario");
-            if (label2 != null) label2.Text = IdiomaManager_GV42.T("cambiarClave.actual");
-            if (label3 != null) label3.Text = IdiomaManager_GV42.T("cambiarClave.nueva");
-            if (label4 != null) label4.Text = IdiomaManager_GV42.T("cambiarClave.confirmar");
-            if (btnAceptar != null) btnAceptar.Text = IdiomaManager_GV42.T("cambiarClave.btnAceptar");
+            lblTitulo.Text = IdiomaManager_GV42.T("cambiarClave.titulo");
+            lblSubtitulo.Text = IdiomaManager_GV42.T("cambiarClave.subtitulo");
+            lblSeccion.Text = IdiomaManager_GV42.T("cambiarClave.seccion");
+            label1.Text = IdiomaManager_GV42.T("cambiarClave.usuario");
+            label2.Text = IdiomaManager_GV42.T("cambiarClave.actual");
+            label3.Text = IdiomaManager_GV42.T("cambiarClave.nueva");
+            label4.Text = IdiomaManager_GV42.T("cambiarClave.confirmar");
+            lblAyudaNueva.Text = IdiomaManager_GV42.T("cambiarClave.ayudaNueva");
+            btnAceptar.Text = IdiomaManager_GV42.T("cambiarClave.btnAceptar");
         }
+
+        #endregion
+
+        #region Navegación
+
+        private void AbrirMenuPrincipalSegunRol()
+        {
+            Form menu = new FRMMenuPrincipalAdmin();
+            menu.Show();
+        }
+
+        #endregion
+
+        #region Eventos
 
         private void btnAceptar_Click(object sender, EventArgs e)
         {
@@ -92,7 +110,7 @@ namespace PROYECTO_ING_DE_SOFTWARE
             }
             catch (Exception ex)
             {
-                Tema_GV42.MostrarErrorInesperado("cambiar la contraseña", ex);
+                Tema_GV42.MostrarErrorInesperado(IdiomaManager_GV42.T("cambiarClave.accionCambiar"), ex);
                 return;
             }
 
@@ -137,10 +155,6 @@ namespace PROYECTO_ING_DE_SOFTWARE
             }
         }
 
-        private void AbrirMenuPrincipalSegunRol()
-        {
-            Form menu = new FRMMenuPrincipalAdmin();
-            menu.Show();
-        }
+        #endregion
     }
 }

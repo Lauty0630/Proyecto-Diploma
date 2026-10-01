@@ -1,4 +1,4 @@
-﻿﻿using BE;
+﻿using BE;
 using System;
 using System.Collections.Generic;
 using System.Data;
@@ -8,15 +8,25 @@ namespace DAL
 {
     public class DALAsiento_GV42
     {
+        #region Campos
+
         private readonly Acceso _acceso;
 
         private const string SELECT_BASE =
             "SELECT A.Id, A.IdVuelo, A.NumeroAsiento, A.IdClase, A.Ubicacion FROM Asiento A";
 
+        #endregion
+
+        #region Constructor
+
         public DALAsiento_GV42()
         {
             _acceso = Acceso.Instancia;
         }
+
+        #endregion
+
+        #region Métodos públicos
 
         // Asientos de la clase que todavía no fueron asignados a ningún check-in.
         public List<Asiento_GV42> ListarLibres(int idVuelo, ClaseVuelo_GV42 clase)
@@ -133,6 +143,10 @@ namespace DAL
                 throw new NegocioException_GV42("No se pudo asignar el asiento: el check-in no existe o ya fue realizado.");
         }
 
+        #endregion
+
+        #region Métodos privados
+
         private Asiento_GV42 Mapear(DataRow r)
         {
             return new Asiento_GV42
@@ -144,5 +158,7 @@ namespace DAL
                 Ubicacion = DALUtil_GV42.Str(r, "Ubicacion")
             };
         }
+
+        #endregion
     }
 }

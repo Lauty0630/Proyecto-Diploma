@@ -7,12 +7,22 @@ namespace DAL
 {
     public class DALTarjetaEmbarque_GV42
     {
+        #region Campos
+
         private readonly Acceso _acceso;
+
+        #endregion
+
+        #region Constructor
 
         public DALTarjetaEmbarque_GV42()
         {
             _acceso = Acceso.Instancia;
         }
+
+        #endregion
+
+        #region Métodos públicos
 
         // Emite la tarjeta de embarque. Solo se emite si el check-in sigue pendiente y ya tiene asiento.
         public TarjetaEmbarque_GV42 Generar(int idCheckIn, string puertaEmbarque, DateTime horaLimiteEmbarque)
@@ -76,5 +86,7 @@ namespace DAL
                 FechaHoraEmision = DALUtil_GV42.Fecha(r, "FechaHoraEmision")
             };
         }
+
+        #endregion
     }
 }

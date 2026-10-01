@@ -1,132 +1,88 @@
-﻿using BE;
+using BE;
 using BLL;
+using Servicios;
 using System;
-using System.Drawing;
 using System.Windows.Forms;
 
 namespace PROYECTO_ING_DE_SOFTWARE
 {
     // El cliente crea su propia cuenta para poder reservar sin pasar por un vendedor (RFN 1,
-    // canal Autogestión). Misma estética "tarjeta blanca sobre fondo celeste" que FRMIniciarSesion.
-    public class FRMRegistroCliente_GV42 : Form
+    // canal Autogestión). El diseño está en FRMRegistroCliente_GV42.Designer.cs (Form Designer).
+    public partial class FRMRegistroCliente_GV42 : Form, IObservadorIdioma_GV42
     {
+        #region Campos
+
         private readonly BLLReserva_GV42 _bll = new BLLReserva_GV42();
 
-        private TextBox txtDni, txtNombre, txtApellido, txtEmail, txtTelefono, txtLogin, txtContrasena, txtConfirmar;
-        private Button btnRegistrarme;
+        #endregion
+
+        #region Constructor
 
         public FRMRegistroCliente_GV42()
         {
-            ConstruirUI();
+            InitializeComponent();
+
+            IdiomaManager_GV42.Instancia.Suscribir(this);
+            FormClosed += (s, e) => IdiomaManager_GV42.Instancia.Desuscribir(this);
+            ActualizarIdioma();
         }
 
-        private void ConstruirUI()
+        #endregion
+
+        #region Idioma (Observer)
+
+        public void ActualizarIdioma()
         {
-            Text = "Crear cuenta de cliente";
-            // Antes el alto no alcanzaba: con 8 campos + botón, el contenido terminaba fuera del
-            // formulario y "Crear cuenta" quedaba inalcanzable. AutoScroll queda como red de
-            // seguridad por si se agrega algún campo más adelante.
-            ClientSize = new Size(560, 680);
-            BackColor = Tema_GV42.Fondo;
-            FormBorderStyle = FormBorderStyle.FixedSingle;
-            MaximizeBox = false;
-            StartPosition = FormStartPosition.CenterScreen;
-            Font = new Font("Segoe UI", 9F);
-
-            var card = Tema_GV42.CrearCard();
-            card.Location = new Point(60, 20);
-            card.Size = new Size(440, 640);
-            card.AutoScroll = true;
-            Controls.Add(card);
-
-            var lblTitulo = new Label
-            {
-                Text = "Crear cuenta",
-                Font = Tema_GV42.FuenteTitulo,
-                ForeColor = Tema_GV42.Acento,
-                AutoSize = true,
-                Location = new Point(30, 20)
-            };
-            var lblSubtitulo = new Label
-            {
-                Text = "Registrate para reservar tus propios vuelos",
-                Font = Tema_GV42.FuenteSubtitulo,
-                ForeColor = Tema_GV42.Texto,
-                AutoSize = true,
-                Location = new Point(30, 55)
-            };
-            card.Controls.Add(lblTitulo);
-            card.Controls.Add(lblSubtitulo);
-
-            int y = 95;
-            txtDni       = AgregarCampo(card, "DNI", ref y);
-            txtNombre    = AgregarCampo(card, "Nombre", ref y);
-            txtApellido  = AgregarCampo(card, "Apellido", ref y);
-            txtEmail     = AgregarCampo(card, "Email", ref y);
-            txtTelefono  = AgregarCampo(card, "Teléfono", ref y);
-            txtLogin     = AgregarCampo(card, "Usuario (login)", ref y);
-            txtContrasena = AgregarCampo(card, "Contraseña", ref y, esPassword: true);
-            txtConfirmar  = AgregarCampo(card, "Confirmar contraseña", ref y, esPassword: true);
-
-            txtDni.MaxLength = 8;
-            txtDni.KeyPress += (s, e) => { if (!char.IsControl(e.KeyChar) && !char.IsDigit(e.KeyChar)) e.Handled = true; };
-            txtNombre.MaxLength = Servicios.Validaciones_GV42.MAX_NOMBRE;
-            txtApellido.MaxLength = Servicios.Validaciones_GV42.MAX_NOMBRE;
-            txtEmail.MaxLength = Servicios.Validaciones_GV42.MAX_EMAIL;
-            txtTelefono.MaxLength = 20;
-            txtLogin.MaxLength = Servicios.Validaciones_GV42.MAX_LOGIN;
-            txtContrasena.MaxLength = 50;
-            txtConfirmar.MaxLength = 50;
-
-            btnRegistrarme = new Button
-            {
-                Text = "Crear cuenta",
-                Location = new Point(30, y + 10),
-                Size = new Size(380, 40)
-            };
-            Tema_GV42.EstilizarBotonPrimario(btnRegistrarme);
-            btnRegistrarme.Click += btnRegistrarme_Click;
-            card.Controls.Add(btnRegistrarme);
-
-            AcceptButton = btnRegistrarme;
+            Text = IdiomaManager_GV42.T("registro.tituloVentana");
+            lblTitulo.Text = IdiomaManager_GV42.T("registro.titulo");
+            lblSubtitulo.Text = IdiomaManager_GV42.T("registro.subtitulo");
+            lblDni.Text = IdiomaManager_GV42.T("registro.dni");
+            lblTelefono.Text = IdiomaManager_GV42.T("registro.telefono");
+            lblNombre.Text = IdiomaManager_GV42.T("registro.nombre");
+            lblApellido.Text = IdiomaManager_GV42.T("registro.apellido");
+            lblEmail.Text = IdiomaManager_GV42.T("registro.email");
+            lblLogin.Text = IdiomaManager_GV42.T("registro.login");
+            lblContrasena.Text = IdiomaManager_GV42.T("registro.contrasena");
+            lblConfirmar.Text = IdiomaManager_GV42.T("registro.confirmar");
+            lblAyudaLogin.Text = IdiomaManager_GV42.T("registro.ayudaLogin");
+            lblAyudaContrasena.Text = IdiomaManager_GV42.T("registro.ayudaContrasena");
+            btnRegistrarme.Text = IdiomaManager_GV42.T("registro.crear");
+            btnCancelar.Text = IdiomaManager_GV42.T("general.cancelar");
         }
 
-        private TextBox AgregarCampo(Panel card, string etiqueta, ref int y, bool esPassword = false)
-        {
-            var lbl = Tema_GV42.CrearLabel(etiqueta);
-            lbl.Location = new Point(30, y);
-            card.Controls.Add(lbl);
+        #endregion
 
-            var txt = Tema_GV42.CrearTextBox();
-            txt.Location = new Point(30, y + 20);
-            txt.Size = new Size(380, 24);
-            if (esPassword) txt.UseSystemPasswordChar = true;
-            card.Controls.Add(txt);
-
-            y += 55;
-            return txt;
-        }
+        #region Validaciones
 
         // Valida en pantalla campo por campo y marca el que está mal (la BLL vuelve a validar todo).
         private bool ValidarCampos()
         {
-            if (!Servicios.Validaciones_GV42.EsDniValido(txtDni.Text.Trim()))
-            { Tema_GV42.MostrarError(txtDni, Servicios.Validaciones_GV42.MENSAJE_DNI); return false; }
-            if (!Servicios.Validaciones_GV42.EsNombreValido(Servicios.Validaciones_GV42.NormalizarEspacios(txtNombre.Text)))
-            { Tema_GV42.MostrarError(txtNombre, Servicios.Validaciones_GV42.MENSAJE_NOMBRE); return false; }
-            if (!Servicios.Validaciones_GV42.EsApellidoValido(Servicios.Validaciones_GV42.NormalizarEspacios(txtApellido.Text)))
-            { Tema_GV42.MostrarError(txtApellido, Servicios.Validaciones_GV42.MENSAJE_APELLIDO); return false; }
-            if (!Servicios.Validaciones_GV42.EsEmailValido(txtEmail.Text.Trim()))
-            { Tema_GV42.MostrarError(txtEmail, Servicios.Validaciones_GV42.MENSAJE_EMAIL); return false; }
-            if (!Servicios.Validaciones_GV42.EsTelefonoValido(txtTelefono.Text.Trim()))
-            { Tema_GV42.MostrarError(txtTelefono, Servicios.Validaciones_GV42.MENSAJE_TELEFONO); return false; }
-            if (!Servicios.Validaciones_GV42.EsLoginValido(txtLogin.Text.Trim()))
-            { Tema_GV42.MostrarError(txtLogin, Servicios.Validaciones_GV42.MENSAJE_LOGIN); return false; }
-            if (!Servicios.Validaciones_GV42.EsContrasenaValida(txtContrasena.Text))
-            { Tema_GV42.MostrarError(txtContrasena, Servicios.Validaciones_GV42.MENSAJE_CONTRASENA); return false; }
+            if (!Validaciones_GV42.EsDniValido(txtDni.Text.Trim()))
+            { Tema_GV42.MostrarError(txtDni, Validaciones_GV42.MENSAJE_DNI); return false; }
+            if (!Validaciones_GV42.EsTelefonoValido(txtTelefono.Text.Trim()))
+            { Tema_GV42.MostrarError(txtTelefono, Validaciones_GV42.MENSAJE_TELEFONO); return false; }
+            if (!Validaciones_GV42.EsNombreValido(Validaciones_GV42.NormalizarEspacios(txtNombre.Text)))
+            { Tema_GV42.MostrarError(txtNombre, Validaciones_GV42.MENSAJE_NOMBRE); return false; }
+            if (!Validaciones_GV42.EsApellidoValido(Validaciones_GV42.NormalizarEspacios(txtApellido.Text)))
+            { Tema_GV42.MostrarError(txtApellido, Validaciones_GV42.MENSAJE_APELLIDO); return false; }
+            if (!Validaciones_GV42.EsEmailValido(txtEmail.Text.Trim()))
+            { Tema_GV42.MostrarError(txtEmail, Validaciones_GV42.MENSAJE_EMAIL); return false; }
+            if (!Validaciones_GV42.EsLoginValido(txtLogin.Text.Trim()))
+            { Tema_GV42.MostrarError(txtLogin, Validaciones_GV42.MENSAJE_LOGIN); return false; }
+            if (!Validaciones_GV42.EsContrasenaValida(txtContrasena.Text))
+            { Tema_GV42.MostrarError(txtContrasena, Validaciones_GV42.MENSAJE_CONTRASENA); return false; }
             if (txtContrasena.Text != txtConfirmar.Text)
-            { Tema_GV42.MostrarError(txtConfirmar, "Las contraseñas no coinciden."); return false; }
+            { Tema_GV42.MostrarError(txtConfirmar, IdiomaManager_GV42.T("registro.noCoinciden")); return false; }
             return true;
+        }
+
+        #endregion
+
+        #region Eventos
+
+        private void txtDni_KeyPress(object sender, KeyPressEventArgs e)
+        {
+            if (!char.IsControl(e.KeyChar) && !char.IsDigit(e.KeyChar)) e.Handled = true;
         }
 
         private void btnRegistrarme_Click(object sender, EventArgs e)
@@ -145,20 +101,27 @@ namespace PROYECTO_ING_DE_SOFTWARE
 
                 _bll.RegistrarClienteAutogestionado(cliente, txtLogin.Text.Trim(), txtContrasena.Text, txtConfirmar.Text);
 
-                MessageBox.Show(
-                    "Cuenta creada correctamente. Ya podés iniciar sesión.",
-                    "Cuenta creada", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                MessageBox.Show(IdiomaManager_GV42.T("registro.creada"), IdiomaManager_GV42.T("registro.creadaTitulo"),
+                                MessageBoxButtons.OK, MessageBoxIcon.Information);
                 DialogResult = DialogResult.OK;
                 Close();
             }
             catch (NegocioException_GV42 ex)
             {
-                MessageBox.Show(ex.Message, "No se pudo crear la cuenta", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                MessageBox.Show(ex.Message, IdiomaManager_GV42.T("registro.noSePudo"), MessageBoxButtons.OK, MessageBoxIcon.Warning);
             }
             catch (Exception ex)
             {
-                MessageBox.Show(ex.Message, "No se pudo crear la cuenta", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                Tema_GV42.MostrarErrorInesperado(IdiomaManager_GV42.T("registro.accionCrear"), ex);
             }
         }
+
+        private void btnCancelar_Click(object sender, EventArgs e)
+        {
+            DialogResult = DialogResult.Cancel;
+            Close();
+        }
+
+        #endregion
     }
 }

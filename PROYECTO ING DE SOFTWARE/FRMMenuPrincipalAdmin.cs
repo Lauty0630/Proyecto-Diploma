@@ -8,28 +8,20 @@ namespace PROYECTO_ING_DE_SOFTWARE
 {
     public partial class FRMMenuPrincipalAdmin : Form, IObservadorIdioma_GV42
     {
+        #region Campos
+
         private Form _formularioActual = null;
         private readonly BLLUsuario_GV42 _bllUsuario;
-
-        private ToolStripMenuItem _menuIdioma;
-        private ToolStripMenuItem _itemEspanol;
-        private ToolStripMenuItem _itemIngles;
-
-        private ToolStripMenuItem _menuReservas;
-        private ToolStripMenuItem _itemNuevaReserva;
-        private ToolStripMenuItem _itemRegistrarPago;
-        private ToolStripMenuItem _itemConsultarReservas;
-        private ToolStripMenuItem _itemMisReservas;
 
         // true cuando el propio menú abre el login (logout / re-login) antes de cerrarse.
         private bool _cerrandoSesion = false;
 
-        private ToolStripMenuItem _menuVuelos;
-        private ToolStripMenuItem _itemGestionVuelos;
-        private ToolStripMenuItem _itemBitacoraVuelos;
+        // true cuando el rol solo puede ver sus propias reservas (el acceso rápido dice "Mis reservas").
+        private bool _soloReservasPropias = false;
 
-        private ToolStripMenuItem _menuReportes;
-        private ToolStripMenuItem _itemReporteReservas;
+        #endregion
+
+        #region Constructor
 
         public FRMMenuPrincipalAdmin()
         {
@@ -41,117 +33,105 @@ namespace PROYECTO_ING_DE_SOFTWARE
             this.FormClosing += FRMMenuPrincipalAdmin_FormClosing;
             Program.CerrarAplicacionAlSerUltimaVentana(this);
 
-            ConstruirMenuReservas();
-            ConstruirMenuVuelos();
-            ConstruirMenuReportes();
-            ConstruirMenuIdioma();
             ActualizarIdioma();
         }
 
-        // Negocio (RFN 1): un solo formulario para vendedor y cliente (ver FRMReservarVuelo_GV42);
-        // la visibilidad de cada opción depende de las patentes del rol, igual que el resto del menú.
-        private void ConstruirMenuReservas()
-        {
-            if (menuStrip1 == null) return;
+        #endregion
 
-            _itemNuevaReserva = new ToolStripMenuItem("Nueva reserva");
-            _itemNuevaReserva.Click += (s, e) => AbrirFormularioHijo(new FRMReservarVuelo_GV42());
-
-            _itemRegistrarPago = new ToolStripMenuItem("Registrar pago");
-            _itemRegistrarPago.Click += (s, e) => AbrirFormularioHijo(new FRMPagoReserva_GV42());
-
-            // Antes se podía asignar la patente Reservas.Consultar / Reservas.ConsultarPropia
-            // pero no existía ninguna pantalla que las usara. Estos dos ítems las cubren.
-            _itemConsultarReservas = new ToolStripMenuItem("Consultar reservas");
-            _itemConsultarReservas.Click += (s, e) => AbrirFormularioHijo(new FRMConsultarReservas_GV42());
-
-            _itemMisReservas = new ToolStripMenuItem("Mis reservas");
-            _itemMisReservas.Click += (s, e) => AbrirFormularioHijo(new FRMConsultarReservas_GV42());
-
-            _menuReservas = new ToolStripMenuItem("Reservas");
-            _menuReservas.DropDownItems.Add(_itemNuevaReserva);
-            _menuReservas.DropDownItems.Add(_itemRegistrarPago);
-            _menuReservas.DropDownItems.Add(_itemConsultarReservas);
-            _menuReservas.DropDownItems.Add(_itemMisReservas);
-
-            menuStrip1.Items.Add(_menuReservas);
-        }
-
-        // Vuelos: gestión (modificar / baja lógica) y bitácora de cambios (tabla Vuelo_C).
-        // Cada opción se muestra según su patente (Vuelos.Gestionar / Vuelos.Bitacora).
-        private void ConstruirMenuVuelos()
-        {
-            if (menuStrip1 == null) return;
-
-            _itemGestionVuelos = new ToolStripMenuItem("Gestión de vuelos");
-            _itemGestionVuelos.Click += (s, e) => AbrirFormularioHijo(new FRMGestionVuelos_GV42());
-
-            _itemBitacoraVuelos = new ToolStripMenuItem("Bitácora de cambios");
-            _itemBitacoraVuelos.Click += (s, e) => AbrirFormularioHijo(new FRMBitacoraVuelos_GV42());
-
-            _menuVuelos = new ToolStripMenuItem("Vuelos");
-            _menuVuelos.DropDownItems.Add(_itemGestionVuelos);
-            _menuVuelos.DropDownItems.Add(_itemBitacoraVuelos);
-
-            menuStrip1.Items.Add(_menuVuelos);
-        }
-
-        // Reportes de gestión (rol Gerente). Por ahora: reporte de reservas del RFN 1.
-        private void ConstruirMenuReportes()
-        {
-            if (menuStrip1 == null) return;
-
-            _itemReporteReservas = new ToolStripMenuItem("Reporte de reservas");
-            _itemReporteReservas.Click += (s, e) => AbrirFormularioHijo(new FRMReporteReservas_GV42());
-
-            _menuReportes = new ToolStripMenuItem("Reportes");
-            _menuReportes.DropDownItems.Add(_itemReporteReservas);
-
-            menuStrip1.Items.Add(_menuReportes);
-        }
-
-        private void ConstruirMenuIdioma()
-        {
-            if (menuStrip1 == null) return;
-
-            _itemEspanol = new ToolStripMenuItem("Español");
-            _itemEspanol.Click += (s, e) => _bllUsuario.CambiarIdioma(IdiomaManager_GV42.ES);
-
-            _itemIngles = new ToolStripMenuItem("English");
-            _itemIngles.Click += (s, e) => _bllUsuario.CambiarIdioma(IdiomaManager_GV42.EN);
-
-            _menuIdioma = new ToolStripMenuItem("Idioma");
-            _menuIdioma.DropDownItems.Add(_itemEspanol);
-            _menuIdioma.DropDownItems.Add(_itemIngles);
-
-            menuStrip1.Items.Add(_menuIdioma);
-        }
+        #region Idioma (Observer)
 
         public void ActualizarIdioma()
         {
-            if (adminToolStripMenuItem != null) adminToolStripMenuItem.Text = IdiomaManager_GV42.T("menu.admin");
-            if (usuariosToolStripMenuItem != null) usuariosToolStripMenuItem.Text = IdiomaManager_GV42.T("menu.usuarios");
-            if (bitacoraToolStripMenuItem != null) bitacoraToolStripMenuItem.Text = IdiomaManager_GV42.T("menu.bitacora");
-            if (gestionDePermisosToolStripMenuItem != null) gestionDePermisosToolStripMenuItem.Text = IdiomaManager_GV42.T("menu.gestionPermisos");
-            if (backupToolStripMenuItem != null) backupToolStripMenuItem.Text = IdiomaManager_GV42.T("menu.backup");
-            if (usuarioToolStripMenuItem != null) usuarioToolStripMenuItem.Text = IdiomaManager_GV42.T("menu.usuario");
-            if (reLoginToolStripMenuItem != null) reLoginToolStripMenuItem.Text = IdiomaManager_GV42.T("menu.relogin");
-            if (cambiarClaveToolStripMenuItem != null) cambiarClaveToolStripMenuItem.Text = IdiomaManager_GV42.T("menu.cambiarClave");
-            if (logOutToolStripMenuItem != null) logOutToolStripMenuItem.Text = IdiomaManager_GV42.T("menu.logout");
+            this.Text = IdiomaManager_GV42.T("menu.tituloAdmin");
 
-            if (_menuIdioma != null) _menuIdioma.Text = IdiomaManager_GV42.T("menu.idioma");
-            if (_itemEspanol != null) _itemEspanol.Text = IdiomaManager_GV42.T("general.espanol");
-            if (_itemIngles != null) _itemIngles.Text = IdiomaManager_GV42.T("general.ingles");
+            adminToolStripMenuItem.Text = IdiomaManager_GV42.T("menu.admin");
+            usuariosToolStripMenuItem.Text = IdiomaManager_GV42.T("menu.usuarios");
+            bitacoraToolStripMenuItem.Text = IdiomaManager_GV42.T("menu.bitacora");
+            gestionDePermisosToolStripMenuItem.Text = IdiomaManager_GV42.T("menu.gestionPermisos");
+            backupToolStripMenuItem.Text = IdiomaManager_GV42.T("menu.backup");
+
+            reservasToolStripMenuItem.Text = IdiomaManager_GV42.T("menu.reservas");
+            nuevaReservaToolStripMenuItem.Text = IdiomaManager_GV42.T("menu.nuevaReserva");
+            registrarPagoToolStripMenuItem.Text = IdiomaManager_GV42.T("menu.registrarPago");
+            consultarReservasToolStripMenuItem.Text = IdiomaManager_GV42.T("menu.consultarReservas");
+            misReservasToolStripMenuItem.Text = IdiomaManager_GV42.T("menu.misReservas");
+
+            vuelosToolStripMenuItem.Text = IdiomaManager_GV42.T("menu.vuelos");
+            gestionVuelosToolStripMenuItem.Text = IdiomaManager_GV42.T("menu.gestionVuelos");
+            bitacoraVuelosToolStripMenuItem.Text = IdiomaManager_GV42.T("menu.bitacoraVuelos");
+
+            reportesToolStripMenuItem.Text = IdiomaManager_GV42.T("menu.reportes");
+            reporteReservasToolStripMenuItem.Text = IdiomaManager_GV42.T("menu.reporteReservas");
+
+            usuarioToolStripMenuItem.Text = IdiomaManager_GV42.T("menu.usuario");
+            reLoginToolStripMenuItem.Text = IdiomaManager_GV42.T("menu.relogin");
+            cambiarClaveToolStripMenuItem.Text = IdiomaManager_GV42.T("menu.cambiarClave");
+            logOutToolStripMenuItem.Text = IdiomaManager_GV42.T("menu.logout");
+
+            idiomaToolStripMenuItem.Text = IdiomaManager_GV42.T("menu.idioma");
+            espanolToolStripMenuItem.Text = IdiomaManager_GV42.T("general.espanol");
+            inglesToolStripMenuItem.Text = IdiomaManager_GV42.T("general.ingles");
+            espanolToolStripMenuItem.Checked = !IdiomaManager_GV42.Instancia.EsIngles;
+            inglesToolStripMenuItem.Checked = IdiomaManager_GV42.Instancia.EsIngles;
+
+            lblAyudaBienvenida.Text = IdiomaManager_GV42.T("menu.bienvenidaAyuda");
+            lblAccesos.Text = IdiomaManager_GV42.T("menu.accesosRapidos");
+            btnAccesoNuevaReserva.Text = IdiomaManager_GV42.T("menu.nuevaReserva");
+            btnAccesoCambiarClave.Text = IdiomaManager_GV42.T("menu.cambiarClave");
+
+            ActualizarBarraEstado();
+            ActualizarBienvenida();
         }
 
-        private void FRMMenuPrincipalAdmin_Load(object sender, EventArgs e)
+        #endregion
+
+        #region Barra de estado y bienvenida
+
+        // Textos que dependen del usuario en sesión: se regeneran al cargar y al cambiar el idioma.
+        private void ActualizarBarraEstado()
         {
             Usuario_GV42 actual = SessionManager_GV42.Instancia.ObtenerUsuarioActual();
-            if (actual != null)
-                lblUsuarioActual.Text = $"Sesión: {actual.Nombre} {actual.Apellido} ({actual.Login}) — Rol: {actual.RolNombre}";
 
-            AplicarPermisosMenu();
+            lblUsuarioActual.Text = actual != null
+                ? IdiomaManager_GV42.T("menu.estadoSesion", actual.Nombre, actual.Apellido, actual.Login)
+                : IdiomaManager_GV42.T("general.sesionNoIniciada");
+
+            bool tieneRol = actual != null && !string.IsNullOrEmpty(actual.RolNombre);
+            lblRolActual.Visible = tieneRol;
+            if (tieneRol) lblRolActual.Text = IdiomaManager_GV42.T("menu.estadoRol", actual.RolNombre);
+
+            lblIdiomaActual.Text = IdiomaManager_GV42.T("menu.estadoIdioma",
+                IdiomaManager_GV42.Instancia.EsIngles ? IdiomaManager_GV42.T("general.ingles") : IdiomaManager_GV42.T("general.espanol"));
+            lblFechaActual.Text = DateTime.Now.ToString("dd/MM/yyyy");
         }
+
+        private void ActualizarBienvenida()
+        {
+            Usuario_GV42 actual = SessionManager_GV42.Instancia.ObtenerUsuarioActual();
+
+            lblSaludo.Text = actual != null && !string.IsNullOrEmpty(actual.Nombre)
+                ? IdiomaManager_GV42.T("menu.bienvenidaSaludo", actual.Nombre)
+                : IdiomaManager_GV42.T("menu.bienvenida");
+
+            bool tieneRol = actual != null && !string.IsNullOrEmpty(actual.RolNombre);
+            lblRolBienvenida.Text = tieneRol ? IdiomaManager_GV42.T("menu.bienvenidaRol", actual.RolNombre) : "";
+
+            btnAccesoReservas.Text = _soloReservasPropias
+                ? IdiomaManager_GV42.T("menu.misReservas")
+                : IdiomaManager_GV42.T("menu.consultarReservas");
+        }
+
+        // La tarjeta de bienvenida se ve solo cuando no hay ningún formulario hijo abierto.
+        private void MostrarBienvenidaSiNoHayHijo(Form cerrado)
+        {
+            if (IsDisposed || Disposing) return;
+            bool hayHijo = pnlContenido.Controls.OfType<Form>().Any(f => f != cerrado && !f.IsDisposed);
+            pnlBienvenida.Visible = !hayHijo;
+        }
+
+        #endregion
+
+        #region Permisos
 
         private void AplicarPermisosMenu()
         {
@@ -166,72 +146,65 @@ namespace PROYECTO_ING_DE_SOFTWARE
                 .Select(p => p.DataKey ?? string.Empty)
                 .ToList();
 
-            if (usuariosToolStripMenuItem != null)
-                usuariosToolStripMenuItem.Visible = dataKeys.Any(k => k.StartsWith("Usuarios."));
-
-            if (bitacoraToolStripMenuItem != null)
-                bitacoraToolStripMenuItem.Visible = dataKeys.Any(k => k.StartsWith("Bitacora."));
-
-            if (gestionDePermisosToolStripMenuItem != null)
-                gestionDePermisosToolStripMenuItem.Visible = dataKeys.Any(k => k.StartsWith("Permisos."));
-
-            if (backupToolStripMenuItem != null)
-                backupToolStripMenuItem.Visible =
-                    dataKeys.Contains("Backup.Crear") ||
-                    dataKeys.Contains("Integridad.Restore");
+            usuariosToolStripMenuItem.Visible = dataKeys.Any(k => k.StartsWith("Usuarios."));
+            bitacoraToolStripMenuItem.Visible = dataKeys.Any(k => k.StartsWith("Bitacora."));
+            gestionDePermisosToolStripMenuItem.Visible = dataKeys.Any(k => k.StartsWith("Permisos."));
+            backupToolStripMenuItem.Visible =
+                dataKeys.Contains("Backup.Crear") ||
+                dataKeys.Contains("Integridad.Restore");
 
             bool puedeCambiarClave = dataKeys.Contains("Sesion.CambiarClave");
-            bool puedeReLogin      = dataKeys.Contains("Sesion.ReLogin");
-            bool puedeLogout       = dataKeys.Contains("Sesion.Logout");
+            bool puedeReLogin = dataKeys.Contains("Sesion.ReLogin");
+            bool puedeLogout = dataKeys.Contains("Sesion.Logout");
 
-            if (cambiarClaveToolStripMenuItem != null)
-            {
-                cambiarClaveToolStripMenuItem.Visible = puedeCambiarClave;
-                cambiarClaveToolStripMenuItem.Available = puedeCambiarClave;
-            }
+            cambiarClaveToolStripMenuItem.Visible = puedeCambiarClave;
+            cambiarClaveToolStripMenuItem.Available = puedeCambiarClave;
 
-            if (reLoginToolStripMenuItem != null)
-            {
-                reLoginToolStripMenuItem.Visible = puedeReLogin;
-                reLoginToolStripMenuItem.Available = puedeReLogin;
-            }
+            reLoginToolStripMenuItem.Visible = puedeReLogin;
+            reLoginToolStripMenuItem.Available = puedeReLogin;
 
-            if (logOutToolStripMenuItem != null)
-            {
-                logOutToolStripMenuItem.Visible = puedeLogout;
-                logOutToolStripMenuItem.Available = puedeLogout;
-            }
+            logOutToolStripMenuItem.Visible = puedeLogout;
+            logOutToolStripMenuItem.Available = puedeLogout;
 
-            if (usuarioToolStripMenuItem != null)
-                usuarioToolStripMenuItem.Visible = puedeCambiarClave || puedeReLogin || puedeLogout;
+            usuarioToolStripMenuItem.Visible = puedeCambiarClave || puedeReLogin || puedeLogout;
 
             bool puedeGenerarReserva = dataKeys.Contains("Reservas.Generar") || dataKeys.Contains("Reservas.GenerarPropia");
-            bool puedeRegistrarPago  = dataKeys.Contains("Pagos.Registrar") || dataKeys.Contains("Pagos.RegistrarPropio");
+            bool puedeRegistrarPago = dataKeys.Contains("Pagos.Registrar") || dataKeys.Contains("Pagos.RegistrarPropio");
 
             bool puedeConsultarTodas = dataKeys.Contains("Reservas.Consultar");
             bool puedeConsultarPropias = dataKeys.Contains("Reservas.ConsultarPropia");
 
-            if (_itemNuevaReserva != null) _itemNuevaReserva.Visible = puedeGenerarReserva;
-            if (_itemRegistrarPago != null) _itemRegistrarPago.Visible = puedeRegistrarPago;
-            if (_itemConsultarReservas != null) _itemConsultarReservas.Visible = puedeConsultarTodas;
-            if (_itemMisReservas != null) _itemMisReservas.Visible = puedeConsultarPropias && !puedeConsultarTodas;
-            if (_menuReservas != null)
-                _menuReservas.Visible = puedeGenerarReserva || puedeRegistrarPago || puedeConsultarTodas || puedeConsultarPropias;
+            nuevaReservaToolStripMenuItem.Visible = puedeGenerarReserva;
+            registrarPagoToolStripMenuItem.Visible = puedeRegistrarPago;
+            consultarReservasToolStripMenuItem.Visible = puedeConsultarTodas;
+            misReservasToolStripMenuItem.Visible = puedeConsultarPropias && !puedeConsultarTodas;
+            reservasToolStripMenuItem.Visible = puedeGenerarReserva || puedeRegistrarPago || puedeConsultarTodas || puedeConsultarPropias;
 
             bool puedeGestionarVuelos = dataKeys.Contains("Vuelos.Gestionar");
             bool puedeVerBitacoraVuelos = dataKeys.Contains("Vuelos.Bitacora");
-            if (_itemGestionVuelos != null) _itemGestionVuelos.Visible = puedeGestionarVuelos;
-            if (_itemBitacoraVuelos != null) _itemBitacoraVuelos.Visible = puedeVerBitacoraVuelos;
-            if (_menuVuelos != null) _menuVuelos.Visible = puedeGestionarVuelos || puedeVerBitacoraVuelos;
+            gestionVuelosToolStripMenuItem.Visible = puedeGestionarVuelos;
+            bitacoraVuelosToolStripMenuItem.Visible = puedeVerBitacoraVuelos;
+            vuelosToolStripMenuItem.Visible = puedeGestionarVuelos || puedeVerBitacoraVuelos;
 
             bool puedeVerReporteReservas = dataKeys.Contains("Reportes.Reservas");
-            if (_itemReporteReservas != null) _itemReporteReservas.Visible = puedeVerReporteReservas;
-            if (_menuReportes != null) _menuReportes.Visible = puedeVerReporteReservas;
+            reporteReservasToolStripMenuItem.Visible = puedeVerReporteReservas;
+            reportesToolStripMenuItem.Visible = puedeVerReporteReservas;
 
             bool puedeCambiarIdioma = dataKeys.Contains("Sesion.CambiarIdioma");
-            if (_menuIdioma != null)
-                _menuIdioma.Visible = puedeCambiarIdioma;
+            idiomaToolStripMenuItem.Visible = puedeCambiarIdioma;
+
+            // Accesos rápidos de la tarjeta de bienvenida: mismas patentes que el menú.
+            btnAccesoNuevaReserva.Visible = puedeGenerarReserva;
+            btnAccesoReservas.Visible = puedeConsultarTodas || puedeConsultarPropias;
+            btnAccesoCambiarClave.Visible = puedeCambiarClave;
+            _soloReservasPropias = puedeConsultarPropias && !puedeConsultarTodas;
+            lblAccesos.Visible = puedeGenerarReserva || puedeConsultarTodas || puedeConsultarPropias || puedeCambiarClave;
+            ActualizarBienvenida();
         }
+
+        #endregion
+
+        #region Navegación
 
         public void AbrirFormularioHijo(Form f)
         {
@@ -255,15 +228,107 @@ namespace PROYECTO_ING_DE_SOFTWARE
             f.FormBorderStyle = FormBorderStyle.None;
             f.Dock = DockStyle.Fill;
 
-            pnlContenido.Controls.Clear();
+            // Se quitan los hijos anteriores (la tarjeta de bienvenida queda, solo se oculta).
+            foreach (Form anterior in pnlContenido.Controls.OfType<Form>().ToList())
+                pnlContenido.Controls.Remove(anterior);
+
+            pnlBienvenida.Visible = false;
+            f.FormClosed += (s, e) => MostrarBienvenidaSiNoHayHijo(f);
             pnlContenido.Controls.Add(f);
             f.Show();
             _formularioActual = f;
         }
 
+        #endregion
+
+        #region Eventos
+
+        private void FRMMenuPrincipalAdmin_Load(object sender, EventArgs e)
+        {
+            ActualizarBarraEstado();
+            ActualizarBienvenida();
+            AplicarPermisosMenu();
+        }
+
+        // Si se cierra el menú con la X, se registra el logout en la bitácora y se cierra la sesión.
+        private void FRMMenuPrincipalAdmin_FormClosing(object sender, FormClosingEventArgs e)
+        {
+            if (_cerrandoSesion) return;
+            if (e.CloseReason != CloseReason.UserClosing) return;
+            if (!SessionManager_GV42.Instancia.HaySesionActiva()) return;
+            try { BLLUsuario_GV42.CerrarSesión(); } catch { }
+        }
+
         private void usuariosToolStripMenuItem_Click(object sender, EventArgs e)
         {
             AbrirFormularioHijo(new FRMGestionUsuariosAdmin());
+        }
+
+        private void bitacoraToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            AbrirFormularioHijo(new FRMBitacoraDeEventos());
+        }
+
+        private void gestionDePermisosToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            AbrirFormularioHijo(new FRMGestionPermisos());
+        }
+
+        private void backupToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            AbrirFormularioHijo(new FRMBackupManual());
+        }
+
+        // Negocio (RFN 1): un solo formulario para vendedor y cliente (ver FRMReservarVuelo_GV42);
+        // la visibilidad de cada opción depende de las patentes del rol, igual que el resto del menú.
+        private void nuevaReservaToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            AbrirFormularioHijo(new FRMReservarVuelo_GV42());
+        }
+
+        private void registrarPagoToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            AbrirFormularioHijo(new FRMPagoReserva_GV42());
+        }
+
+        // Antes se podía asignar la patente Reservas.Consultar / Reservas.ConsultarPropia
+        // pero no existía ninguna pantalla que las usara. Estos dos ítems las cubren.
+        private void consultarReservasToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            AbrirFormularioHijo(new FRMConsultarReservas_GV42());
+        }
+
+        private void misReservasToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            AbrirFormularioHijo(new FRMConsultarReservas_GV42());
+        }
+
+        // Vuelos: gestión (modificar / baja lógica) y bitácora de cambios (tabla Vuelo_C).
+        // Cada opción se muestra según su patente (Vuelos.Gestionar / Vuelos.Bitacora).
+        private void gestionVuelosToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            AbrirFormularioHijo(new FRMGestionVuelos_GV42());
+        }
+
+        private void bitacoraVuelosToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            AbrirFormularioHijo(new FRMBitacoraVuelos_GV42());
+        }
+
+        // Reportes de gestión (rol Gerente). Por ahora: reporte de reservas del RFN 1.
+        private void reporteReservasToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            AbrirFormularioHijo(new FRMReporteReservas_GV42());
+        }
+
+        private void espanolToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            _bllUsuario.CambiarIdioma(IdiomaManager_GV42.ES);
+        }
+
+        private void inglesToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            _bllUsuario.CambiarIdioma(IdiomaManager_GV42.EN);
         }
 
         // Re-Login: cierra la sesión actual y vuelve al login para entrar con otro usuario.
@@ -277,13 +342,9 @@ namespace PROYECTO_ING_DE_SOFTWARE
             this.Close();
         }
 
-        // Si se cierra el menú con la X, se registra el logout en la bitácora y se cierra la sesión.
-        private void FRMMenuPrincipalAdmin_FormClosing(object sender, FormClosingEventArgs e)
+        private void cambiarClaveToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            if (_cerrandoSesion) return;
-            if (e.CloseReason != CloseReason.UserClosing) return;
-            if (!SessionManager_GV42.Instancia.HaySesionActiva()) return;
-            try { BLLUsuario_GV42.CerrarSesión(); } catch { }
+            AbrirFormularioHijo(new FRMCambiarContrasenia());
         }
 
         private void logOutToolStripMenuItem_Click(object sender, EventArgs e)
@@ -303,25 +364,6 @@ namespace PROYECTO_ING_DE_SOFTWARE
             }
         }
 
-        private void cambiarClaveToolStripMenuItem_Click(object sender, EventArgs e)
-        {
-            AbrirFormularioHijo(new FRMCambiarContrasenia());
-        }
-
-        private void bitacoraToolStripMenuItem_Click(object sender, EventArgs e)
-        {
-            AbrirFormularioHijo(new FRMBitacoraDeEventos());
-        }
-
-        private void gestionDePermisosToolStripMenuItem_Click(object sender, EventArgs e)
-        {
-            AbrirFormularioHijo(new FRMGestionPermisos());
-        }
-
-        private void backupToolStripMenuItem_Click(object sender, EventArgs e)
-        {
-            AbrirFormularioHijo(new FRMBackupManual());
-        }
-
+        #endregion
     }
 }

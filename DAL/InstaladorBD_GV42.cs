@@ -14,12 +14,14 @@ namespace DAL
     //  - Siempre: genera los vuelos que falten para los próximos días (usp_GenerarVuelos_GV42).
     public static class InstaladorBD_GV42
     {
+        #region Campos
+
         public const string NOMBRE_BD = "Gestion Usuario";
         private const string NOMBRE_SCRIPT = "EsquemaCompleto.sql";
         private const string NOMBRE_SCRIPT_ACTUALIZACION = "ActualizacionBD.sql";
 
         // Subir este número cuando se agregue un bloque nuevo al final de ActualizacionBD.sql.
-        public const int VERSION_ACTUAL = 2;
+        public const int VERSION_ACTUAL = 3;
 
         // Tablas y columnas que necesita esta versión del sistema. Si falta alguna, la base es de
         // una versión muy anterior y no se puede actualizar conservando los datos.
@@ -33,11 +35,9 @@ namespace DAL
             "Vuelo.BorradoLogico", "Vuelo.PuertaEmbarque"
         };
 
-        private static string ConexionMaster(string instancia, int timeout = 15) =>
-            $"Data Source={instancia};Initial Catalog=master;Integrated Security=True;Connect Timeout={timeout}";
+        #endregion
 
-        private static string ConexionBase(string instancia) =>
-            $"Data Source={instancia};Initial Catalog={NOMBRE_BD};Integrated Security=True;Connect Timeout=15";
+        #region Métodos públicos
 
         public static bool ExisteBaseDatos(string instancia)
         {
@@ -171,6 +171,16 @@ namespace DAL
             }
         }
 
+        #endregion
+
+        #region Métodos privados
+
+        private static string ConexionMaster(string instancia, int timeout = 15) =>
+            $"Data Source={instancia};Initial Catalog=master;Integrated Security=True;Connect Timeout={timeout}";
+
+        private static string ConexionBase(string instancia) =>
+            $"Data Source={instancia};Initial Catalog={NOMBRE_BD};Integrated Security=True;Connect Timeout=15";
+
         private static void EliminarBaseDatos(string instancia)
         {
             SqlConnection.ClearAllPools();
@@ -221,5 +231,7 @@ namespace DAL
                 }
             }
         }
+
+        #endregion
     }
 }

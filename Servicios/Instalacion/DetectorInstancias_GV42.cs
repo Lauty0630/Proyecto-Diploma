@@ -9,7 +9,13 @@ namespace Servicios.Instalacion
 {
     public static class DetectorInstancias_GV42
     {
+        #region Campos
+
         private const int TIMEOUT_SEG_ENUMERATOR = 3;
+
+        #endregion
+
+        #region Métodos públicos
 
         public static List<string> DetectarInstancias()
         {
@@ -26,6 +32,10 @@ namespace Servicios.Instalacion
 
             return lista;
         }
+
+        #endregion
+
+        #region Métodos privados
 
         private static List<string> DetectarSqlServerLocalesConTimeout(int segundos)
         {
@@ -103,5 +113,7 @@ namespace Servicios.Instalacion
 
             return lista;
         }
+
+        #endregion
     }
 }

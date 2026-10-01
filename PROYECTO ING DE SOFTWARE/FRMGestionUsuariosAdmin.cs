@@ -1,20 +1,17 @@
 ﻿using Servicios;
 using System;
 using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
-using System.Drawing;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows.Forms;
 using BLL;
 
 namespace PROYECTO_ING_DE_SOFTWARE
 {
-
+    // Gestión de usuarios del sistema (ABM, desbloqueo, activación) y serialización XML del maestro.
+    // El diseño está en FRMGestionUsuariosAdmin.Designer.cs (Form Designer); acá va solo la lógica.
     public partial class FRMGestionUsuariosAdmin : Form, IObservadorIdioma_GV42
     {
+        #region Campos
+
         private readonly BLLUsuario_GV42 _bll;
 
         private string _modo = "Consulta";
@@ -25,47 +22,84 @@ namespace PROYECTO_ING_DE_SOFTWARE
         // (no desde la base): en ese estado no se permite el ABM sobre esas filas.
         private bool _mostrandoXml = false;
 
+        // Serializar / des-serializar exige la patente Usuarios.Ver (se calcula en AplicarPermisos).
+        private bool _puedeSerializar = true;
+
+        // Último mensaje de la caja "Mensaje": se guarda cómo armarlo para regenerarlo al cambiar el idioma.
+        private Func<string> _generadorMensaje;
+        private bool _mensajeEsError;
+
+        #endregion
+
+        #region Constructor
+
         public FRMGestionUsuariosAdmin()
         {
             InitializeComponent();
             _bll = new BLLUsuario_GV42();
 
             IdiomaManager_GV42.Instancia.Suscribir(this);
-            this.FormClosed += (s, e) => IdiomaManager_GV42.Instancia.Desuscribir(this);
+            FormClosed += (s, e) => IdiomaManager_GV42.Instancia.Desuscribir(this);
 
             ActualizarIdioma();
             AplicarPermisos();
 
-            // Largos máximos iguales a los de la base / reglas de negocio, y DNI solo con dígitos.
+            // Largos máximos iguales a los de la base / reglas de negocio (el DNI solo acepta dígitos: txtDni_KeyPress).
             txtDni.MaxLength = 8;
             txtNombre.MaxLength = Validaciones_GV42.MAX_NOMBRE;
             txtApellido.MaxLength = Validaciones_GV42.MAX_NOMBRE;
             txtEmail.MaxLength = Validaciones_GV42.MAX_EMAIL;
-            txtDni.KeyPress += (s, e) => { if (!char.IsControl(e.KeyChar) && !char.IsDigit(e.KeyChar)) e.Handled = true; };
         }
 
-        private void AplicarPermisos()
+        #endregion
+
+        #region Idioma (Observer)
+
+        public void ActualizarIdioma()
         {
-            Usuario_GV42 actual = SessionManager_GV42.Instancia.ObtenerUsuarioActual();
-            if (actual == null || actual.Rol == null) return;
+            Text = IdiomaManager_GV42.T("usuarios.titulo");
+            lblTitulo.Text = IdiomaManager_GV42.T("usuarios.titulo");
+            lblSubtitulo.Text = IdiomaManager_GV42.T("usuarios.subtitulo");
 
-            var bllPermisos = new BLLPermisos_GV42();
-            Rol_GV42 rolCompleto = bllPermisos.ObtenerArbolRol(actual.Rol.Id);
-            if (rolCompleto == null) return;
+            lblTituloDatos.Text = IdiomaManager_GV42.T("usuarios.tituloDatos");
+            label1.Text = IdiomaManager_GV42.T("usuarios.dni");
+            label2.Text = IdiomaManager_GV42.T("usuarios.apellido");
+            label3.Text = IdiomaManager_GV42.T("usuarios.nombre");
+            label4.Text = IdiomaManager_GV42.T("usuarios.email");
+            label5.Text = IdiomaManager_GV42.T("usuarios.rol");
+            label6.Text = IdiomaManager_GV42.T("usuarios.userName");
+            label7.Text = IdiomaManager_GV42.T("usuarios.bloqueado");
+            label8.Text = IdiomaManager_GV42.T("usuarios.activo");
+            lblTituloMensaje.Text = IdiomaManager_GV42.T("usuarios.mensaje");
+            lblMensaje.Text = TraducirModo(_modo);
 
-            if (btnCrear != null)
-                btnCrear.Visible = rolCompleto.TienePermiso("Usuarios.Crear");
-            if (btnModificar != null)
-                btnModificar.Visible = rolCompleto.TienePermiso("Usuarios.Modificar");
-            if (btnDesbloquear != null)
-                btnDesbloquear.Visible = rolCompleto.TienePermiso("Usuarios.Desbloquear");
-            if (btnActivarDesactivar != null)
-                btnActivarDesactivar.Visible = rolCompleto.TienePermiso("Usuarios.Activar");
+            lblTituloGrilla.Text = IdiomaManager_GV42.T("usuarios.tituloGrilla");
+            rbActivos.Text = IdiomaManager_GV42.T("usuarios.activos");
+            rbTodos.Text = IdiomaManager_GV42.T("usuarios.todos");
 
-            // Serializar / des-serializar el maestro exige poder ver usuarios (también lo controla la BLL).
-            bool puedeVer = rolCompleto.TienePermiso("Usuarios.Ver");
-            if (btnSerializar != null) btnSerializar.Enabled = puedeVer;
-            if (btnDeserializar != null) btnDeserializar.Enabled = puedeVer;
+            btnCrear.Text = IdiomaManager_GV42.T("usuarios.crear");
+            btnModificar.Text = IdiomaManager_GV42.T("usuarios.modificar");
+            btnDesbloquear.Text = IdiomaManager_GV42.T("usuarios.desbloquear");
+            btnActivarDesactivar.Text = IdiomaManager_GV42.T("usuarios.activarDesactivar");
+            btnAplicar.Text = IdiomaManager_GV42.T("usuarios.aplicar");
+            btnCancelar.Text = IdiomaManager_GV42.T("usuarios.cancelar");
+            btnSalir.Text = IdiomaManager_GV42.T("usuarios.salir");
+
+            lblTituloSerializacion.Text = IdiomaManager_GV42.T("serializacion.titulo");
+            btnActualizar.Text = IdiomaManager_GV42.T("usuarios.actualizar");
+            btnLimpiar.Text = IdiomaManager_GV42.T("usuarios.limpiar");
+            btnSerializar.Text = IdiomaManager_GV42.T("serializacion.serializar");
+            btnDeserializar.Text = IdiomaManager_GV42.T("serializacion.deserializar");
+            ConfigurarAyudas();
+
+            // Datos ya mostrados: encabezados de la grilla, Sí/No del usuario elegido y el último mensaje.
+            ConfigurarColumnasGrilla();
+            if (_usuarioSeleccionado != null)
+            {
+                if (txtBloqueado.Text.Length > 0) txtBloqueado.Text = TextoSiNo(_usuarioSeleccionado.Bloqueo);
+                if (txtActivo.Text.Length > 0) txtActivo.Text = TextoSiNo(_usuarioSeleccionado.Activo);
+            }
+            RefrescarMensaje();
         }
 
         private void ConfigurarAyudas()
@@ -79,87 +113,48 @@ namespace PROYECTO_ING_DE_SOFTWARE
             toolTipAyuda.SetToolTip(btnUbicacionDeserializar, IdiomaManager_GV42.T("serializacion.ayudaArchivo"));
         }
 
-        public void ActualizarIdioma()
-        {
-            this.Text = IdiomaManager_GV42.T("usuarios.titulo");
-
-            if (label1 != null) label1.Text = IdiomaManager_GV42.T("usuarios.dni");
-            if (label2 != null) label2.Text = IdiomaManager_GV42.T("usuarios.apellido");
-            if (label3 != null) label3.Text = IdiomaManager_GV42.T("usuarios.nombre");
-            if (label4 != null) label4.Text = IdiomaManager_GV42.T("usuarios.email");
-            if (label5 != null) label5.Text = IdiomaManager_GV42.T("usuarios.rol");
-            if (label6 != null) label6.Text = IdiomaManager_GV42.T("usuarios.userName");
-            if (label7 != null) label7.Text = IdiomaManager_GV42.T("usuarios.bloqueado");
-            if (label8 != null) label8.Text = IdiomaManager_GV42.T("usuarios.activo");
-
-            if (btnCrear != null) btnCrear.Text = IdiomaManager_GV42.T("usuarios.crear");
-            if (btnModificar != null) btnModificar.Text = IdiomaManager_GV42.T("usuarios.modificar");
-            if (btnDesbloquear != null) btnDesbloquear.Text = IdiomaManager_GV42.T("usuarios.desbloquear");
-            if (btnActivarDesactivar != null) btnActivarDesactivar.Text = IdiomaManager_GV42.T("usuarios.activarDesactivar");
-            if (btnAplicar != null) btnAplicar.Text = IdiomaManager_GV42.T("usuarios.aplicar");
-            if (btnCancelar != null) btnCancelar.Text = IdiomaManager_GV42.T("usuarios.cancelar");
-            if (btnSalir != null) btnSalir.Text = IdiomaManager_GV42.T("usuarios.salir");
-
-            if (rbActivos != null) rbActivos.Text = IdiomaManager_GV42.T("usuarios.activos");
-            if (rbTodos != null) rbTodos.Text = IdiomaManager_GV42.T("usuarios.todos");
-
-            if (lblMensaje != null) lblMensaje.Text = TraducirModo(_modo);
-
-            if (btnActualizar != null) btnActualizar.Text = IdiomaManager_GV42.T("usuarios.actualizar");
-            if (btnLimpiar != null) btnLimpiar.Text = IdiomaManager_GV42.T("usuarios.limpiar");
-            if (lblTituloMensaje != null) lblTituloMensaje.Text = IdiomaManager_GV42.T("usuarios.mensaje");
-            if (lblTituloSerializacion != null) lblTituloSerializacion.Text = IdiomaManager_GV42.T("serializacion.titulo");
-            if (btnSerializar != null) btnSerializar.Text = IdiomaManager_GV42.T("serializacion.serializar");
-            if (btnDeserializar != null) btnDeserializar.Text = IdiomaManager_GV42.T("serializacion.deserializar");
-            if (toolTipAyuda != null) ConfigurarAyudas();
-
-            ConfigurarColumnasGrilla();
-        }
-
         private string TraducirModo(string modo)
         {
             string etiquetaModo = IdiomaManager_GV42.T("usuarios.modo");
-            if (_mostrandoXml) return etiquetaModo + " " + IdiomaManager_GV42.T("serializacion.modoVistaXml");
-            return etiquetaModo + " " + modo;
+            if (_mostrandoXml) return etiquetaModo + ": " + IdiomaManager_GV42.T("serializacion.modoVistaXml");
+            return etiquetaModo + ": " + IdiomaManager_GV42.TConDefecto("usuarios.nombreModo" + modo, modo);
         }
 
-        private void FRMPrincipalAdmin_Load(object sender, EventArgs e)
+        private static string TextoSiNo(bool valor)
         {
-            try
-            {
-                ConfigurarGrillaSoloLectura();
-                CargarRoles();
-                ModoConsulta();
-                // Al marcar rbActivos se dispara rbActivos_CheckedChanged, que ya carga la grilla
-                // (antes la grilla se cargaba dos veces al abrir el formulario).
-                if (rbActivos.Checked) CargarGrilla(soloActivos: true);
-                else rbActivos.Checked = true;
-            }
-            catch (Exception ex)
-            {
-                Tema_GV42.MostrarErrorInesperado("cargar los usuarios", ex);
-            }
+            return IdiomaManager_GV42.T(valor ? "general.si" : "general.no");
         }
 
-        private void ConfigurarGrillaSoloLectura()
+        #endregion
+
+        #region Permisos
+
+        private void AplicarPermisos()
         {
-            dgvUsuarios.ReadOnly = true;
-            dgvUsuarios.AllowUserToAddRows = false;
-            dgvUsuarios.AllowUserToDeleteRows = false;
-            dgvUsuarios.AllowUserToResizeRows = false;
-            dgvUsuarios.AllowUserToResizeColumns = false;
-            dgvUsuarios.AllowUserToOrderColumns = false;
-            dgvUsuarios.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
-            dgvUsuarios.MultiSelect = false;
-            dgvUsuarios.RowHeadersVisible = false;
-            dgvUsuarios.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.AllCells;
-            dgvUsuarios.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.DisableResizing;
-            dgvUsuarios.RowHeadersWidthSizeMode = DataGridViewRowHeadersWidthSizeMode.DisableResizing;
+            Usuario_GV42 actual = SessionManager_GV42.Instancia.ObtenerUsuarioActual();
+            if (actual == null || actual.Rol == null) return;
+
+            var bllPermisos = new BLLPermisos_GV42();
+            Rol_GV42 rolCompleto = bllPermisos.ObtenerArbolRol(actual.Rol.Id);
+            if (rolCompleto == null) return;
+
+            btnCrear.Visible = rolCompleto.TienePermiso("Usuarios.Crear");
+            btnModificar.Visible = rolCompleto.TienePermiso("Usuarios.Modificar");
+            btnDesbloquear.Visible = rolCompleto.TienePermiso("Usuarios.Desbloquear");
+            btnActivarDesactivar.Visible = rolCompleto.TienePermiso("Usuarios.Activar");
+
+            // Serializar / des-serializar el maestro exige poder ver usuarios (también lo controla la BLL).
+            _puedeSerializar = rolCompleto.TienePermiso("Usuarios.Ver");
+            btnSerializar.Enabled = _puedeSerializar;
+            btnDeserializar.Enabled = _puedeSerializar;
         }
+
+        #endregion
+
+        #region Carga de datos
 
         private void CargarRoles()
         {
-            comboBox1.DropDownStyle = ComboBoxStyle.DropDownList;
             comboBox1.DataSource = _bll.ListarRoles();
             comboBox1.DisplayMember = "Nombre";
             comboBox1.ValueMember = "Id";
@@ -178,10 +173,14 @@ namespace PROYECTO_ING_DE_SOFTWARE
 
             ConfigurarColumnasGrilla();
 
+            // Los usuarios inactivos se resaltan (depende de cada fila, por eso se hace en código).
             foreach (DataGridViewRow row in dgvUsuarios.Rows)
             {
                 if (row.DataBoundItem is Usuario_GV42 u && !u.Activo)
-                    row.DefaultCellStyle.BackColor = Color.LightCoral;
+                {
+                    row.DefaultCellStyle.BackColor = Tema_GV42.FondoError;
+                    row.DefaultCellStyle.ForeColor = Tema_GV42.Error;
+                }
             }
 
             if (dgvUsuarios.Rows.Count == 0)
@@ -203,23 +202,48 @@ namespace PROYECTO_ING_DE_SOFTWARE
                 if (dgvUsuarios.Columns.Contains(col))
                     dgvUsuarios.Columns[col].Visible = false;
 
-            if (dgvUsuarios.Columns.Contains("DNI"))
-                dgvUsuarios.Columns["DNI"].HeaderText = IdiomaManager_GV42.T("usuarios.dni");
-            if (dgvUsuarios.Columns.Contains("Apellido"))
-                dgvUsuarios.Columns["Apellido"].HeaderText = IdiomaManager_GV42.T("usuarios.apellido");
-            if (dgvUsuarios.Columns.Contains("Nombre"))
-                dgvUsuarios.Columns["Nombre"].HeaderText = IdiomaManager_GV42.T("usuarios.nombre");
-            if (dgvUsuarios.Columns.Contains("Login"))
-                dgvUsuarios.Columns["Login"].HeaderText = IdiomaManager_GV42.T("usuarios.login");
-            if (dgvUsuarios.Columns.Contains("RolNombre"))
-                dgvUsuarios.Columns["RolNombre"].HeaderText = IdiomaManager_GV42.T("usuarios.rol");
-            if (dgvUsuarios.Columns.Contains("Email"))
-                dgvUsuarios.Columns["Email"].HeaderText = IdiomaManager_GV42.T("usuarios.email");
-            if (dgvUsuarios.Columns.Contains("Bloqueo"))
-                dgvUsuarios.Columns["Bloqueo"].HeaderText = IdiomaManager_GV42.T("usuarios.bloqueado");
-            if (dgvUsuarios.Columns.Contains("Activo"))
-                dgvUsuarios.Columns["Activo"].HeaderText = IdiomaManager_GV42.T("usuarios.activo");
+            ConfigurarColumna("DNI", "usuarios.dni", 80, 84);
+            ConfigurarColumna("Apellido", "usuarios.apellido", 95, 60);
+            ConfigurarColumna("Nombre", "usuarios.nombre", 90, 60);
+            ConfigurarColumna("Login", "usuarios.login", 85, 60);
+            ConfigurarColumna("RolNombre", "usuarios.rol", 90, 60);
+            ConfigurarColumna("Email", "usuarios.email", 150, 80);
+            ConfigurarColumna("Bloqueo", "usuarios.bloqueado", 75, 60);
+            ConfigurarColumna("Activo", "usuarios.activo", 60, 50);
         }
+
+        // Encabezado traducido y ancho relativo de cada columna (las columnas se generan al enlazar los datos).
+        private void ConfigurarColumna(string nombre, string clave, float pesoAncho, int anchoMinimo)
+        {
+            if (!dgvUsuarios.Columns.Contains(nombre)) return;
+            DataGridViewColumn col = dgvUsuarios.Columns[nombre];
+            col.HeaderText = IdiomaManager_GV42.T(clave);
+            col.FillWeight = pesoAncho;
+            col.MinimumWidth = anchoMinimo;
+        }
+
+        private void SeleccionarRolEnCombo(Rol_GV42 rol)
+        {
+            if (rol == null) { comboBox1.SelectedIndex = -1; return; }
+
+            for (int i = 0; i < comboBox1.Items.Count; i++)
+            {
+                Rol_GV42 r = comboBox1.Items[i] as Rol_GV42;
+                bool mismoRol = rol.Id > 0
+                    ? r != null && r.Id == rol.Id
+                    : r != null && string.Equals(r.Nombre, rol.Nombre, StringComparison.OrdinalIgnoreCase);
+                if (mismoRol)
+                {
+                    comboBox1.SelectedIndex = i;
+                    return;
+                }
+            }
+            comboBox1.SelectedIndex = -1;
+        }
+
+        #endregion
+
+        #region Modos de pantalla
 
         private void ModoConsulta()
         {
@@ -255,16 +279,6 @@ namespace PROYECTO_ING_DE_SOFTWARE
             HabilitarSerializacion(false);
         }
 
-        private void HabilitarSerializacion(bool habilitar)
-        {
-            btnActualizar.Enabled = habilitar;
-            btnLimpiar.Enabled = habilitar;
-            btnSerializar.Enabled = habilitar;
-            btnDeserializar.Enabled = habilitar;
-            btnUbicacionSerializar.Enabled = habilitar;
-            btnUbicacionDeserializar.Enabled = habilitar;
-        }
-
         // La matriz muestra datos de un XML: se puede navegar, volver a serializar o limpiar,
         // pero no hacer ABM, porque esas filas no son necesariamente las de la base.
         private void ModoVistaXml()
@@ -283,6 +297,17 @@ namespace PROYECTO_ING_DE_SOFTWARE
             dgvUsuarios.Enabled = true;
             HabilitarSerializacion(true);
             lblMensaje.Text = TraducirModo(_modo);
+        }
+
+        private void HabilitarSerializacion(bool habilitar)
+        {
+            btnActualizar.Enabled = habilitar;
+            btnLimpiar.Enabled = habilitar;
+            // Sin la patente Usuarios.Ver quedan deshabilitados aunque la pantalla esté en consulta.
+            btnSerializar.Enabled = habilitar && _puedeSerializar;
+            btnDeserializar.Enabled = habilitar && _puedeSerializar;
+            btnUbicacionSerializar.Enabled = habilitar;
+            btnUbicacionDeserializar.Enabled = habilitar;
         }
 
         private void HabilitarCampos(bool habilitar)
@@ -305,117 +330,9 @@ namespace PROYECTO_ING_DE_SOFTWARE
             if (comboBox1.Items.Count > 0) comboBox1.SelectedIndex = 0;
         }
 
-        private void btnCrear_Click(object sender, EventArgs e)
-        {
-            LimpiarCampos();
-            HabilitarCampos(true);
-            dgvUsuarios.Enabled = false;
-            ModoOperacion("Crear");
-        }
+        #endregion
 
-        private void btnAplicar_Click(object sender, EventArgs e)
-        {
-            // Las reglas de la BLL (email repetido, último administrador, permisos, etc.) llegan como
-            // excepción con el motivo: se muestran como aviso en lugar del diálogo de error de .NET.
-            try
-            {
-                switch (_modo)
-                {
-                    case "Crear":
-                        Crear();
-                        break;
-                    case "Modificar":
-                        Modificar();
-                        break;
-                    case "Desbloquear":
-                        Desbloquear();
-                        break;
-                    case "ActivarDesactivar":
-                        ActivarDesactivar();
-                        break;
-                }
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show(ex.Message, IdiomaManager_GV42.T("general.advertencia"),
-                                MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                try { ModoConsulta(); CargarGrilla(rbActivos.Checked); } catch { }
-            }
-        }
-
-        private void ActivarDesactivar()
-        {
-            bool nuevoEstado = !_usuarioSeleccionado.Activo;
-
-            Usuario_GV42 actual = SessionManager_GV42.Instancia.ObtenerUsuarioActual();
-            if (actual != null && _usuarioSeleccionado.Login == actual.Login)
-            {
-                MessageBox.Show(IdiomaManager_GV42.T("usuarios.noAutoDesactivar"),
-                                IdiomaManager_GV42.T("general.accionNoPermitida"),
-                                MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                ModoConsulta();
-                CargarGrilla(rbActivos.Checked);
-                return;
-            }
-
-            _bll.ActivarDesactivar(_usuarioSeleccionado.DNI, nuevoEstado);
-            string claveMsj = nuevoEstado ? "usuarios.usuarioActivado" : "usuarios.usuarioDesactivado";
-            MessageBox.Show(string.Format(IdiomaManager_GV42.T(claveMsj), _usuarioSeleccionado.Login),
-                            IdiomaManager_GV42.T("general.exito"),
-                            MessageBoxButtons.OK, MessageBoxIcon.Information);
-            ModoConsulta();
-            CargarGrilla(rbActivos.Checked);
-        }
-
-        private void Desbloquear()
-        {
-            if (_usuarioSeleccionado.Bloqueo == false)
-            {
-                MessageBox.Show(IdiomaManager_GV42.T("usuarios.usuarioYaDesbloqueado"),
-                                IdiomaManager_GV42.T("general.advertencia"),
-                                MessageBoxButtons.OK, MessageBoxIcon.Information);
-                ModoConsulta();
-                CargarGrilla(rbActivos.Checked);
-                return;
-            }
-
-            string temporal = _bll.Desbloquear(_usuarioSeleccionado.DNI, _usuarioSeleccionado.Login);
-            MessageBox.Show(string.Format(IdiomaManager_GV42.T("usuarios.usuarioDesbloqueado"), _usuarioSeleccionado.Login) +
-                            "\n\nContraseña temporal: " + temporal + "\n(se le pedirá cambiarla al ingresar)",
-                            IdiomaManager_GV42.T("general.exito"),
-                            MessageBoxButtons.OK, MessageBoxIcon.Information);
-            ModoConsulta();
-            CargarGrilla(rbActivos.Checked);
-        }
-
-        private void Modificar()
-        {
-            string email = txtEmail.Text.Trim();
-            Rol_GV42 rol = comboBox1.SelectedItem as Rol_GV42;
-
-            if (!Validaciones_GV42.EsEmailValido(email))
-            {
-                Tema_GV42.MostrarError(txtEmail, Validaciones_GV42.MENSAJE_EMAIL, IdiomaManager_GV42.T("general.advertencia"));
-                return;
-            }
-            if (rol == null)
-            {
-                Tema_GV42.MostrarError(comboBox1, IdiomaManager_GV42.T("usuarios.rolVacio"), IdiomaManager_GV42.T("general.advertencia"));
-                return;
-            }
-
-            if (email != _usuarioSeleccionado.Email)
-                _bll.ModificarEmail(_usuarioSeleccionado.DNI, email);
-
-            if (_usuarioSeleccionado.Rol == null || rol.Id != _usuarioSeleccionado.Rol.Id)
-                _bll.ModificarRol(_usuarioSeleccionado.DNI, rol);
-
-            MessageBox.Show(IdiomaManager_GV42.T("usuarios.confirmarModificado"),
-                            IdiomaManager_GV42.T("general.exito"),
-                            MessageBoxButtons.OK, MessageBoxIcon.Information);
-            ModoConsulta();
-            CargarGrilla(rbActivos.Checked);
-        }
+        #region Operaciones (Crear / Modificar / Desbloquear / Activar)
 
         private void Crear()
         {
@@ -425,9 +342,9 @@ namespace PROYECTO_ING_DE_SOFTWARE
             string email = txtEmail.Text.Trim();
             Rol_GV42 rol = comboBox1.SelectedItem as Rol_GV42;
 
-            if (string.IsNullOrEmpty(dni) || string.IsNullOrEmpty(apellido) ||string.IsNullOrEmpty(nombre) || string.IsNullOrEmpty(email) ||rol == null)
+            if (string.IsNullOrEmpty(dni) || string.IsNullOrEmpty(apellido) || string.IsNullOrEmpty(nombre) || string.IsNullOrEmpty(email) || rol == null)
             {
-                MessageBox.Show(IdiomaManager_GV42.T("general.completarCampos"),IdiomaManager_GV42.T("general.advertencia"),MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                MessageBox.Show(IdiomaManager_GV42.T("general.completarCampos"), IdiomaManager_GV42.T("general.advertencia"), MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
 
@@ -464,8 +381,7 @@ namespace PROYECTO_ING_DE_SOFTWARE
 
                 // El administrador necesita saber con qué credenciales entra la persona la primera vez.
                 MessageBox.Show(IdiomaManager_GV42.T("usuarios.confirmarCreado") + "\n\n" +
-                                "Usuario: " + loginCreado + "\nContraseña inicial: " + loginCreado +
-                                "\n(se le pedirá cambiarla en el primer ingreso)",
+                                IdiomaManager_GV42.T("usuarios.credencialesIniciales", loginCreado, loginCreado),
                                 IdiomaManager_GV42.T("general.exito"),
                                 MessageBoxButtons.OK, MessageBoxIcon.Information);
                 ModoConsulta();
@@ -477,6 +393,132 @@ namespace PROYECTO_ING_DE_SOFTWARE
                                 IdiomaManager_GV42.T("general.error"),
                                 MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
+        }
+
+        private void Modificar()
+        {
+            string email = txtEmail.Text.Trim();
+            Rol_GV42 rol = comboBox1.SelectedItem as Rol_GV42;
+
+            if (!Validaciones_GV42.EsEmailValido(email))
+            {
+                Tema_GV42.MostrarError(txtEmail, Validaciones_GV42.MENSAJE_EMAIL, IdiomaManager_GV42.T("general.advertencia"));
+                return;
+            }
+            if (rol == null)
+            {
+                Tema_GV42.MostrarError(comboBox1, IdiomaManager_GV42.T("usuarios.rolVacio"), IdiomaManager_GV42.T("general.advertencia"));
+                return;
+            }
+
+            if (email != _usuarioSeleccionado.Email)
+                _bll.ModificarEmail(_usuarioSeleccionado.DNI, email);
+
+            if (_usuarioSeleccionado.Rol == null || rol.Id != _usuarioSeleccionado.Rol.Id)
+                _bll.ModificarRol(_usuarioSeleccionado.DNI, rol);
+
+            MessageBox.Show(IdiomaManager_GV42.T("usuarios.confirmarModificado"),
+                            IdiomaManager_GV42.T("general.exito"),
+                            MessageBoxButtons.OK, MessageBoxIcon.Information);
+            ModoConsulta();
+            CargarGrilla(rbActivos.Checked);
+        }
+
+        private void Desbloquear()
+        {
+            if (_usuarioSeleccionado.Bloqueo == false)
+            {
+                MessageBox.Show(IdiomaManager_GV42.T("usuarios.usuarioYaDesbloqueado"),
+                                IdiomaManager_GV42.T("general.advertencia"),
+                                MessageBoxButtons.OK, MessageBoxIcon.Information);
+                ModoConsulta();
+                CargarGrilla(rbActivos.Checked);
+                return;
+            }
+
+            string temporal = _bll.Desbloquear(_usuarioSeleccionado.DNI, _usuarioSeleccionado.Login);
+            MessageBox.Show(IdiomaManager_GV42.T("usuarios.usuarioDesbloqueado", _usuarioSeleccionado.Login) + "\n\n" +
+                            IdiomaManager_GV42.T("usuarios.contrasenaTemporal", temporal),
+                            IdiomaManager_GV42.T("general.exito"),
+                            MessageBoxButtons.OK, MessageBoxIcon.Information);
+            ModoConsulta();
+            CargarGrilla(rbActivos.Checked);
+        }
+
+        private void ActivarDesactivar()
+        {
+            bool nuevoEstado = !_usuarioSeleccionado.Activo;
+
+            Usuario_GV42 actual = SessionManager_GV42.Instancia.ObtenerUsuarioActual();
+            if (actual != null && _usuarioSeleccionado.Login == actual.Login)
+            {
+                MessageBox.Show(IdiomaManager_GV42.T("usuarios.noAutoDesactivar"),
+                                IdiomaManager_GV42.T("general.accionNoPermitida"),
+                                MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                ModoConsulta();
+                CargarGrilla(rbActivos.Checked);
+                return;
+            }
+
+            _bll.ActivarDesactivar(_usuarioSeleccionado.DNI, nuevoEstado);
+            string claveMsj = nuevoEstado ? "usuarios.usuarioActivado" : "usuarios.usuarioDesactivado";
+            MessageBox.Show(IdiomaManager_GV42.T(claveMsj, _usuarioSeleccionado.Login),
+                            IdiomaManager_GV42.T("general.exito"),
+                            MessageBoxButtons.OK, MessageBoxIcon.Information);
+            ModoConsulta();
+            CargarGrilla(rbActivos.Checked);
+        }
+
+        #endregion
+
+        #region Serialización XML
+
+        // Caso de uso compartido: SERIALIZAR / DES-SERIALIZAR el maestro de usuarios.
+
+        // Muestra un texto en la caja "Mensaje". Se guarda la forma de armarlo para poder
+        // regenerarlo en el otro idioma cuando cambia el idioma (ActualizarIdioma).
+        private void MostrarMensaje(Func<string> generador, bool esError = false)
+        {
+            _generadorMensaje = generador;
+            _mensajeEsError = esError;
+            RefrescarMensaje();
+        }
+
+        private void RefrescarMensaje()
+        {
+            if (_generadorMensaje == null) return;
+            // El color depende del resultado (error / normal), por eso se asigna en tiempo de ejecución.
+            txtMensaje.ForeColor = _mensajeEsError ? Tema_GV42.Error : Tema_GV42.Texto;
+            txtMensaje.Text = _generadorMensaje();
+        }
+
+        private string FiltroXml() => IdiomaManager_GV42.T("serializacion.filtroXml") + " (*.xml)|*.xml";
+
+        #endregion
+
+        #region Eventos
+
+        private void FRMPrincipalAdmin_Load(object sender, EventArgs e)
+        {
+            try
+            {
+                CargarRoles();
+                ModoConsulta();
+                // Al marcar rbActivos se dispara rbActivos_CheckedChanged, que ya carga la grilla
+                // (antes la grilla se cargaba dos veces al abrir el formulario).
+                if (rbActivos.Checked) CargarGrilla(soloActivos: true);
+                else rbActivos.Checked = true;
+            }
+            catch (Exception ex)
+            {
+                Tema_GV42.MostrarErrorInesperado(IdiomaManager_GV42.T("usuarios.accionCargar"), ex);
+            }
+        }
+
+        private void txtDni_KeyPress(object sender, KeyPressEventArgs e)
+        {
+            // El DNI solo admite dígitos.
+            if (!char.IsControl(e.KeyChar) && !char.IsDigit(e.KeyChar)) e.Handled = true;
         }
 
         private void dgvUsuarios_SelectionChanged(object sender, EventArgs e)
@@ -492,27 +534,8 @@ namespace PROYECTO_ING_DE_SOFTWARE
             txtEmail.Text = _usuarioSeleccionado.Email;
             SeleccionarRolEnCombo(_usuarioSeleccionado.Rol);
             txtUser.Text = _usuarioSeleccionado.Login;
-            txtBloqueado.Text = _usuarioSeleccionado.Bloqueo ? "Sí" : "No";
-            txtActivo.Text = _usuarioSeleccionado.Activo ? "Sí" : "No";
-        }
-
-        private void SeleccionarRolEnCombo(Rol_GV42 rol)
-        {
-            if (rol == null) { comboBox1.SelectedIndex = -1; return; }
-
-            for (int i = 0; i < comboBox1.Items.Count; i++)
-            {
-                Rol_GV42 r = comboBox1.Items[i] as Rol_GV42;
-                bool mismoRol = rol.Id > 0
-                    ? r != null && r.Id == rol.Id
-                    : r != null && string.Equals(r.Nombre, rol.Nombre, StringComparison.OrdinalIgnoreCase);
-                if (mismoRol)
-                {
-                    comboBox1.SelectedIndex = i;
-                    return;
-                }
-            }
-            comboBox1.SelectedIndex = -1;
+            txtBloqueado.Text = TextoSiNo(_usuarioSeleccionado.Bloqueo);
+            txtActivo.Text = TextoSiNo(_usuarioSeleccionado.Activo);
         }
 
         private void rbActivos_CheckedChanged(object sender, EventArgs e)
@@ -525,15 +548,27 @@ namespace PROYECTO_ING_DE_SOFTWARE
             if (rbTodos.Checked) CargarGrilla(soloActivos: false);
         }
 
-        private void btnCancelar_Click(object sender, EventArgs e)
+        private void btnCrear_Click(object sender, EventArgs e)
         {
-            ModoConsulta();
-            CargarGrilla(rbActivos.Checked);
+            LimpiarCampos();
+            HabilitarCampos(true);
+            dgvUsuarios.Enabled = false;
+            ModoOperacion("Crear");
         }
 
-        private void btnSalir_Click(object sender, EventArgs e)
+        private void btnModificar_Click(object sender, EventArgs e)
         {
-            this.Close();
+            if (_usuarioSeleccionado == null)
+            {
+                MessageBox.Show(IdiomaManager_GV42.T("usuarios.seleccionarUsuario"), IdiomaManager_GV42.T("general.advertencia"), MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            HabilitarCampos(false);
+            txtEmail.Enabled = true;
+            comboBox1.Enabled = true;
+            dgvUsuarios.Enabled = false;
+            ModoOperacion("Modificar");
         }
 
         private void btnDesbloquear_Click(object sender, EventArgs e)
@@ -550,21 +585,6 @@ namespace PROYECTO_ING_DE_SOFTWARE
             ModoOperacion("Desbloquear");
         }
 
-        private void btnModificar_Click(object sender, EventArgs e)
-        {
-            if (_usuarioSeleccionado == null)
-            {
-                MessageBox.Show(IdiomaManager_GV42.T("usuarios.seleccionarUsuario"),IdiomaManager_GV42.T("general.advertencia"),MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                return;
-            }
-
-            HabilitarCampos(false);
-            txtEmail.Enabled = true;
-            comboBox1.Enabled = true;
-            dgvUsuarios.Enabled = false;
-            ModoOperacion("Modificar");
-        }
-
         private void btnActivarDesactivar_Click(object sender, EventArgs e)
         {
             if (_usuarioSeleccionado == null)
@@ -579,17 +599,46 @@ namespace PROYECTO_ING_DE_SOFTWARE
             ModoOperacion("ActivarDesactivar");
         }
 
-        // ---------------------------------------------------------------------------------
-        // Serialización XML (Caso de uso compartido: SERIALIZAR / DES-SERIALIZAR)
-        // ---------------------------------------------------------------------------------
-
-        private void MostrarMensaje(string texto, bool esError = false)
+        private void btnAplicar_Click(object sender, EventArgs e)
         {
-            txtMensaje.ForeColor = esError ? Color.FromArgb(198, 40, 40) : Color.FromArgb(33, 33, 33);
-            txtMensaje.Text = texto;
+            // Las reglas de la BLL (email repetido, último administrador, permisos, etc.) llegan como
+            // excepción con el motivo: se muestran como aviso en lugar del diálogo de error de .NET.
+            try
+            {
+                switch (_modo)
+                {
+                    case "Crear":
+                        Crear();
+                        break;
+                    case "Modificar":
+                        Modificar();
+                        break;
+                    case "Desbloquear":
+                        Desbloquear();
+                        break;
+                    case "ActivarDesactivar":
+                        ActivarDesactivar();
+                        break;
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message, IdiomaManager_GV42.T("general.advertencia"),
+                                MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                try { ModoConsulta(); CargarGrilla(rbActivos.Checked); } catch { }
+            }
         }
 
-        private string FiltroXml() => IdiomaManager_GV42.T("serializacion.filtroXml") + " (*.xml)|*.xml";
+        private void btnCancelar_Click(object sender, EventArgs e)
+        {
+            ModoConsulta();
+            CargarGrilla(rbActivos.Checked);
+        }
+
+        private void btnSalir_Click(object sender, EventArgs e)
+        {
+            Close();
+        }
 
         private void btnUbicacionSerializar_Click(object sender, EventArgs e)
         {
@@ -613,8 +662,9 @@ namespace PROYECTO_ING_DE_SOFTWARE
 
                 if (dlg.ShowDialog(this) == DialogResult.OK)
                 {
-                    txtRutaSerializar.Text = dlg.FileName;
-                    MostrarMensaje(IdiomaManager_GV42.T("serializacion.ubicacionElegida") + Environment.NewLine + dlg.FileName);
+                    string ruta = dlg.FileName;
+                    txtRutaSerializar.Text = ruta;
+                    MostrarMensaje(() => IdiomaManager_GV42.T("serializacion.ubicacionElegida") + Environment.NewLine + ruta);
                 }
             }
         }
@@ -623,20 +673,21 @@ namespace PROYECTO_ING_DE_SOFTWARE
         {
             if (string.IsNullOrWhiteSpace(txtRutaSerializar.Text))
             {
-                MostrarMensaje(IdiomaManager_GV42.T("serializacion.sinUbicacion"), true);
+                MostrarMensaje(() => IdiomaManager_GV42.T("serializacion.sinUbicacion"), true);
                 return;
             }
 
             List<Usuario_GV42> visibles = dgvUsuarios.DataSource as List<Usuario_GV42>;
+            string ruta = txtRutaSerializar.Text;
             try
             {
-                int cantidad = _bll.SerializarUsuarios(visibles, txtRutaSerializar.Text);
-                MostrarMensaje(string.Format(IdiomaManager_GV42.T("serializacion.okSerializar"),
-                                             cantidad, txtRutaSerializar.Text));
+                int cantidad = _bll.SerializarUsuarios(visibles, ruta);
+                MostrarMensaje(() => IdiomaManager_GV42.T("serializacion.okSerializar", cantidad, ruta));
             }
             catch (Exception ex)
             {
-                MostrarMensaje(ex.Message, true);
+                string error = ex.Message;
+                MostrarMensaje(() => error, true);
             }
         }
 
@@ -655,8 +706,9 @@ namespace PROYECTO_ING_DE_SOFTWARE
 
                 if (dlg.ShowDialog(this) == DialogResult.OK)
                 {
-                    txtRutaDeserializar.Text = dlg.FileName;
-                    MostrarMensaje(IdiomaManager_GV42.T("serializacion.archivoElegido") + Environment.NewLine + dlg.FileName);
+                    string ruta = dlg.FileName;
+                    txtRutaDeserializar.Text = ruta;
+                    MostrarMensaje(() => IdiomaManager_GV42.T("serializacion.archivoElegido") + Environment.NewLine + ruta);
                 }
             }
         }
@@ -665,7 +717,7 @@ namespace PROYECTO_ING_DE_SOFTWARE
         {
             if (string.IsNullOrWhiteSpace(txtRutaDeserializar.Text))
             {
-                MostrarMensaje(IdiomaManager_GV42.T("serializacion.sinArchivo"), true);
+                MostrarMensaje(() => IdiomaManager_GV42.T("serializacion.sinArchivo"), true);
                 return;
             }
 
@@ -674,12 +726,14 @@ namespace PROYECTO_ING_DE_SOFTWARE
                 List<Usuario_GV42> usuarios = _bll.DeserializarUsuarios(txtRutaDeserializar.Text);
                 MostrarEnGrilla(usuarios);
                 ModoVistaXml();
-                MostrarMensaje(string.Format(IdiomaManager_GV42.T("serializacion.okDeserializar"),
-                                             usuarios.Count, System.IO.Path.GetFileName(txtRutaDeserializar.Text)));
+                int cantidad = usuarios.Count;
+                string archivo = System.IO.Path.GetFileName(txtRutaDeserializar.Text);
+                MostrarMensaje(() => IdiomaManager_GV42.T("serializacion.okDeserializar", cantidad, archivo));
             }
             catch (Exception ex)
             {
-                MostrarMensaje(ex.Message, true);
+                string error = ex.Message;
+                MostrarMensaje(() => error, true);
             }
         }
 
@@ -689,11 +743,12 @@ namespace PROYECTO_ING_DE_SOFTWARE
             {
                 ModoConsulta();
                 CargarGrilla(rbActivos.Checked);
-                MostrarMensaje(IdiomaManager_GV42.T("serializacion.actualizado"));
+                MostrarMensaje(() => IdiomaManager_GV42.T("serializacion.actualizado"));
             }
             catch (Exception ex)
             {
-                MostrarMensaje(ex.Message, true);
+                string error = ex.Message;
+                MostrarMensaje(() => error, true);
             }
         }
 
@@ -705,7 +760,9 @@ namespace PROYECTO_ING_DE_SOFTWARE
             LimpiarCampos();
             txtRutaSerializar.Text = string.Empty;
             txtRutaDeserializar.Text = string.Empty;
-            MostrarMensaje(IdiomaManager_GV42.T("serializacion.limpiado"));
+            MostrarMensaje(() => IdiomaManager_GV42.T("serializacion.limpiado"));
         }
+
+        #endregion
     }
 }

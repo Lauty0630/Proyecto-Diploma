@@ -5,6 +5,8 @@ namespace BE
     // Se emite un boleto por cada pasajero al confirmarse el pago.
     public class Boleto_GV42
     {
+        #region Propiedades
+
         public int Id { get; set; }
 
         // Autogenerado por la base de datos (ej: BOL-000001).
@@ -17,5 +19,7 @@ namespace BE
 
         public string PasajeroNombre { get { return Pasajero != null ? Pasajero.NombreCompleto : string.Empty; } }
         public string PasajeroDni { get { return Pasajero != null ? Pasajero.DNI : string.Empty; } }
+
+        #endregion
     }
 }

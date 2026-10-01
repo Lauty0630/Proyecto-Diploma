@@ -6,13 +6,23 @@ namespace BLL
 {
     public static class BLLInstalador_GV42
     {
+        #region Constantes
+
         // Días hacia adelante para los que siempre tiene que haber vuelos a la venta.
         public const int DIAS_VUELOS_DISPONIBLES = 30;
+
+        #endregion
+
+        #region Propiedades
 
         public static string NombreBD
         {
             get { return InstaladorBD_GV42.NOMBRE_BD; }
         }
+
+        #endregion
+
+        #region Instalación y actualización de la base
 
         public static bool ExisteBaseDatos(string instancia)
         {
@@ -45,6 +55,10 @@ namespace BLL
             InstaladorBD_GV42.ReinstalarBaseDatos(instancia);
         }
 
+        #endregion
+
+        #region Tareas de mantenimiento
+
         // Crea los vuelos que falten para los próximos días (no hace nada si ya están).
         public static int AsegurarVuelosDisponibles(string instancia)
         {
@@ -68,11 +82,17 @@ namespace BLL
             }
         }
 
+        #endregion
+
+        #region Conexión
+
         public static void ConfigurarConexion(string instancia)
         {
             Acceso.InstanciaActual = instancia;
             Acceso.ConnectionString = ConfiguracionBD_GV42.ArmarConnectionString(
                 instancia, InstaladorBD_GV42.NOMBRE_BD);
         }
+
+        #endregion
     }
 }

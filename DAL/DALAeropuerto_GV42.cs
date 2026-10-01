@@ -6,12 +6,22 @@ namespace DAL
 {
     public class DALAeropuerto_GV42
     {
+        #region Campos
+
         private readonly Acceso _acceso;
+
+        #endregion
+
+        #region Constructor
 
         public DALAeropuerto_GV42()
         {
             _acceso = Acceso.Instancia;
         }
+
+        #endregion
+
+        #region Métodos públicos
 
         public List<Aeropuerto_GV42> ListarTodos()
         {
@@ -32,5 +42,7 @@ namespace DAL
             }
             return lista;
         }
+
+        #endregion
     }
 }

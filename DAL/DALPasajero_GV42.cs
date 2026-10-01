@@ -8,12 +8,22 @@ namespace DAL
     // Acceso a la tabla Pasajero: personas que reservan (cliente de la reserva) y/o viajan.
     public class DALPasajero_GV42
     {
+        #region Campos
+
         private readonly Acceso _acceso;
+
+        #endregion
+
+        #region Constructor
 
         public DALPasajero_GV42()
         {
             _acceso = Acceso.Instancia;
         }
+
+        #endregion
+
+        #region Métodos públicos
 
         public bool ExisteDni(string dni)
         {
@@ -74,5 +84,7 @@ namespace DAL
             };
             _acceso.escribir(query, prm);
         }
+
+        #endregion
     }
 }

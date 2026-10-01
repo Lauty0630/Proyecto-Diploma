@@ -8,23 +8,37 @@ namespace Servicios
 
     public class EncriptadorReversible_GV42
     {
+        #region Campos
+
         private static EncriptadorReversible_GV42 _instancia;
 
         private static readonly byte[] CLAVE = Encoding.UTF8.GetBytes("GV42_K3y_S3cr3ta_ProyectoIngSft!");
 
         private static readonly byte[] IV = Encoding.UTF8.GetBytes("GV42_IV_ProyMng_");
 
+        #endregion
+
+        #region Constructor
+
         private EncriptadorReversible_GV42() { }
+
+        #endregion
+
+        #region Propiedades
 
         public static EncriptadorReversible_GV42 Instancia
         {
             get
             {
                 if (_instancia == null)
-                _instancia = new EncriptadorReversible_GV42();
+                    _instancia = new EncriptadorReversible_GV42();
                 return _instancia;
             }
         }
+
+        #endregion
+
+        #region Métodos públicos
 
         public string Encriptar(string textoPlano)
         {
@@ -71,5 +85,7 @@ namespace Servicios
                 return textoCifrado;
             }
         }
+
+        #endregion
     }
 }

@@ -10,9 +10,15 @@ namespace DAL
 
     public class DALRol_GV42
     {
+        #region Campos
+
         private readonly Acceso _acceso;
         private readonly DALFamilia_GV42 _dalFamilia;
         private readonly DALPatente_GV42 _dalPatente;
+
+        #endregion
+
+        #region Constructor
 
         public DALRol_GV42()
         {
@@ -20,6 +26,10 @@ namespace DAL
             _dalFamilia = new DALFamilia_GV42();
             _dalPatente = new DALPatente_GV42();
         }
+
+        #endregion
+
+        #region Métodos públicos
 
         public List<Rol_GV42> ListarTodos()
         {
@@ -96,17 +106,6 @@ namespace DAL
             });
         }
 
-        private void InsertarHijos(SqlTransaction tx, int idRol, List<int> idsPatentes, List<int> idsFamilias)
-        {
-            foreach (int idPat in idsPatentes ?? new List<int>())
-                _acceso.escribir(tx, "INSERT INTO RolPatente (IdRol, IdPatente) VALUES (@R, @P)",
-                    new[] { new SqlParameter("@R", idRol), new SqlParameter("@P", idPat) });
-
-            foreach (int idFam in idsFamilias ?? new List<int>())
-                _acceso.escribir(tx, "INSERT INTO RolFamilia (IdRol, IdFamilia) VALUES (@R, @F)",
-                    new[] { new SqlParameter("@R", idRol), new SqlParameter("@F", idFam) });
-        }
-
         public bool EstaEnUso(int idRol)
         {
             string q = "SELECT COUNT(1) FROM Usuario WHERE IdRol = @Id";
@@ -159,5 +158,22 @@ namespace DAL
             DataTable dt = _acceso.leer(q, new[] { new SqlParameter("@Id", idRol) });
             return dt.Rows.Cast<DataRow>().Select(r => Convert.ToInt32(r["IdFamilia"])).ToList();
         }
+
+        #endregion
+
+        #region Métodos privados
+
+        private void InsertarHijos(SqlTransaction tx, int idRol, List<int> idsPatentes, List<int> idsFamilias)
+        {
+            foreach (int idPat in idsPatentes ?? new List<int>())
+                _acceso.escribir(tx, "INSERT INTO RolPatente (IdRol, IdPatente) VALUES (@R, @P)",
+                    new[] { new SqlParameter("@R", idRol), new SqlParameter("@P", idPat) });
+
+            foreach (int idFam in idsFamilias ?? new List<int>())
+                _acceso.escribir(tx, "INSERT INTO RolFamilia (IdRol, IdFamilia) VALUES (@R, @F)",
+                    new[] { new SqlParameter("@R", idRol), new SqlParameter("@F", idFam) });
+        }
+
+        #endregion
     }
 }

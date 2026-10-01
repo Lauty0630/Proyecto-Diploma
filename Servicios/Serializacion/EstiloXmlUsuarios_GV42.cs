@@ -8,12 +8,9 @@ namespace Servicios
     // referencia con <?xml-stylesheet type="text/css" href="estilo.css"?>. El XML no se modifica.
     public static class EstiloXmlUsuarios_GV42
     {
-        public const string NOMBRE_ARCHIVO = "estilo.css";
+        #region Campos
 
-        public static string CSS
-        {
-            get { return CONTENIDO_CSS; }
-        }
+        public const string NOMBRE_ARCHIVO = "estilo.css";
 
         private const string CONTENIDO_CSS =
 @"/* Maestro de Usuarios - estilo de visualización del XML serializado */
@@ -79,5 +76,16 @@ Usuario:first-of-type > Activo::before    { content: ""Activo""; }
 
 @page { size: A4 landscape; margin: 18mm; }
 ";
+
+        #endregion
+
+        #region Propiedades
+
+        public static string CSS
+        {
+            get { return CONTENIDO_CSS; }
+        }
+
+        #endregion
     }
 }

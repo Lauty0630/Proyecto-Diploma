@@ -8,10 +8,34 @@ using System.Linq;
 namespace BLL
 {
     // RFN 1 - Reserva de vuelo (atención presencial: Vendedor + Cliente).
+    // Los mensajes que llegan al usuario salen del archivo de idioma (claves "neg.");
+    // lo que se guarda en la bitácora queda en español porque es dato.
     public class BLLReserva_GV42
     {
+        #region Constantes
+
         // Tasa de impuestos aplicada sobre (importe base + adicionales). Ajustar según el enunciado.
         public const decimal TASA_IMPUESTOS = 0.21m;
+
+        public const int MAX_PASAJEROS_POR_RESERVA = 9;
+
+        // Tope absoluto por servicio (además del tope por pasajero de MaximoAdicional).
+        public const int MAX_CANTIDAD_ADICIONAL = 20;
+        public const decimal MAX_COSTO_ADICIONAL = 999999m;
+
+        // Reglas de penalidad según el tiempo que falta para la salida (ajustable si la cátedra
+        // pide otros porcentajes u horas de corte):
+        //   72 hs o más antes de la salida -> sin cargo.
+        //   entre 24 y 72 hs                -> 30% del importe total.
+        //   menos de 24 hs                  -> 100% del importe total (sin reembolso).
+        public const int HORAS_SIN_PENALIDAD = 72;
+        public const int HORAS_PENALIDAD_PARCIAL = 24;
+        public const decimal PORCENTAJE_PENALIDAD_PARCIAL = 0.30m;
+        public const decimal PORCENTAJE_PENALIDAD_TOTAL = 1.00m;
+
+        #endregion
+
+        #region Campos
 
         private readonly DALAeropuerto_GV42 _dalAeropuerto;
         private readonly DALTipoAdicional_GV42 _dalTipoAdicional;
@@ -22,6 +46,12 @@ namespace BLL
         private readonly DALBoleto_GV42 _dalBoleto;
         private readonly DALAsiento_GV42 _dalAsiento;
         private readonly BLLIntegridad_GV42 _bllIntegridad;
+
+        private static readonly Random _generadorAutorizacion = new Random();
+
+        #endregion
+
+        #region Constructor
 
         public BLLReserva_GV42()
         {
@@ -36,13 +66,9 @@ namespace BLL
             _bllIntegridad = new BLLIntegridad_GV42();
         }
 
-        // Recalcula el dígito verificador de una tabla de negocio protegida. Nunca interrumpe la
-        // operación si falla (igual criterio que BLLUsuario_GV42 con la tabla Usuario).
-        private void RecalcularIntegridad(string tabla)
-        {
-            if (BLLIntegridad_GV42.IntegridadConocidamenteRota) return;
-            try { _bllIntegridad.RecalcularTabla(tabla); } catch { }
-        }
+        #endregion
+
+        #region Catálogos
 
         // ---- Catálogos para armar los combos de la pantalla ----
 
@@ -56,6 +82,10 @@ namespace BLL
             return _dalTipoAdicional.ListarActivos();
         }
 
+        #endregion
+
+        #region Búsqueda de vuelos
+
         // ---- Pasos 1 a 4: buscar vuelos disponibles ----
 
         public List<VueloClase_GV42> BuscarVuelosDisponibles(CriterioBusquedaVuelo_GV42 criterio)
@@ -67,26 +97,30 @@ namespace BLL
         private void ValidarCriterio(CriterioBusquedaVuelo_GV42 c)
         {
             if (c == null)
-                throw new NegocioException_GV42("Faltan los datos de búsqueda del vuelo.");
+                throw new NegocioException_GV42(IdiomaManager_GV42.T("neg.reserva.faltanDatosBusqueda"));
             if (c.IdOrigen <= 0)
-                throw new NegocioException_GV42("Debe seleccionar el origen.");
+                throw new NegocioException_GV42(IdiomaManager_GV42.T("neg.reserva.seleccioneOrigen"));
             if (c.IdDestino <= 0)
-                throw new NegocioException_GV42("Debe seleccionar el destino.");
+                throw new NegocioException_GV42(IdiomaManager_GV42.T("neg.reserva.seleccioneDestino"));
             if (c.IdOrigen == c.IdDestino)
-                throw new NegocioException_GV42("El origen y el destino no pueden ser el mismo.");
+                throw new NegocioException_GV42(IdiomaManager_GV42.T("neg.reserva.origenIgualDestino"));
             if (c.FechaSalida.Date < DateTime.Today)
-                throw new NegocioException_GV42("La fecha de salida no puede ser anterior a hoy.");
+                throw new NegocioException_GV42(IdiomaManager_GV42.T("neg.reserva.salidaAnteriorHoy"));
             if (c.CantidadPasajeros < 1)
-                throw new NegocioException_GV42("La cantidad de pasajeros debe ser al menos 1.");
+                throw new NegocioException_GV42(IdiomaManager_GV42.T("neg.reserva.pasajerosMinimo"));
 
             if (c.TipoViaje == TipoViaje_GV42.IdaYVuelta)
             {
                 if (!c.FechaRegreso.HasValue)
-                    throw new NegocioException_GV42("Para un viaje de ida y vuelta debe indicar la fecha de regreso.");
+                    throw new NegocioException_GV42(IdiomaManager_GV42.T("neg.reserva.faltaRegreso"));
                 if (c.FechaRegreso.Value.Date < c.FechaSalida.Date)
-                    throw new NegocioException_GV42("La fecha de regreso no puede ser anterior a la fecha de salida.");
+                    throw new NegocioException_GV42(IdiomaManager_GV42.T("neg.reserva.regresoAnterior"));
             }
         }
+
+        #endregion
+
+        #region Clientes y pasajeros
 
         // ---- Pasos 6 y 7: cliente (la tabla Pasajero guarda tanto al que reserva como al que viaja) ----
 
@@ -116,7 +150,7 @@ namespace BLL
         private static void ExigirVendedorParaBuscarPersonas()
         {
             if (!PatentesActuales().Contains("Reservas.Generar"))
-                throw new NegocioException_GV42("No tenés permiso para buscar personas por DNI.");
+                throw new NegocioException_GV42(IdiomaManager_GV42.T("neg.reserva.sinPermisoBuscarPersonas"));
         }
 
         // ---- Identidad de las personas ----
@@ -137,7 +171,7 @@ namespace BLL
 
         // Lanza excepción si el DNI ya pertenece a otra persona. 'mostrarRegistrado' indica si el
         // mensaje puede decir a nombre de quién está (vendedor sí; cliente autogestionado no, para no
-        // exponer datos de terceros a partir de un DNI).
+        // exponer datos de terceros a partir de un DNI). 'rol' ya llega traducido.
         private void VerificarIdentidad(Persona_GV42 p, string rol, bool mostrarRegistrado)
         {
             Pasajero_GV42 registrado = PersonaRegistrada(p.DNI, out bool _);
@@ -148,22 +182,21 @@ namespace BLL
             if (coincide) return;
 
             if (mostrarRegistrado)
-                throw new NegocioException_GV42(rol + ": el DNI " + p.DNI + " ya está registrado a nombre de " +
-                    registrado.Nombre + " " + registrado.Apellido + ". Verificá el DNI o usá los datos registrados.");
+                throw new NegocioException_GV42(IdiomaManager_GV42.T("neg.reserva.dniOtroNombre",
+                    rol, p.DNI, registrado.Nombre, registrado.Apellido));
 
-            throw new NegocioException_GV42(rol + ": el DNI " + p.DNI + " ya está registrado en el sistema con otro " +
-                "nombre y apellido. Verificá que el DNI y los datos sean correctos.");
+            throw new NegocioException_GV42(IdiomaManager_GV42.T("neg.reserva.dniOtroNombreOculto", rol, p.DNI));
         }
 
         public void RegistrarPasajero(Pasajero_GV42 pasajero)
         {
-            BLLNegocioUtil_GV42.ValidarPersona(pasajero, "Cliente");
+            BLLNegocioUtil_GV42.ValidarPersona(pasajero, IdiomaManager_GV42.T("neg.rol.cliente"));
 
             if (_dalPasajero.ExisteDni(pasajero.DNI))
-                throw new NegocioException_GV42("Ya existe una persona registrada con el DNI " + pasajero.DNI + ".");
+                throw new NegocioException_GV42(IdiomaManager_GV42.T("neg.reserva.personaDniExiste", pasajero.DNI));
 
             // Si tiene cuenta de usuario, el nombre y apellido deben ser los de esa cuenta.
-            VerificarIdentidad(pasajero, "Cliente", true);
+            VerificarIdentidad(pasajero, IdiomaManager_GV42.T("neg.rol.cliente"), true);
 
             _dalPasajero.Insertar(pasajero);
 
@@ -177,15 +210,15 @@ namespace BLL
         public Usuario_GV42 RegistrarClienteAutogestionado(Pasajero_GV42 cliente, string login,
                                                             string contrasenaPlana, string confirmarContrasena)
         {
-            BLLNegocioUtil_GV42.ValidarPersona(cliente, "Cliente");
+            BLLNegocioUtil_GV42.ValidarPersona(cliente, IdiomaManager_GV42.T("neg.rol.cliente"));
 
             if (contrasenaPlana != confirmarContrasena)
-                throw new NegocioException_GV42("Las contraseñas no coinciden.");
+                throw new NegocioException_GV42(IdiomaManager_GV42.T("neg.reserva.contrasenasNoCoinciden"));
 
             // Alguien que ya viajó (lo cargó un vendedor) puede crear su cuenta: se reutiliza su fila de
             // Pasajero siempre que el nombre y apellido coincidan. Si ya tiene cuenta, lo rechaza el alta
             // del usuario (DNI duplicado en Usuario).
-            VerificarIdentidad(cliente, "Cliente", false);
+            VerificarIdentidad(cliente, IdiomaManager_GV42.T("neg.rol.cliente"), false);
             bool yaEraPasajero = _dalPasajero.ExisteDni(cliente.DNI);
 
             // Si ya viajó (lo cargó un vendedor), además del nombre tiene que coincidir el email que
@@ -196,8 +229,7 @@ namespace BLL
                 Pasajero_GV42 registrado = _dalPasajero.BuscarPorDni(cliente.DNI);
                 if (registrado != null && !string.IsNullOrWhiteSpace(registrado.Email) &&
                     !string.Equals(registrado.Email.Trim(), (cliente.Email ?? "").Trim(), StringComparison.OrdinalIgnoreCase))
-                    throw new NegocioException_GV42("El DNI " + cliente.DNI + " ya tiene reservas a su nombre. Para crear la cuenta " +
-                        "usá el mismo email que dejaste al reservar (o pedile al vendedor que lo actualice).");
+                    throw new NegocioException_GV42(IdiomaManager_GV42.T("neg.reserva.dniConReservasEmail", cliente.DNI));
             }
 
             if (!yaEraPasajero)
@@ -221,17 +253,9 @@ namespace BLL
             }
         }
 
-        // ---- Pasos 8 a 10: generar la reserva en estado "Pendiente de Pago" ----
+        #endregion
 
-        // 'borrador' debe traer: Cliente, VueloClase (con Vuelo.Id y Clase), TipoViaje, FechaRegreso (si es
-        // ida y vuelta), Pasajeros y Adicionales (opcional). Importes, estado y vendedor los completa esta clase.
-        // Asientos libres de una clase de un vuelo, para pintar la grilla de selección estilo cine.
-        public List<AsientoDisponibilidad_GV42> ObtenerMapaAsientos(int idVuelo, ClaseVuelo_GV42 clase)
-        {
-            if (_dalVuelo.BuscarVueloClase(idVuelo, clase) == null)
-                throw new NegocioException_GV42("El vuelo no ofrece la clase seleccionada.");
-            return _dalAsiento.ListarMapa(idVuelo, clase);
-        }
+        #region Permisos de reservas
 
         // ---- Permisos de reservas ----
         // El modo de cada pantalla (vendedor / pasajero) se decide por las PATENTES del rol de la
@@ -281,13 +305,29 @@ namespace BLL
             return autogestion ? CanalVenta_GV42.Autogestion : CanalVenta_GV42.Presencial;
         }
 
+        #endregion
+
+        #region Generar reserva
+
+        // ---- Pasos 8 a 10: generar la reserva en estado "Pendiente de Pago" ----
+
+        // 'borrador' debe traer: Cliente, VueloClase (con Vuelo.Id y Clase), TipoViaje, FechaRegreso (si es
+        // ida y vuelta), Pasajeros y Adicionales (opcional). Importes, estado y vendedor los completa esta clase.
+        // Asientos libres de una clase de un vuelo, para pintar la grilla de selección estilo cine.
+        public List<AsientoDisponibilidad_GV42> ObtenerMapaAsientos(int idVuelo, ClaseVuelo_GV42 clase)
+        {
+            if (_dalVuelo.BuscarVueloClase(idVuelo, clase) == null)
+                throw new NegocioException_GV42(IdiomaManager_GV42.T("neg.reserva.claseNoOfrecida"));
+            return _dalAsiento.ListarMapa(idVuelo, clase);
+        }
+
         // Datos del usuario logueado como pasajero titular: nombre, apellido y email salen de la
         // sesión; el teléfono, si ya reservó antes, de su fila en Pasajero (Usuario no lo guarda).
         public Pasajero_GV42 ObtenerTitularDeSesion()
         {
             Usuario_GV42 actual = SessionManager_GV42.Instancia.ObtenerUsuarioActual();
             if (actual == null)
-                throw new NegocioException_GV42("No hay una sesión activa.");
+                throw new NegocioException_GV42(IdiomaManager_GV42.T("neg.reserva.sinSesion"));
 
             string dni = (actual.DNI ?? string.Empty).Trim();
             Pasajero_GV42 guardado = _dalPasajero.BuscarPorDni(dni);
@@ -298,9 +338,9 @@ namespace BLL
         public Reserva_GV42 GenerarReserva(Reserva_GV42 borrador)
         {
             if (borrador == null)
-                throw new NegocioException_GV42("Faltan los datos de la reserva.");
+                throw new NegocioException_GV42(IdiomaManager_GV42.T("neg.reserva.faltanDatos"));
             if (borrador.VueloClase == null || borrador.VueloClase.Vuelo == null || borrador.VueloClase.Vuelo.Id <= 0)
-                throw new NegocioException_GV42("Debe seleccionar el vuelo y la clase.");
+                throw new NegocioException_GV42(IdiomaManager_GV42.T("neg.reserva.seleccioneVueloClase"));
 
             string login = BLLNegocioUtil_GV42.LoginActual();
             CanalVenta_GV42 canal = CanalSegunSesion();
@@ -308,7 +348,7 @@ namespace BLL
 
             var patentes = PatentesActuales();
             if (!patentes.Contains("Reservas.Generar") && !patentes.Contains("Reservas.GenerarPropia"))
-                throw new NegocioException_GV42("No tenés permiso para generar reservas.");
+                throw new NegocioException_GV42(IdiomaManager_GV42.T("neg.reserva.sinPermisoGenerar"));
 
             if (canal == CanalVenta_GV42.Autogestion)
             {
@@ -322,7 +362,7 @@ namespace BLL
                         .FirstOrDefault(x => x != null && string.Equals((x.DNI ?? string.Empty).Trim(), titular.DNI, StringComparison.OrdinalIgnoreCase));
                     if (enPantalla != null) titular.Telefono = enPantalla.Telefono;
                 }
-                BLLNegocioUtil_GV42.ValidarPersona(titular, "Pasajero");
+                BLLNegocioUtil_GV42.ValidarPersona(titular, IdiomaManager_GV42.T("neg.rol.pasajero"));
                 if (!_dalPasajero.ExisteDni(titular.DNI))
                     _dalPasajero.Insertar(titular);
                 borrador.Cliente = titular;
@@ -330,31 +370,31 @@ namespace BLL
             else
             {
                 if (borrador.Cliente == null || string.IsNullOrWhiteSpace(borrador.Cliente.DNI))
-                    throw new NegocioException_GV42("Debe indicar el cliente de la reserva.");
+                    throw new NegocioException_GV42(IdiomaManager_GV42.T("neg.reserva.indiqueCliente"));
                 if (!_dalPasajero.ExisteDni(borrador.Cliente.DNI.Trim()))
-                    throw new NegocioException_GV42("El cliente no está registrado. Regístrelo antes de generar la reserva.");
+                    throw new NegocioException_GV42(IdiomaManager_GV42.T("neg.reserva.clienteNoRegistrado"));
             }
 
             ValidarPasajerosParaReserva(borrador.Pasajeros);
-            ValidarAdicionales(borrador.Adicionales, canal);
+            ValidarAdicionales(borrador.Adicionales, canal, borrador.CantidadPasajeros, borrador.TipoViaje);
 
             // El precio y la disponibilidad se toman siempre de la base, no de lo que traiga la pantalla.
             VueloClase_GV42 vc = _dalVuelo.BuscarVueloClase(borrador.VueloClase.Vuelo.Id, borrador.VueloClase.Clase);
             if (vc == null)
-                throw new NegocioException_GV42("El vuelo no ofrece la clase seleccionada.");
+                throw new NegocioException_GV42(IdiomaManager_GV42.T("neg.reserva.claseNoOfrecida"));
             if (vc.Vuelo.FechaHoraSalida <= DateTime.Now)
-                throw new NegocioException_GV42("El vuelo seleccionado ya salió.");
+                throw new NegocioException_GV42(IdiomaManager_GV42.T("neg.reserva.vueloSalio"));
             if (vc.AsientosDisponibles < borrador.CantidadPasajeros)
-                throw new NegocioException_GV42("Solo quedan " + vc.AsientosDisponibles + " asiento(s) disponible(s) en esa clase.");
+                throw new NegocioException_GV42(IdiomaManager_GV42.T("neg.reserva.quedanAsientos", vc.AsientosDisponibles));
 
             ValidarAsientos(borrador, vc);
 
             if (borrador.TipoViaje == TipoViaje_GV42.IdaYVuelta)
             {
                 if (!borrador.FechaRegreso.HasValue)
-                    throw new NegocioException_GV42("Para un viaje de ida y vuelta debe indicar la fecha de regreso.");
+                    throw new NegocioException_GV42(IdiomaManager_GV42.T("neg.reserva.faltaRegreso"));
                 if (borrador.FechaRegreso.Value.Date < vc.Vuelo.FechaHoraSalida.Date)
-                    throw new NegocioException_GV42("La fecha de regreso no puede ser anterior a la fecha de salida.");
+                    throw new NegocioException_GV42(IdiomaManager_GV42.T("neg.reserva.regresoAnterior"));
             }
             else
             {
@@ -375,7 +415,7 @@ namespace BLL
 
             string asientosTexto = string.Join(", ", creada.AsientosPorPasajero.Select(a => a.Asiento.NumeroAsiento));
             BLLNegocioUtil_GV42.Auditar(BLLNegocioUtil_GV42.MODULO_RESERVAS, "Reserva generada",
-                creada.NumeroReserva + " - vuelo " + vc.CodigoVuelo + " - canal " + canal.Texto() +
+                creada.NumeroReserva + " - vuelo " + vc.CodigoVuelo + " - canal " + canal.ToString() +
                 " - total " + BLLNegocioUtil_GV42.Dinero(creada.ImporteTotal), "Media");
 
             if (asientosTexto.Length > 0)
@@ -393,34 +433,34 @@ namespace BLL
             List<AsientoPasajero_GV42> asientos = borrador.AsientosPorPasajero ?? new List<AsientoPasajero_GV42>();
 
             if (asientos.Count != borrador.Pasajeros.Count)
-                throw new NegocioException_GV42("Debe elegir un asiento para cada pasajero.");
+                throw new NegocioException_GV42(IdiomaManager_GV42.T("neg.reserva.asientoPorPasajero"));
 
             var dnisPasajeros = new HashSet<string>(borrador.Pasajeros.Select(p => p.DNI));
             foreach (AsientoPasajero_GV42 ap in asientos)
             {
                 if (ap.Asiento == null || ap.Asiento.Id <= 0)
-                    throw new NegocioException_GV42("Falta el asiento de uno de los pasajeros.");
+                    throw new NegocioException_GV42(IdiomaManager_GV42.T("neg.reserva.faltaAsiento"));
                 // Se confirma contra la base que el asiento exista y sea de este vuelo y de esta clase
                 // (no se confía en los datos que trae la pantalla).
                 Asiento_GV42 enBase = _dalAsiento.BuscarPorId(ap.Asiento.Id);
                 if (enBase == null || enBase.IdVuelo != vc.Vuelo.Id)
-                    throw new NegocioException_GV42("Uno de los asientos elegidos no pertenece al vuelo seleccionado.");
+                    throw new NegocioException_GV42(IdiomaManager_GV42.T("neg.reserva.asientoOtroVuelo"));
                 ap.Asiento = enBase;
                 if (!dnisPasajeros.Contains(ap.DniPasajero))
-                    throw new NegocioException_GV42("El asiento " + ap.Asiento.NumeroAsiento + " no corresponde a ningún pasajero de esta reserva.");
+                    throw new NegocioException_GV42(IdiomaManager_GV42.T("neg.reserva.asientoSinPasajero", ap.Asiento.NumeroAsiento));
                 if (ap.Asiento.Clase != vc.Clase)
-                    throw new NegocioException_GV42("El asiento " + ap.Asiento.NumeroAsiento + " no es de la clase reservada.");
+                    throw new NegocioException_GV42(IdiomaManager_GV42.T("neg.reserva.asientoOtraClase", ap.Asiento.NumeroAsiento));
                 if (_dalAsiento.EstaReservado(ap.Asiento.Id))
-                    throw new NegocioException_GV42("El asiento " + ap.Asiento.NumeroAsiento + " ya fue elegido por otro pasajero.");
+                    throw new NegocioException_GV42(IdiomaManager_GV42.T("neg.reserva.asientoOcupado", ap.Asiento.NumeroAsiento));
             }
 
             var repetido = asientos.GroupBy(a => a.Asiento.Id).FirstOrDefault(g => g.Count() > 1);
             if (repetido != null)
-                throw new NegocioException_GV42("No se puede asignar el mismo asiento a más de un pasajero.");
+                throw new NegocioException_GV42(IdiomaManager_GV42.T("neg.reserva.asientoRepetido"));
 
             var dniRepetido = asientos.GroupBy(a => a.DniPasajero).FirstOrDefault(g => g.Count() > 1);
             if (dniRepetido != null)
-                throw new NegocioException_GV42("El pasajero con DNI " + dniRepetido.Key + " tiene más de un asiento asignado.");
+                throw new NegocioException_GV42(IdiomaManager_GV42.T("neg.reserva.pasajeroVariosAsientos", dniRepetido.Key));
         }
 
         // Pública para que la pantalla valide al pasar del paso "Pasajeros" (antes solo se controlaba
@@ -429,16 +469,16 @@ namespace BLL
         public void ValidarPasajerosParaReserva(List<Pasajero_GV42> pasajeros)
         {
             if (pasajeros == null || pasajeros.Count == 0)
-                throw new NegocioException_GV42("Debe registrar al menos un pasajero.");
+                throw new NegocioException_GV42(IdiomaManager_GV42.T("neg.reserva.minimoPasajeros"));
             if (pasajeros.Count > MAX_PASAJEROS_POR_RESERVA)
-                throw new NegocioException_GV42("Una reserva puede tener como máximo " + MAX_PASAJEROS_POR_RESERVA + " pasajeros.");
+                throw new NegocioException_GV42(IdiomaManager_GV42.T("neg.reserva.maximoPasajeros", MAX_PASAJEROS_POR_RESERVA));
 
             for (int i = 0; i < pasajeros.Count; i++)
-                BLLNegocioUtil_GV42.ValidarPersona(pasajeros[i], "Pasajero " + (i + 1));
+                BLLNegocioUtil_GV42.ValidarPersona(pasajeros[i], IdiomaManager_GV42.T("neg.rol.pasajeroN", i + 1));
 
             var repetido = pasajeros.GroupBy(p => p.DNI).FirstOrDefault(g => g.Count() > 1);
             if (repetido != null)
-                throw new NegocioException_GV42("El DNI " + repetido.Key + " está cargado en más de un pasajero.");
+                throw new NegocioException_GV42(IdiomaManager_GV42.T("neg.reserva.dniRepetido", repetido.Key));
 
             bool esVendedor = PatentesActuales().Contains("Reservas.Generar");
             string dniSesion = DniSesion();
@@ -448,19 +488,26 @@ namespace BLL
                 // El titular autogestionado ya está identificado por su sesión (sus datos salen de ahí).
                 if (!esVendedor && string.Equals(p.DNI, dniSesion, StringComparison.OrdinalIgnoreCase))
                     continue;
-                VerificarIdentidad(p, "Pasajero " + (i + 1), esVendedor);
+                VerificarIdentidad(p, IdiomaManager_GV42.T("neg.rol.pasajeroN", i + 1), esVendedor);
             }
         }
-
-        public const int MAX_PASAJEROS_POR_RESERVA = 9;
-
-        public const int MAX_CANTIDAD_ADICIONAL = 20;
-        public const decimal MAX_COSTO_ADICIONAL = 999999m;
 
         // El tipo tiene que existir y estar activo, sin repetir. El precio sale del catálogo
         // (TipoAdicional.PrecioUnitario): el cliente autogestionado no puede cambiarlo (antes podía
         // cargar cualquier costo, incluso $0); el vendedor puede ajustarlo, pero debe ser mayor a 0.
-        private void ValidarAdicionales(List<AdicionalReserva_GV42> adicionales, CanalVenta_GV42 canal)
+        // Tope de un servicio adicional para la reserva: lo que permite cada pasajero por tramo
+        // (TipoAdicional.MaxPorPasajero) x cantidad de pasajeros x tramos (ida = 1, ida y vuelta = 2).
+        // Ej.: 1 pasajero de ida -> como máximo 1 comida especial (antes se podían pedir 20).
+        public int MaximoAdicional(TipoAdicional_GV42 tipo, int cantidadPasajeros, TipoViaje_GV42 tipoViaje)
+        {
+            if (tipo == null || cantidadPasajeros <= 0) return 0;
+            int tramos = tipoViaje == TipoViaje_GV42.IdaYVuelta ? 2 : 1;
+            int porPasajero = Math.Max(1, tipo.MaxPorPasajero);
+            return Math.Min(MAX_CANTIDAD_ADICIONAL, porPasajero * cantidadPasajeros * tramos);
+        }
+
+        private void ValidarAdicionales(List<AdicionalReserva_GV42> adicionales, CanalVenta_GV42 canal,
+                                        int cantidadPasajeros, TipoViaje_GV42 tipoViaje)
         {
             if (adicionales == null) return;
 
@@ -469,44 +516,90 @@ namespace BLL
             foreach (AdicionalReserva_GV42 a in adicionales)
             {
                 if (a.TipoAdicional == null || a.TipoAdicional.Id <= 0)
-                    throw new NegocioException_GV42("Cada servicio adicional debe tener un tipo.");
+                    throw new NegocioException_GV42(IdiomaManager_GV42.T("neg.adicional.sinTipo"));
                 if (!catalogo.TryGetValue(a.TipoAdicional.Id, out TipoAdicional_GV42 tipo))
-                    throw new NegocioException_GV42("El servicio adicional '" + a.TipoNombre + "' no existe o ya no está disponible.");
+                    throw new NegocioException_GV42(IdiomaManager_GV42.T("neg.adicional.noDisponible",
+                        BLLNegocioUtil_GV42.NombreAdicional(a.TipoNombre)));
                 a.TipoAdicional = tipo;
 
-                if (a.Cantidad < 1 || a.Cantidad > MAX_CANTIDAD_ADICIONAL)
-                    throw new NegocioException_GV42("La cantidad de '" + tipo.Nombre + "' debe estar entre 1 y " + MAX_CANTIDAD_ADICIONAL + ".");
+                string nombre = BLLNegocioUtil_GV42.NombreAdicional(tipo.Nombre);
+                if (a.Cantidad < 1)
+                    throw new NegocioException_GV42(IdiomaManager_GV42.T("neg.adicional.cantidadMinima", nombre));
+                int maximo = MaximoAdicional(tipo, cantidadPasajeros, tipoViaje);
+                if (a.Cantidad > maximo)
+                    throw new NegocioException_GV42(IdiomaManager_GV42.T(
+                        tipoViaje == TipoViaje_GV42.IdaYVuelta ? "neg.adicional.maximoIdaVuelta" : "neg.adicional.maximo",
+                        cantidadPasajeros, maximo, nombre, Math.Max(1, tipo.MaxPorPasajero)));
 
                 if (canal == CanalVenta_GV42.Autogestion)
                     a.CostoUnitario = tipo.PrecioUnitario;
 
                 a.CostoUnitario = Math.Round(a.CostoUnitario, 2);
                 if (a.CostoUnitario <= 0)
-                    throw new NegocioException_GV42("El costo unitario de '" + tipo.Nombre + "' debe ser mayor a $ 0.");
+                    throw new NegocioException_GV42(IdiomaManager_GV42.T("neg.adicional.costoCero", nombre));
                 if (a.CostoUnitario > MAX_COSTO_ADICIONAL)
-                    throw new NegocioException_GV42("El costo unitario de '" + tipo.Nombre + "' es demasiado alto.");
+                    throw new NegocioException_GV42(IdiomaManager_GV42.T("neg.adicional.costoAlto", nombre));
             }
 
             var repetido = adicionales.GroupBy(a => a.TipoAdicional.Id).FirstOrDefault(g => g.Count() > 1);
             if (repetido != null)
-                throw new NegocioException_GV42("El servicio '" + repetido.First().TipoNombre + "' está cargado más de una vez.");
+                throw new NegocioException_GV42(IdiomaManager_GV42.T("neg.adicional.repetido",
+                    BLLNegocioUtil_GV42.NombreAdicional(repetido.First().TipoNombre)));
         }
+
+        #endregion
+
+        #region Consultas
 
         // Devuelve null si el número de reserva no existe.
         public Reserva_GV42 BuscarReserva(string numeroReserva)
         {
             numeroReserva = (numeroReserva ?? string.Empty).Trim();
             if (numeroReserva.Length == 0)
-                throw new NegocioException_GV42("Debe indicar el número de reserva.");
+                throw new NegocioException_GV42(IdiomaManager_GV42.T("neg.reserva.indiqueNumero"));
             Reserva_GV42 reserva = _dalReserva.BuscarPorNumero(numeroReserva);
 
             // Quien solo tiene permisos "propios" no puede ver reservas de otras personas.
             var p = PatentesActuales();
             bool veAjenas = p.Contains("Reservas.Consultar") || p.Contains("Pagos.Registrar") || p.Contains("Reservas.Cancelar");
             if (reserva != null && !veAjenas && !EsDeLaSesion(reserva))
-                throw new NegocioException_GV42("La reserva indicada no es tuya.");
+                throw new NegocioException_GV42(IdiomaManager_GV42.T("neg.reserva.noEsTuya"));
             return reserva;
         }
+
+        // "Mis reservas" del cliente autogestionado (usa el DNI de la sesión, no lo que venga de la UI).
+        public List<Reserva_GV42> ListarMisReservas()
+        {
+            if (!PatentesActuales().Contains("Reservas.ConsultarPropia"))
+                throw new NegocioException_GV42(IdiomaManager_GV42.T("neg.consulta.sinPermisoPropias"));
+            return _dalReserva.ListarPorCliente(DniSesion());
+        }
+
+        // Consulta del vendedor: sin texto trae las últimas reservas; con texto filtra por
+        // número de reserva, DNI o apellido del cliente.
+        public List<Reserva_GV42> BuscarReservas(string textoLibre)
+        {
+            if (!PatentesActuales().Contains("Reservas.Consultar"))
+                throw new NegocioException_GV42(IdiomaManager_GV42.T("neg.consulta.sinPermisoTodas"));
+            return _dalReserva.Buscar(textoLibre);
+        }
+
+        // ---- Paso 14: boletos para entregar al cliente (uno por pasajero) ----
+
+        public List<Boleto_GV42> ObtenerBoletos(string numeroReserva)
+        {
+            Reserva_GV42 reserva = BuscarReserva(numeroReserva);
+            if (reserva == null)
+                throw new NegocioException_GV42(IdiomaManager_GV42.T("neg.reserva.noExiste"));
+            if (reserva.Estado != EstadoReserva_GV42.Confirmada)
+                throw new NegocioException_GV42(IdiomaManager_GV42.T("neg.boletos.noConfirmada"));
+
+            return _dalBoleto.ListarPorReserva(reserva.NumeroReserva);
+        }
+
+        #endregion
+
+        #region Pago
 
         // ---- Pasos 11 a 13: registrar el pago y confirmar la reserva ----
 
@@ -514,31 +607,42 @@ namespace BLL
         // transferencia es obligatorio. El importe debe coincidir con el total de la reserva.
         public Pago_GV42 RegistrarPago(string numeroReserva, MedioPago_GV42 medioPago, decimal importeAbonado, string numeroTransaccion)
         {
+            return RegistrarPago(numeroReserva, medioPago, importeAbonado, numeroTransaccion, null);
+        }
+
+        // Con tarjeta (crédito o débito) se exigen los datos de la tarjeta: número válido según el
+        // algoritmo de Luhn, titular, vencimiento no pasado y código de seguridad. El banco es teórico:
+        // si los datos son válidos el sistema genera el código de autorización. De la tarjeta solo
+        // se guarda la marca y los últimos 4 dígitos (nunca el número completo ni el código).
+        public Pago_GV42 RegistrarPago(string numeroReserva, MedioPago_GV42 medioPago, decimal importeAbonado,
+                                       string numeroTransaccion, DatosTarjeta_GV42 tarjeta)
+        {
             string login = BLLNegocioUtil_GV42.LoginActual();
 
             var patentesPago = PatentesActuales();
             bool pagaCualquiera = patentesPago.Contains("Pagos.Registrar");
             if (!pagaCualquiera && !patentesPago.Contains("Pagos.RegistrarPropio"))
-                throw new NegocioException_GV42("No tenés permiso para registrar pagos.");
+                throw new NegocioException_GV42(IdiomaManager_GV42.T("neg.pago.sinPermiso"));
 
             Reserva_GV42 reserva = BuscarReserva(numeroReserva);
             if (reserva == null)
-                throw new NegocioException_GV42("No existe una reserva con el número indicado.");
+                throw new NegocioException_GV42(IdiomaManager_GV42.T("neg.reserva.noExiste"));
             if (!pagaCualquiera && !EsDeLaSesion(reserva))
-                throw new NegocioException_GV42("Solo podés pagar tus propias reservas.");
+                throw new NegocioException_GV42(IdiomaManager_GV42.T("neg.pago.soloPropias"));
             if (reserva.Estado != EstadoReserva_GV42.PendienteDePago)
-                throw new NegocioException_GV42("La reserva " + reserva.NumeroReserva + " ya está " + reserva.EstadoTexto.ToLower() + ".");
+                throw new NegocioException_GV42(IdiomaManager_GV42.T("neg.pago.reservaYaEsta",
+                    reserva.NumeroReserva, reserva.EstadoTexto.ToLower()));
             if (reserva.Vuelo.FechaHoraSalida <= DateTime.Now)
-                throw new NegocioException_GV42("El vuelo de la reserva " + reserva.NumeroReserva + " ya salió: no se puede registrar el pago.");
+                throw new NegocioException_GV42(IdiomaManager_GV42.T("neg.pago.vueloSalio", reserva.NumeroReserva));
 
             // El efectivo lo cobra un vendedor en el mostrador: el cliente autogestionado no puede
             // declararse pagado en efectivo (quedaba confirmado sin haber pagado nada).
             if (!pagaCualquiera && medioPago == MedioPago_GV42.Efectivo)
-                throw new NegocioException_GV42("El pago en efectivo solo lo puede registrar un vendedor. Elegí tarjeta o transferencia.");
+                throw new NegocioException_GV42(IdiomaManager_GV42.T("neg.pago.efectivoSoloVendedor"));
 
             if (Math.Round(importeAbonado, 2) != reserva.ImporteTotal)
-                throw new NegocioException_GV42("El importe abonado (" + BLLNegocioUtil_GV42.Dinero(importeAbonado) +
-                    ") debe coincidir con el total de la reserva (" + BLLNegocioUtil_GV42.Dinero(reserva.ImporteTotal) + ").");
+                throw new NegocioException_GV42(IdiomaManager_GV42.T("neg.pago.importeNoCoincide",
+                    BLLNegocioUtil_GV42.Dinero(importeAbonado), BLLNegocioUtil_GV42.Dinero(reserva.ImporteTotal)));
 
             numeroTransaccion = (numeroTransaccion ?? string.Empty).Trim();
             if (medioPago == MedioPago_GV42.Efectivo)
@@ -546,18 +650,16 @@ namespace BLL
                 // En efectivo no hay número externo: se genera uno interno.
                 numeroTransaccion = "EFE-" + DateTime.Now.ToString("yyyyMMddHHmmssfff");
             }
-            else if (numeroTransaccion.Length == 0)
-            {
-                throw new NegocioException_GV42("Debe indicar el número de transacción del pago.");
-            }
             else if (medioPago == MedioPago_GV42.Transferencia)
             {
+                if (numeroTransaccion.Length == 0)
+                    throw new NegocioException_GV42(IdiomaManager_GV42.T("neg.pago.faltaOperacion"));
                 if (!System.Text.RegularExpressions.Regex.IsMatch(numeroTransaccion, Validaciones_GV42.REGEX_TX_TRANSFERENCIA))
-                    throw new NegocioException_GV42("El número de operación de la transferencia debe tener entre 6 y 40 letras, números o guiones.");
+                    throw new NegocioException_GV42(IdiomaManager_GV42.T("neg.pago.operacionInvalida"));
             }
-            else if (!System.Text.RegularExpressions.Regex.IsMatch(numeroTransaccion, Validaciones_GV42.REGEX_TX_TARJETA))
+            else
             {
-                throw new NegocioException_GV42("El código de autorización de la tarjeta debe tener entre 6 y 20 dígitos.");
+                numeroTransaccion = AutorizarTarjeta(tarjeta, medioPago);
             }
 
             var pago = new Pago_GV42
@@ -575,41 +677,48 @@ namespace BLL
             RecalcularIntegridad("Reserva");
 
             BLLNegocioUtil_GV42.Auditar(BLLNegocioUtil_GV42.MODULO_RESERVAS, "Pago registrado",
-                reserva.NumeroReserva + " - " + medioPago.Texto() + " - " + BLLNegocioUtil_GV42.Dinero(registrado.ImporteTotalAbonado), "Media");
+                reserva.NumeroReserva + " - " + medioPago.ToString() + " - " + BLLNegocioUtil_GV42.Dinero(registrado.ImporteTotalAbonado), "Media");
 
             return registrado;
         }
 
-        // ---- Consultar reservas ----
-
-        // "Mis reservas" del cliente autogestionado (usa el DNI de la sesión, no lo que venga de la UI).
-        public List<Reserva_GV42> ListarMisReservas()
+        // Valida la tarjeta y devuelve el "número de transacción" que queda en el pago:
+        // "VISA **** 3704 AUT 123456" (marca, últimos 4 dígitos y código de autorización).
+        private string AutorizarTarjeta(DatosTarjeta_GV42 tarjeta, MedioPago_GV42 medioPago)
         {
-            if (!PatentesActuales().Contains("Reservas.ConsultarPropia"))
-                throw new NegocioException_GV42("No tenés permiso para consultar tus reservas.");
-            return _dalReserva.ListarPorCliente(DniSesion());
+            if (tarjeta == null)
+                throw new NegocioException_GV42(IdiomaManager_GV42.T("neg.tarjeta.faltanDatos"));
+
+            string numero = Validaciones_GV42.SoloDigitos(tarjeta.Numero);
+            if (!Validaciones_GV42.EsNumeroTarjetaValido(tarjeta.Numero))
+                throw new NegocioException_GV42(Validaciones_GV42.MENSAJE_TARJETA);
+
+            string marca = Validaciones_GV42.MarcaTarjeta(numero);
+            if (medioPago == MedioPago_GV42.TarjetaDebito && marca == "American Express")
+                throw new NegocioException_GV42(IdiomaManager_GV42.T("neg.tarjeta.amexDebito"));
+
+            if (!Validaciones_GV42.EsTitularTarjetaValido(tarjeta.Titular))
+                throw new NegocioException_GV42(IdiomaManager_GV42.T("neg.tarjeta.titular"));
+
+            if (!Validaciones_GV42.EsVencimientoValido(tarjeta.MesVencimiento, tarjeta.AnioVencimiento, DateTime.Today))
+                throw new NegocioException_GV42(IdiomaManager_GV42.T("neg.tarjeta.vencida"));
+
+            if (!Validaciones_GV42.EsCodigoSeguridadValido(tarjeta.CodigoSeguridad, numero))
+                throw new NegocioException_GV42(marca == "American Express"
+                    ? IdiomaManager_GV42.T("neg.tarjeta.codigoAmex")
+                    : IdiomaManager_GV42.T("neg.tarjeta.codigo"));
+
+            int codigo;
+            lock (_generadorAutorizacion) codigo = _generadorAutorizacion.Next(100000, 1000000);
+            string resultado = marca.ToUpperInvariant() + " " + Validaciones_GV42.EnmascararTarjeta(numero) + " AUT " + codigo;
+            return resultado.Length <= Validaciones_GV42.MAX_NUMERO_TRANSACCION
+                ? resultado
+                : resultado.Substring(resultado.Length - Validaciones_GV42.MAX_NUMERO_TRANSACCION);
         }
 
-        // Consulta del vendedor: sin texto trae las últimas reservas; con texto filtra por
-        // número de reserva, DNI o apellido del cliente.
-        public List<Reserva_GV42> BuscarReservas(string textoLibre)
-        {
-            if (!PatentesActuales().Contains("Reservas.Consultar"))
-                throw new NegocioException_GV42("No tenés permiso para consultar todas las reservas.");
-            return _dalReserva.Buscar(textoLibre);
-        }
+        #endregion
 
-        // ---- Cancelar reserva ----
-
-        // Reglas de penalidad según el tiempo que falta para la salida (ajustable si la cátedra
-        // pide otros porcentajes u horas de corte):
-        //   72 hs o más antes de la salida -> sin cargo.
-        //   entre 24 y 72 hs                -> 30% del importe total.
-        //   menos de 24 hs                  -> 100% del importe total (sin reembolso).
-        public const int HORAS_SIN_PENALIDAD = 72;
-        public const int HORAS_PENALIDAD_PARCIAL = 24;
-        public const decimal PORCENTAJE_PENALIDAD_PARCIAL = 0.30m;
-        public const decimal PORCENTAJE_PENALIDAD_TOTAL = 1.00m;
+        #region Cancelación
 
         public decimal CalcularPorcentajePenalidad(DateTime fechaHoraSalida)
         {
@@ -627,22 +736,22 @@ namespace BLL
             var patentes = PatentesActuales();
             bool cancelaCualquiera = patentes.Contains("Reservas.Cancelar");
             if (!cancelaCualquiera && !patentes.Contains("Reservas.CancelarPropia"))
-                throw new NegocioException_GV42("No tenés permiso para cancelar reservas.");
+                throw new NegocioException_GV42(IdiomaManager_GV42.T("neg.cancelar.sinPermiso"));
 
             Reserva_GV42 reserva = BuscarReserva(numeroReserva);
             if (reserva == null)
-                throw new NegocioException_GV42("No existe una reserva con el número indicado.");
+                throw new NegocioException_GV42(IdiomaManager_GV42.T("neg.reserva.noExiste"));
             if (reserva.Estado == EstadoReserva_GV42.Cancelada)
-                throw new NegocioException_GV42("La reserva ya estaba cancelada.");
+                throw new NegocioException_GV42(IdiomaManager_GV42.T("neg.cancelar.yaCancelada"));
 
             // Con la patente "propia" solo se cancelan las reservas del propio usuario.
             if (!cancelaCualquiera && !EsDeLaSesion(reserva))
-                throw new NegocioException_GV42("No podés cancelar una reserva que no es tuya.");
+                throw new NegocioException_GV42(IdiomaManager_GV42.T("neg.cancelar.noEsTuya"));
 
             if (reserva.Vuelo.FechaHoraSalida <= DateTime.Now)
-                throw new NegocioException_GV42("El vuelo ya salió: la reserva no se puede cancelar.");
+                throw new NegocioException_GV42(IdiomaManager_GV42.T("neg.cancelar.vueloSalio"));
             if (_dalReserva.TieneCheckInRealizado(reserva.Id))
-                throw new NegocioException_GV42("Algún pasajero ya hizo el check-in: la reserva no se puede cancelar.");
+                throw new NegocioException_GV42(IdiomaManager_GV42.T("neg.cancelar.conCheckIn"));
 
             // Una reserva pendiente de pago no cobró nada: se cancela sin penalidad.
             decimal porcentaje = reserva.Estado == EstadoReserva_GV42.PendienteDePago
@@ -660,17 +769,18 @@ namespace BLL
             return cancelada;
         }
 
-        // ---- Paso 14: boletos para entregar al cliente (uno por pasajero) ----
+        #endregion
 
-        public List<Boleto_GV42> ObtenerBoletos(string numeroReserva)
+        #region Métodos privados
+
+        // Recalcula el dígito verificador de una tabla de negocio protegida. Nunca interrumpe la
+        // operación si falla (igual criterio que BLLUsuario_GV42 con la tabla Usuario).
+        private void RecalcularIntegridad(string tabla)
         {
-            Reserva_GV42 reserva = BuscarReserva(numeroReserva);
-            if (reserva == null)
-                throw new NegocioException_GV42("No existe una reserva con el número indicado.");
-            if (reserva.Estado != EstadoReserva_GV42.Confirmada)
-                throw new NegocioException_GV42("La reserva todavía no está confirmada: no hay boletos para entregar.");
-
-            return _dalBoleto.ListarPorReserva(reserva.NumeroReserva);
+            if (BLLIntegridad_GV42.IntegridadConocidamenteRota) return;
+            try { _bllIntegridad.RecalcularTabla(tabla); } catch { }
         }
+
+        #endregion
     }
 }

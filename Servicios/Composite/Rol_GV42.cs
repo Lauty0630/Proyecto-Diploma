@@ -6,21 +6,15 @@ namespace Servicios
 
     public class Rol_GV42 : IComponentePermiso_GV42
     {
+        #region Campos
+
         private int _Id;
-        public int Id
-        {
-            get { return _Id; }
-            set { _Id = value; }
-        }
 
         private string _Nombre;
-        public string Nombre
-        {
-            get { return _Nombre; }
-            set { _Nombre = value; }
-        }
 
-        public List<IComponentePermiso_GV42> Hijos { get; set; } = new List<IComponentePermiso_GV42>();
+        #endregion
+
+        #region Constructor
 
         public Rol_GV42() { }
 
@@ -29,6 +23,28 @@ namespace Servicios
             Id = id;
             Nombre = nombre;
         }
+
+        #endregion
+
+        #region Propiedades
+
+        public int Id
+        {
+            get { return _Id; }
+            set { _Id = value; }
+        }
+
+        public string Nombre
+        {
+            get { return _Nombre; }
+            set { _Nombre = value; }
+        }
+
+        public List<IComponentePermiso_GV42> Hijos { get; set; } = new List<IComponentePermiso_GV42>();
+
+        #endregion
+
+        #region Métodos públicos
 
         public IEnumerable<Patente_GV42> ObtenerPatentes()
         {
@@ -48,9 +64,12 @@ namespace Servicios
             if (string.IsNullOrEmpty(dataKey)) return false;
             return ObtenerPatentes().Any(p => p.DataKey == dataKey);
         }
+
         public override string ToString()
         {
             return Nombre ?? string.Empty;
         }
+
+        #endregion
     }
 }

@@ -2,22 +2,22 @@
 using Servicios;
 using System;
 using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
-using System.Drawing;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows.Forms;
 using static BLL.BLLUsuario_GV42;
 
 namespace PROYECTO_ING_DE_SOFTWARE
 {
-
     public partial class FRMIniciarSesion : Form, IObservadorIdioma_GV42
     {
+        #region Campos
+
         private readonly BLLUsuario_GV42 _bllUsuario;
         private ResultadoIntegridad _resultadoIntegridadPrelogin;
+
+        #endregion
+
+        #region Constructor
 
         public FRMIniciarSesion()
         {
@@ -31,40 +31,149 @@ namespace PROYECTO_ING_DE_SOFTWARE
             Program.CerrarAplicacionAlSerUltimaVentana(this);
 
             ActualizarIdioma();
-            AgregarLinkRegistroCliente();
         }
 
-        // RFN 1: el cliente puede crearse su propia cuenta y reservar sin pasar por un vendedor.
-        // Se agrega en código (no en el Designer) para no tocar el diseño existente del login.
-        private void AgregarLinkRegistroCliente()
-        {
-            var link = new LinkLabel
-            {
-                Text = "¿Sos cliente y no tenés cuenta? Registrate",
-                AutoSize = false,
-                TextAlign = ContentAlignment.MiddleCenter,
-                Location = new Point(80, 392),
-                Size = new Size(380, 20),
-                LinkColor = Color.FromArgb(13, 71, 161),
-                Font = new Font("Segoe UI", 9F)
-            };
-            link.Click += (s, e) =>
-            {
-                using (var frm = new FRMRegistroCliente_GV42())
-                    frm.ShowDialog(this);
-            };
-            Controls.Add(link);
-        }
+        #endregion
+
+        #region Idioma (Observer)
 
         public void ActualizarIdioma()
         {
             this.Text = IdiomaManager_GV42.T("login.titulo");
-            if (lblTitulo != null) lblTitulo.Text = IdiomaManager_GV42.T("login.titulo");
-            if (lblSubtitulo != null) lblSubtitulo.Text = IdiomaManager_GV42.T("login.subtitulo");
-            if (label1 != null) label1.Text = IdiomaManager_GV42.T("login.login");
-            if (label2 != null) label2.Text = IdiomaManager_GV42.T("login.contrasena");
-            if (btnIngresar != null) btnIngresar.Text = IdiomaManager_GV42.T("login.btnIngresar");
+            lblTitulo.Text = IdiomaManager_GV42.T("login.titulo");
+            lblSubtitulo.Text = IdiomaManager_GV42.T("login.subtitulo");
+            lblEslogan.Text = IdiomaManager_GV42.T("login.eslogan");
+            label1.Text = IdiomaManager_GV42.T("login.login");
+            label2.Text = IdiomaManager_GV42.T("login.contrasena");
+            btnIngresar.Text = IdiomaManager_GV42.T("login.btnIngresar");
+            lnkRegistro.Text = IdiomaManager_GV42.T("login.registrarse");
+
+            // El idioma activo se muestra resaltado (link deshabilitado); el otro queda para hacer clic.
+            bool ingles = IdiomaManager_GV42.Instancia.EsIngles;
+            if (lnkEspanol.Links.Count > 0) lnkEspanol.Links[0].Enabled = ingles;
+            if (lnkIngles.Links.Count > 0) lnkIngles.Links[0].Enabled = !ingles;
         }
+
+        #endregion
+
+        #region Inicio de sesión
+
+        private void AbrirFormularioSegunRol()
+        {
+            Usuario_GV42 actual = SessionManager_GV42.Instancia.ObtenerUsuarioActual();
+
+            if (!VerificarIntegridad(actual))
+            {
+                BLLUsuario_GV42.CerrarSesión();
+                return;
+            }
+
+            if (actual != null && actual.DebeCambiarContrasena)
+            {
+                MessageBox.Show(IdiomaManager_GV42.T("login.cambioRequeridoMensaje"),
+                                IdiomaManager_GV42.T("login.cambioRequeridoTitulo"),
+                                MessageBoxButtons.OK, MessageBoxIcon.Information);
+
+                FRMCambiarContrasenia cambio = new FRMCambiarContrasenia(primerLogin: true);
+                cambio.Show();
+                this.Hide();
+                return;
+            }
+
+            Form formulario = new FRMMenuPrincipalAdmin();
+            formulario.Show();
+            this.Hide();
+        }
+
+        #endregion
+
+        #region Integridad
+
+        private bool VerificarIntegridad(Usuario_GV42 actual)
+        {
+            try
+            {
+                var bllInt = new BLLIntegridad_GV42();
+                ResultadoIntegridad res = _resultadoIntegridadPrelogin ?? bllInt.Verificar();
+
+                if (res.EsIntegra)
+                {
+                    try { bllInt.IniciarBackupsProgramados(); } catch { }
+                    return true;
+                }
+
+                string detalleBitacora;
+                if (res.Detalles != null && res.Detalles.Count > 0)
+                {
+                    detalleBitacora = string.Join(" | ",
+                        res.Detalles.Select(d => $"[{d.Tipo}] {d.Tabla}#{d.IdRegistro}"));
+                }
+                else
+                {
+                    detalleBitacora = string.Join(", ", res.TablasComprometidas);
+                }
+
+                BLLBitacora_GV42.Instancia.RegistrarEvento(
+                    actual.Login, "Admin", "Integridad comprometida",
+                    detalleBitacora, "Alta");
+
+                var bllPermisos = new BLLPermisos_GV42();
+                Rol_GV42 rolCompleto = bllPermisos.ObtenerArbolRol(actual.Rol.Id);
+                var dataKeys = rolCompleto != null
+                    ? rolCompleto.ObtenerPatentes().Select(p => p.DataKey ?? string.Empty).ToList()
+                    : new List<string>();
+
+                bool puedeRecalcular = dataKeys.Contains("Integridad.Recalcular");
+                bool puedeRestaurar = dataKeys.Contains("Integridad.Restore");
+
+                if (!puedeRecalcular && !puedeRestaurar)
+                {
+                    MessageBox.Show(
+                        IdiomaManager_GV42.T("integridad.sistemaInactivoMensaje"),
+                        IdiomaManager_GV42.T("integridad.sistemaInactivoTitulo"),
+                        MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return false;
+                }
+
+                using (var frm = new FRMIntegridad(res, puedeRecalcular, puedeRestaurar))
+                {
+                    DialogResult dr = frm.ShowDialog(this);
+
+                    if (frm.SeRestauroBackup)
+                    {
+                        MessageBox.Show(
+                            IdiomaManager_GV42.T("integridad.cerrandoAppBackup"),
+                            IdiomaManager_GV42.T("integridad.titulo"),
+                            MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        Application.Exit();
+                        return false;
+                    }
+
+                    if (frm.SeRecalcularon)
+                    {
+                        BLLBitacora_GV42.Instancia.RegistrarEvento(
+                            actual.Login, "Admin", "Integridad recalculada",
+                            "Admin aceptó los cambios externos como válidos.", "Alta");
+                        try { bllInt.IniciarBackupsProgramados(); } catch { }
+                        return true;
+                    }
+
+                    return false;
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(
+                    IdiomaManager_GV42.T("integridad.errorVerificacion") + "\n\n" + ex.Message,
+                    IdiomaManager_GV42.T("general.error"),
+                    MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return false;
+            }
+        }
+
+        #endregion
+
+        #region Eventos
 
         private void btnIngresar_Click(object sender, EventArgs e)
         {
@@ -137,114 +246,26 @@ namespace PROYECTO_ING_DE_SOFTWARE
             }
         }
 
-        private void AbrirFormularioSegunRol()
+        // RFN 1: el cliente puede crearse su propia cuenta y reservar sin pasar por un vendedor.
+        private void lnkRegistro_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
         {
-            Usuario_GV42 actual = SessionManager_GV42.Instancia.ObtenerUsuarioActual();
-
-            if (!VerificarIntegridad(actual))
-            {
-                BLLUsuario_GV42.CerrarSesión();
-                return;
-            }
-
-            if (actual != null && actual.DebeCambiarContrasena)
-            {
-                MessageBox.Show(IdiomaManager_GV42.T("login.cambioRequeridoMensaje"),
-                                IdiomaManager_GV42.T("login.cambioRequeridoTitulo"),
-                                MessageBoxButtons.OK, MessageBoxIcon.Information);
-
-                FRMCambiarContrasenia cambio = new FRMCambiarContrasenia(primerLogin: true);
-                cambio.Show();
-                this.Hide();
-                return;
-            }
-
-            Form formulario = new FRMMenuPrincipalAdmin();
-            formulario.Show();
-            this.Hide();
+            using (var frm = new FRMRegistroCliente_GV42())
+                frm.ShowDialog(this);
         }
 
-        private bool VerificarIntegridad(Usuario_GV42 actual)
+        // Selector de idioma del login: todavía no hay sesión, así que se cambia directo en el
+        // IdiomaManager (no se usa BLLUsuario.CambiarIdioma, que además guarda la preferencia del
+        // usuario logueado). Al iniciar sesión se aplica el idioma guardado de ese usuario.
+        private void lnkEspanol_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
         {
-            try
-            {
-                var bllInt = new BLLIntegridad_GV42();
-                ResultadoIntegridad res = _resultadoIntegridadPrelogin ?? bllInt.Verificar();
-
-                if (res.EsIntegra)
-                {
-                    try { bllInt.IniciarBackupsProgramados(); } catch { }
-                    return true;
-                }
-
-                string detalleBitacora;
-                if (res.Detalles != null && res.Detalles.Count > 0)
-                {
-                    detalleBitacora = string.Join(" | ",
-                        res.Detalles.Select(d => $"[{d.Tipo}] {d.Tabla}#{d.IdRegistro}"));
-                }
-                else
-                {
-                    detalleBitacora = string.Join(", ", res.TablasComprometidas);
-                }
-
-                BLLBitacora_GV42.Instancia.RegistrarEvento(
-                    actual.Login, "Admin", "Integridad comprometida",
-                    detalleBitacora, "Alta");
-
-                var bllPermisos = new BLLPermisos_GV42();
-                Rol_GV42 rolCompleto = bllPermisos.ObtenerArbolRol(actual.Rol.Id);
-                var dataKeys = rolCompleto != null
-                    ? rolCompleto.ObtenerPatentes().Select(p => p.DataKey ?? string.Empty).ToList()
-                    : new List<string>();
-
-                bool puedeRecalcular = dataKeys.Contains("Integridad.Recalcular");
-                bool puedeRestaurar  = dataKeys.Contains("Integridad.Restore");
-
-                if (!puedeRecalcular && !puedeRestaurar)
-                {
-                    MessageBox.Show(
-                        IdiomaManager_GV42.T("integridad.sistemaInactivoMensaje"),
-                        IdiomaManager_GV42.T("integridad.sistemaInactivoTitulo"),
-                        MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                    return false;
-                }
-
-                using (var frm = new FRMIntegridad(res, puedeRecalcular, puedeRestaurar))
-                {
-                    DialogResult dr = frm.ShowDialog(this);
-
-                    if (frm.SeRestauroBackup)
-                    {
-                        MessageBox.Show(
-                            IdiomaManager_GV42.T("integridad.cerrandoAppBackup"),
-                            IdiomaManager_GV42.T("integridad.titulo"),
-                            MessageBoxButtons.OK, MessageBoxIcon.Information);
-                        Application.Exit();
-                        return false;
-                    }
-
-                    if (frm.SeRecalcularon)
-                    {
-                        BLLBitacora_GV42.Instancia.RegistrarEvento(
-                            actual.Login, "Admin", "Integridad recalculada",
-                            "Admin aceptó los cambios externos como válidos.", "Alta");
-                        try { bllInt.IniciarBackupsProgramados(); } catch { }
-                        return true;
-                    }
-
-                    return false;
-                }
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show(
-                    IdiomaManager_GV42.T("integridad.errorVerificacion") + "\n\n" + ex.Message,
-                    IdiomaManager_GV42.T("general.error"),
-                    MessageBoxButtons.OK, MessageBoxIcon.Error);
-                return false;
-            }
+            IdiomaManager_GV42.Instancia.CambiarIdioma(IdiomaManager_GV42.ES);
         }
 
+        private void lnkIngles_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
+        {
+            IdiomaManager_GV42.Instancia.CambiarIdioma(IdiomaManager_GV42.EN);
+        }
+
+        #endregion
     }
 }

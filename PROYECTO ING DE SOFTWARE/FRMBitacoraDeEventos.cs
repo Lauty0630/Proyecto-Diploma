@@ -2,23 +2,27 @@
 using Servicios;
 using System;
 using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
-using System.Drawing;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows.Forms;
 
 namespace PROYECTO_ING_DE_SOFTWARE
 {
     public partial class FRMBitacoraDeEventos : Form, IObservadorIdioma_GV42
     {
+        #region Campos
+
         private readonly BLLBitacora_GV42 _bllBitacora;
 
         private readonly BLLUsuario_GV42 _bllUsuario;
 
-        private const string SIN_FILTRO = "(Todos)";
+        // Listas de los combos de filtro: la posición 0 es siempre la opción "(Todos)" (sin filtro),
+        // que se traduce y se regenera al cambiar el idioma.
+        private List<string> _modulos;
+        private List<string> _eventos;
+        private List<string> _criticidades;
+
+        #endregion
+
+        #region Constructor
 
         public FRMBitacoraDeEventos()
         {
@@ -33,6 +37,10 @@ namespace PROYECTO_ING_DE_SOFTWARE
             AplicarPermisos();
         }
 
+        #endregion
+
+        #region Permisos
+
         private void AplicarPermisos()
         {
             Usuario_GV42 actual = SessionManager_GV42.Instancia.ObtenerUsuarioActual();
@@ -45,100 +53,76 @@ namespace PROYECTO_ING_DE_SOFTWARE
             bool puedeVer = rolCompleto.TienePermiso("Bitacora.Ver");
             bool puedeExportar = rolCompleto.TienePermiso("Bitacora.ExportarPDF");
 
-            if (lblLogin != null) lblLogin.Visible = puedeVer;
-            if (txtLogin != null) txtLogin.Visible = puedeVer;
-            if (lblModulo != null) lblModulo.Visible = puedeVer;
-            if (cboModulo != null) cboModulo.Visible = puedeVer;
-            if (lblEvento != null) lblEvento.Visible = puedeVer;
-            if (cboEvento != null) cboEvento.Visible = puedeVer;
-            if (lblCriticidad != null) lblCriticidad.Visible = puedeVer;
-            if (cboCriticidad != null) cboCriticidad.Visible = puedeVer;
-            if (lblFechaInicio != null) lblFechaInicio.Visible = puedeVer;
-            if (dtpFechaInicio != null) dtpFechaInicio.Visible = puedeVer;
-            if (lblFechaFin != null) lblFechaFin.Visible = puedeVer;
-            if (dtpFechaFin != null) dtpFechaFin.Visible = puedeVer;
-            if (btnAplicar != null) btnAplicar.Visible = puedeVer;
-            if (btnLimpiar != null) btnLimpiar.Visible = puedeVer;
+            lblLogin.Visible = puedeVer;
+            txtLogin.Visible = puedeVer;
+            lblModulo.Visible = puedeVer;
+            cboModulo.Visible = puedeVer;
+            lblEvento.Visible = puedeVer;
+            cboEvento.Visible = puedeVer;
+            lblCriticidad.Visible = puedeVer;
+            cboCriticidad.Visible = puedeVer;
+            lblFechaInicio.Visible = puedeVer;
+            dtpFechaInicio.Visible = puedeVer;
+            lblFechaFin.Visible = puedeVer;
+            dtpFechaFin.Visible = puedeVer;
+            btnAplicar.Visible = puedeVer;
+            btnLimpiar.Visible = puedeVer;
 
-            if (lblNombre != null) lblNombre.Visible = puedeVer;
-            if (txtNombreUsuario != null) txtNombreUsuario.Visible = puedeVer;
-            if (lblApellido != null) lblApellido.Visible = puedeVer;
-            if (txtApellidoUsuario != null) txtApellidoUsuario.Visible = puedeVer;
+            lblNombre.Visible = puedeVer;
+            txtNombreUsuario.Visible = puedeVer;
+            lblApellido.Visible = puedeVer;
+            txtApellidoUsuario.Visible = puedeVer;
 
-            if (btnImprimir != null) btnImprimir.Visible = puedeExportar;
-
+            btnImprimir.Visible = puedeExportar;
         }
+
+        #endregion
+
+        #region Idioma (Observer)
 
         public void ActualizarIdioma()
         {
             this.Text = IdiomaManager_GV42.T("bitacora.titulo");
+            lblTitulo.Text = IdiomaManager_GV42.T("bitacora.titulo");
+            lblSubtitulo.Text = IdiomaManager_GV42.T("bitacora.subtitulo");
 
-            if (lblLogin != null) lblLogin.Text = IdiomaManager_GV42.T("bitacora.usuario");
-            if (lblModulo != null) lblModulo.Text = IdiomaManager_GV42.T("bitacora.modulo");
-            if (lblEvento != null) lblEvento.Text = IdiomaManager_GV42.T("bitacora.evento");
-            if (lblFechaInicio != null) lblFechaInicio.Text = IdiomaManager_GV42.T("bitacora.fechaInicio");
-            if (lblFechaFin != null) lblFechaFin.Text = IdiomaManager_GV42.T("bitacora.fechaFin");
-            if (lblCriticidad != null) lblCriticidad.Text = IdiomaManager_GV42.T("bitacora.criticidad");
-            if (lblNombre != null) lblNombre.Text = IdiomaManager_GV42.T("bitacora.nombre");
-            if (lblApellido != null) lblApellido.Text = IdiomaManager_GV42.T("bitacora.apellido");
+            lblLogin.Text = IdiomaManager_GV42.T("bitacora.usuario");
+            lblModulo.Text = IdiomaManager_GV42.T("bitacora.modulo");
+            lblEvento.Text = IdiomaManager_GV42.T("bitacora.evento");
+            lblFechaInicio.Text = IdiomaManager_GV42.T("bitacora.fechaInicio");
+            lblFechaFin.Text = IdiomaManager_GV42.T("bitacora.fechaFin");
+            lblCriticidad.Text = IdiomaManager_GV42.T("bitacora.criticidad");
+            lblNombre.Text = IdiomaManager_GV42.T("bitacora.nombre");
+            lblApellido.Text = IdiomaManager_GV42.T("bitacora.apellido");
 
-            if (btnAplicar != null) btnAplicar.Text = IdiomaManager_GV42.T("bitacora.aplicar");
-            if (btnLimpiar != null) btnLimpiar.Text = IdiomaManager_GV42.T("bitacora.limpiar");
-            if (btnImprimir != null) btnImprimir.Text = IdiomaManager_GV42.T("bitacora.imprimir");
-            if (btnCancelar != null) btnCancelar.Text = IdiomaManager_GV42.T("bitacora.salir");
+            btnAplicar.Text = IdiomaManager_GV42.T("bitacora.aplicar");
+            btnLimpiar.Text = IdiomaManager_GV42.T("bitacora.limpiar");
+            btnImprimir.Text = IdiomaManager_GV42.T("bitacora.imprimir");
+            btnCancelar.Text = IdiomaManager_GV42.T("bitacora.salir");
 
-            if (dgvBitacora != null && dgvBitacora.Columns.Count > 0)
-            {
-                if (dgvBitacora.Columns.Contains("Login"))
-                    dgvBitacora.Columns["Login"].HeaderText = IdiomaManager_GV42.T("bitacora.usuario");
-                if (dgvBitacora.Columns.Contains("ModuloNombre"))
-                    dgvBitacora.Columns["ModuloNombre"].HeaderText = IdiomaManager_GV42.T("bitacora.modulo");
-                if (dgvBitacora.Columns.Contains("TipoEventoNombre"))
-                    dgvBitacora.Columns["TipoEventoNombre"].HeaderText = IdiomaManager_GV42.T("bitacora.tipoEvento");
-                if (dgvBitacora.Columns.Contains("Detalle"))
-                    dgvBitacora.Columns["Detalle"].HeaderText = IdiomaManager_GV42.T("bitacora.detalle");
-                if (dgvBitacora.Columns.Contains("Criticidad"))
-                    dgvBitacora.Columns["Criticidad"].HeaderText = IdiomaManager_GV42.T("bitacora.criticidad");
-                if (dgvBitacora.Columns.Contains("FechaHora"))
-                    dgvBitacora.Columns["FechaHora"].HeaderText = IdiomaManager_GV42.T("bitacora.fechaHora");
-            }
+            RefrescarOpcionTodos(cboModulo, _modulos);
+            RefrescarOpcionTodos(cboEvento, _eventos);
+            RefrescarOpcionTodos(cboCriticidad, _criticidades);
+
+            ConfigurarColumnas();
         }
 
-        private void FRMBitacoraDeEventos_Load(object sender, EventArgs e)
+        private void RefrescarOpcionTodos(ComboBox cbo, List<string> lista)
         {
-            if (txtLogin != null) txtLogin.MaxLength = Validaciones_GV42.MAX_LOGIN;
-            try
-            {
-                ConfigurarGrillaSoloLectura();
-                CargarCombos();
-                EstablecerFechasPorDefecto();
-                CargarGrillaPorDefecto();
-            }
-            catch (Exception ex)
-            {
-                Tema_GV42.MostrarErrorInesperado("cargar la bitácora", ex);
-            }
+            if (lista == null || lista.Count == 0) return;
+            int seleccion = cbo.SelectedIndex;
+            lista[0] = IdiomaManager_GV42.T("bitacora.todos");
+            cbo.DataSource = null;
+            cbo.DataSource = lista;
+            if (seleccion < cbo.Items.Count) cbo.SelectedIndex = seleccion;
         }
 
-        private void ConfigurarGrillaSoloLectura()
-        {
-            dgvBitacora.ReadOnly = true;
-            dgvBitacora.AllowUserToAddRows = false;
-            dgvBitacora.AllowUserToDeleteRows = false;
-            dgvBitacora.AllowUserToResizeRows = false;
-            dgvBitacora.AllowUserToResizeColumns = false;
-            dgvBitacora.AllowUserToOrderColumns = false;
-            dgvBitacora.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
-            dgvBitacora.MultiSelect = false;
-            dgvBitacora.RowHeadersVisible = false;
-            dgvBitacora.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
-            dgvBitacora.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.DisableResizing;
-            dgvBitacora.RowHeadersWidthSizeMode = DataGridViewRowHeadersWidthSizeMode.DisableResizing;
-        }
+        #endregion
+
+        #region Carga de datos
 
         private void EstablecerFechasPorDefecto()
         {
-
             // Por defecto se muestran los últimos 3 días, pero se puede consultar cualquier fecha
             // anterior (antes el MinDate impedía ver eventos de más de 3 días). No se permiten fechas futuras.
             DateTime hoy = DateTime.Now.Date;
@@ -154,17 +138,19 @@ namespace PROYECTO_ING_DE_SOFTWARE
 
         private void CargarCombos()
         {
-            List<string> modulos = new List<string> { SIN_FILTRO };
-            modulos.AddRange(_bllBitacora.ListarModulos());
-            cboModulo.DataSource = modulos;
+            string todos = IdiomaManager_GV42.T("bitacora.todos");
 
-            List<string> eventos = new List<string> { SIN_FILTRO };
-            eventos.AddRange(_bllBitacora.ListarTiposEvento());
-            cboEvento.DataSource = eventos;
+            _modulos = new List<string> { todos };
+            _modulos.AddRange(_bllBitacora.ListarModulos());
+            cboModulo.DataSource = _modulos;
 
-            List<string> criticidades = new List<string> { SIN_FILTRO };
-            criticidades.AddRange(_bllBitacora.ListarCriticidades());
-            cboCriticidad.DataSource = criticidades;
+            _eventos = new List<string> { todos };
+            _eventos.AddRange(_bllBitacora.ListarTiposEvento());
+            cboEvento.DataSource = _eventos;
+
+            _criticidades = new List<string> { todos };
+            _criticidades.AddRange(_bllBitacora.ListarCriticidades());
+            cboCriticidad.DataSource = _criticidades;
         }
 
         private void CargarGrillaPorDefecto()
@@ -196,12 +182,13 @@ namespace PROYECTO_ING_DE_SOFTWARE
                 txtApellidoUsuario.Text = "";
             }
         }
+
         private void ConfigurarColumnas()
         {
             if (dgvBitacora.Columns.Count == 0) return;
             string[] aOcultar = { "Modulo", "TipoEvento" };
             foreach (string c in aOcultar)
-            if (dgvBitacora.Columns.Contains(c)) dgvBitacora.Columns[c].Visible = false;
+                if (dgvBitacora.Columns.Contains(c)) dgvBitacora.Columns[c].Visible = false;
 
             if (dgvBitacora.Columns.Contains("Login")) dgvBitacora.Columns["Login"].HeaderText = IdiomaManager_GV42.T("bitacora.usuario");
             if (dgvBitacora.Columns.Contains("ModuloNombre")) dgvBitacora.Columns["ModuloNombre"].HeaderText = IdiomaManager_GV42.T("bitacora.modulo");
@@ -213,6 +200,41 @@ namespace PROYECTO_ING_DE_SOFTWARE
             {
                 dgvBitacora.Columns["FechaHora"].HeaderText = IdiomaManager_GV42.T("bitacora.fechaHora");
                 dgvBitacora.Columns["FechaHora"].DefaultCellStyle.Format = "dd/MM/yyyy HH:mm:ss";
+            }
+        }
+
+        private string ValorCelda(DataGridViewRow fila, string columna)
+        {
+            if (!dgvBitacora.Columns.Contains(columna)) return "";
+            object val = fila.Cells[columna].Value;
+            if (val == null) return "";
+            if (val is DateTime dt) return dt.ToString("dd/MM/yyyy HH:mm:ss");
+            return val.ToString();
+        }
+
+        // La posición 0 de cada combo es "(Todos)": equivale a no filtrar.
+        private string ValorCombo(ComboBox cbo)
+        {
+            if (cbo.SelectedIndex <= 0) return null;
+            return cbo.SelectedItem?.ToString();
+        }
+
+        #endregion
+
+        #region Eventos
+
+        private void FRMBitacoraDeEventos_Load(object sender, EventArgs e)
+        {
+            txtLogin.MaxLength = Validaciones_GV42.MAX_LOGIN;
+            try
+            {
+                CargarCombos();
+                EstablecerFechasPorDefecto();
+                CargarGrillaPorDefecto();
+            }
+            catch (Exception ex)
+            {
+                Tema_GV42.MostrarErrorInesperado(IdiomaManager_GV42.T("bitacora.accionCargar"), ex);
             }
         }
 
@@ -240,7 +262,7 @@ namespace PROYECTO_ING_DE_SOFTWARE
             }
             catch (Exception ex)
             {
-                Tema_GV42.MostrarErrorInesperado("filtrar la bitácora", ex);
+                Tema_GV42.MostrarErrorInesperado(IdiomaManager_GV42.T("bitacora.accionFiltrar"), ex);
             }
         }
 
@@ -252,8 +274,9 @@ namespace PROYECTO_ING_DE_SOFTWARE
             cboCriticidad.SelectedIndex = 0;
             EstablecerFechasPorDefecto();
             try { CargarGrillaPorDefecto(); }
-            catch (Exception ex) { Tema_GV42.MostrarErrorInesperado("cargar la bitácora", ex); }
+            catch (Exception ex) { Tema_GV42.MostrarErrorInesperado(IdiomaManager_GV42.T("bitacora.accionCargar"), ex); }
         }
+
         private void btnCancelar_Click(object sender, EventArgs e)
         {
             this.Close();
@@ -305,11 +328,11 @@ namespace PROYECTO_ING_DE_SOFTWARE
                         });
                     }
 
-                    string subtitulo = $"Generado el {DateTime.Now:dd/MM/yyyy HH:mm:ss} - " +
-                                       $"Total de registros: {filas.Count}";
+                    string subtitulo = IdiomaManager_GV42.T("bitacora.pdfSubtitulo",
+                        DateTime.Now.ToString("dd/MM/yyyy HH:mm:ss"), filas.Count);
 
                     GeneradorPdf_GV42 generador = new GeneradorPdf_GV42();
-                    generador.Generar(sfd.FileName, "Bitacora de Eventos", subtitulo,
+                    generador.Generar(sfd.FileName, IdiomaManager_GV42.T("bitacora.pdfTitulo"), subtitulo,
                                       headers, proporciones, filas);
 
                     string mensaje = $"{IdiomaManager_GV42.T("bitacora.pdfGenerado")}\n{sfd.FileName}\n\n{IdiomaManager_GV42.T("bitacora.pdfAbrirAhora")}";
@@ -329,15 +352,6 @@ namespace PROYECTO_ING_DE_SOFTWARE
             }
         }
 
-        private string ValorCelda(DataGridViewRow fila, string columna)
-        {
-            if (!dgvBitacora.Columns.Contains(columna)) return "";
-            object val = fila.Cells[columna].Value;
-            if (val == null) return "";
-            if (val is DateTime dt) return dt.ToString("dd/MM/yyyy HH:mm:ss");
-            return val.ToString();
-        }
-
         private void dgvBitacora_SelectionChanged(object sender, EventArgs e)
         {
             if (dgvBitacora.CurrentRow == null) return;
@@ -354,7 +368,7 @@ namespace PROYECTO_ING_DE_SOFTWARE
                 }
                 else
                 {
-                    txtNombreUsuario.Text = "(Usuario inexistente)";
+                    txtNombreUsuario.Text = IdiomaManager_GV42.T("bitacora.usuarioInexistente");
                     txtApellidoUsuario.Text = "";
                 }
             }
@@ -365,10 +379,6 @@ namespace PROYECTO_ING_DE_SOFTWARE
             }
         }
 
-        private string ValorCombo(ComboBox cbo)
-        {
-            string seleccion = cbo.SelectedItem?.ToString();
-            return seleccion == SIN_FILTRO ? null : seleccion;
-        }
+        #endregion
     }
 }

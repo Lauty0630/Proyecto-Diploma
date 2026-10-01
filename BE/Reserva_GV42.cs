@@ -1,10 +1,12 @@
-﻿﻿﻿using System;
+﻿using System;
 using System.Collections.Generic;
 
 namespace BE
 {
     public class Reserva_GV42
     {
+        #region Propiedades
+
         public int Id { get; set; }
 
         // Autogenerado por la base de datos (ej: RES-000001).
@@ -42,5 +44,7 @@ namespace BE
         public ClaseVuelo_GV42 Clase { get { return VueloClase != null ? VueloClase.Clase : ClaseVuelo_GV42.Economica; } }
         public int CantidadPasajeros { get { return Pasajeros != null ? Pasajeros.Count : 0; } }
         public string EstadoTexto { get { return Estado.Texto(); } }
+
+        #endregion
     }
 }

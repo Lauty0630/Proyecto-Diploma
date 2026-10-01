@@ -1,25 +1,21 @@
-using BLL;
+﻿using BLL;
 using Servicios;
 using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
-using System.Drawing;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows.Forms;
 
 namespace PROYECTO_ING_DE_SOFTWARE
 {
     public partial class FRMMenuPrincipalUsuario : Form, IObservadorIdioma_GV42
     {
+        #region Campos
+
         private Form _formularioActual = null;
         private readonly BLLUsuario_GV42 _bllUsuario;
 
-        private ToolStripMenuItem _menuIdioma;
-        private ToolStripMenuItem _itemEspanol;
-        private ToolStripMenuItem _itemIngles;
+        #endregion
+
+        #region Constructor
 
         public FRMMenuPrincipalUsuario()
         {
@@ -30,45 +26,80 @@ namespace PROYECTO_ING_DE_SOFTWARE
             this.FormClosed += (s, e) => IdiomaManager_GV42.Instancia.Desuscribir(this);
             Program.CerrarAplicacionAlSerUltimaVentana(this);
 
-            ConstruirMenuIdioma();
             ActualizarIdioma();
         }
 
-        private void ConstruirMenuIdioma()
-        {
-            MenuStrip menu = this.Controls.OfType<MenuStrip>().FirstOrDefault();
-            if (menu == null) return;
+        #endregion
 
-            _itemEspanol = new ToolStripMenuItem("Español");
-            _itemEspanol.Click += (s, e) => _bllUsuario.CambiarIdioma(IdiomaManager_GV42.ES);
-
-            _itemIngles = new ToolStripMenuItem("English");
-            _itemIngles.Click += (s, e) => _bllUsuario.CambiarIdioma(IdiomaManager_GV42.EN);
-
-            _menuIdioma = new ToolStripMenuItem("Idioma");
-            _menuIdioma.DropDownItems.Add(_itemEspanol);
-            _menuIdioma.DropDownItems.Add(_itemIngles);
-
-            menu.Items.Add(_menuIdioma);
-        }
+        #region Idioma (Observer)
 
         public void ActualizarIdioma()
         {
-            if (usuarioToolStripMenuItem != null) usuarioToolStripMenuItem.Text = IdiomaManager_GV42.T("menu.usuario");
-            if (cambiarClaveToolStripMenuItem != null) cambiarClaveToolStripMenuItem.Text = IdiomaManager_GV42.T("menu.cambiarClave");
-            if (logOutToolStripMenuItem != null) logOutToolStripMenuItem.Text = IdiomaManager_GV42.T("menu.logout");
+            this.Text = IdiomaManager_GV42.T("menu.tituloUsuario");
 
-            if (_menuIdioma != null) _menuIdioma.Text = IdiomaManager_GV42.T("menu.idioma");
-            if (_itemEspanol != null) _itemEspanol.Text = IdiomaManager_GV42.T("general.espanol");
-            if (_itemIngles != null) _itemIngles.Text = IdiomaManager_GV42.T("general.ingles");
+            usuarioToolStripMenuItem.Text = IdiomaManager_GV42.T("menu.usuario");
+            cambiarClaveToolStripMenuItem.Text = IdiomaManager_GV42.T("menu.cambiarClave");
+            logOutToolStripMenuItem.Text = IdiomaManager_GV42.T("menu.logout");
+
+            idiomaToolStripMenuItem.Text = IdiomaManager_GV42.T("menu.idioma");
+            espanolToolStripMenuItem.Text = IdiomaManager_GV42.T("general.espanol");
+            inglesToolStripMenuItem.Text = IdiomaManager_GV42.T("general.ingles");
+            espanolToolStripMenuItem.Checked = !IdiomaManager_GV42.Instancia.EsIngles;
+            inglesToolStripMenuItem.Checked = IdiomaManager_GV42.Instancia.EsIngles;
+
+            lblAyudaBienvenida.Text = IdiomaManager_GV42.T("menu.bienvenidaAyuda");
+            lblAccesos.Text = IdiomaManager_GV42.T("menu.accesosRapidos");
+            btnAccesoCambiarClave.Text = IdiomaManager_GV42.T("menu.cambiarClave");
+            btnAccesoCerrarSesion.Text = IdiomaManager_GV42.T("menu.tituloLogout");
+
+            ActualizarBarraEstado();
+            ActualizarBienvenida();
         }
 
-        private void FRMMenuPrincipalUsuario_Load(object sender, EventArgs e)
+        #endregion
+
+        #region Barra de estado y bienvenida
+
+        private void ActualizarBarraEstado()
         {
             Usuario_GV42 actual = SessionManager_GV42.Instancia.ObtenerUsuarioActual();
-            if (actual != null)
-                lblUsuarioActual.Text = $"Sesión: {actual.Nombre} {actual.Apellido} ({actual.Login})";
+
+            lblUsuarioActual.Text = actual != null
+                ? IdiomaManager_GV42.T("menu.estadoSesion", actual.Nombre, actual.Apellido, actual.Login)
+                : IdiomaManager_GV42.T("general.sesionNoIniciada");
+
+            bool tieneRol = actual != null && !string.IsNullOrEmpty(actual.RolNombre);
+            lblRolActual.Visible = tieneRol;
+            if (tieneRol) lblRolActual.Text = IdiomaManager_GV42.T("menu.estadoRol", actual.RolNombre);
+
+            lblIdiomaActual.Text = IdiomaManager_GV42.T("menu.estadoIdioma",
+                IdiomaManager_GV42.Instancia.EsIngles ? IdiomaManager_GV42.T("general.ingles") : IdiomaManager_GV42.T("general.espanol"));
+            lblFechaActual.Text = DateTime.Now.ToString("dd/MM/yyyy");
         }
+
+        private void ActualizarBienvenida()
+        {
+            Usuario_GV42 actual = SessionManager_GV42.Instancia.ObtenerUsuarioActual();
+
+            lblSaludo.Text = actual != null && !string.IsNullOrEmpty(actual.Nombre)
+                ? IdiomaManager_GV42.T("menu.bienvenidaSaludo", actual.Nombre)
+                : IdiomaManager_GV42.T("menu.bienvenida");
+
+            bool tieneRol = actual != null && !string.IsNullOrEmpty(actual.RolNombre);
+            lblRolBienvenida.Text = tieneRol ? IdiomaManager_GV42.T("menu.bienvenidaRol", actual.RolNombre) : "";
+        }
+
+        // La tarjeta de bienvenida se ve solo cuando no hay ningún formulario hijo abierto.
+        private void MostrarBienvenidaSiNoHayHijo(Form cerrado)
+        {
+            if (IsDisposed || Disposing) return;
+            bool hayHijo = pnlContenido.Controls.OfType<Form>().Any(f => f != cerrado && !f.IsDisposed);
+            pnlBienvenida.Visible = !hayHijo;
+        }
+
+        #endregion
+
+        #region Navegación
 
         private void AbrirFormularioHijo(Form f)
         {
@@ -89,10 +120,35 @@ namespace PROYECTO_ING_DE_SOFTWARE
             f.FormBorderStyle = FormBorderStyle.None;
             f.Dock = DockStyle.Fill;
 
-            pnlContenido.Controls.Clear();
+            // Se quitan los hijos anteriores (la tarjeta de bienvenida queda, solo se oculta).
+            foreach (Form anterior in pnlContenido.Controls.OfType<Form>().ToList())
+                pnlContenido.Controls.Remove(anterior);
+
+            pnlBienvenida.Visible = false;
+            f.FormClosed += (s, e) => MostrarBienvenidaSiNoHayHijo(f);
             pnlContenido.Controls.Add(f);
             f.Show();
             _formularioActual = f;
+        }
+
+        #endregion
+
+        #region Eventos
+
+        private void FRMMenuPrincipalUsuario_Load(object sender, EventArgs e)
+        {
+            ActualizarBarraEstado();
+            ActualizarBienvenida();
+        }
+
+        private void espanolToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            _bllUsuario.CambiarIdioma(IdiomaManager_GV42.ES);
+        }
+
+        private void inglesToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            _bllUsuario.CambiarIdioma(IdiomaManager_GV42.EN);
         }
 
         private void cambiarClaveToolStripMenuItem_Click(object sender, EventArgs e)
@@ -115,5 +171,7 @@ namespace PROYECTO_ING_DE_SOFTWARE
                 this.Close();
             }
         }
+
+        #endregion
     }
 }

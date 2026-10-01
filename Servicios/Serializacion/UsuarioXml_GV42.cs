@@ -14,6 +14,14 @@ namespace Servicios
     [XmlType("Usuario")]
     public class UsuarioXml_GV42
     {
+        #region Constructor
+
+        public UsuarioXml_GV42() { }
+
+        #endregion
+
+        #region Propiedades
+
         [XmlElement("DNI")]
         public string DNI { get; set; }
 
@@ -38,7 +46,9 @@ namespace Servicios
         [XmlElement("Activo")]
         public bool Activo { get; set; }
 
-        public UsuarioXml_GV42() { }
+        #endregion
+
+        #region Métodos públicos
 
         public static UsuarioXml_GV42 DesdeUsuario(Usuario_GV42 u)
         {
@@ -69,6 +79,8 @@ namespace Servicios
                 Activo = Activo
             };
         }
+
+        #endregion
     }
 
     // Raíz del archivo XML: la lista de usuarios más algunos datos de control
@@ -77,6 +89,8 @@ namespace Servicios
     [XmlRoot("MaestroUsuarios")]
     public class ListaUsuariosXml_GV42
     {
+        #region Propiedades
+
         [XmlAttribute("FechaGeneracion")]
         public DateTime FechaGeneracion { get; set; }
 
@@ -88,5 +102,7 @@ namespace Servicios
 
         [XmlElement("Usuario")]
         public List<UsuarioXml_GV42> Usuarios { get; set; } = new List<UsuarioXml_GV42>();
+
+        #endregion
     }
 }

@@ -6,7 +6,12 @@ namespace BE
     // La UI puede mostrar ex.Message directamente al usuario.
     public class NegocioException_GV42 : Exception
     {
+        #region Constructor
+
         public NegocioException_GV42(string mensaje) : base(mensaje) { }
+
         public NegocioException_GV42(string mensaje, Exception inner) : base(mensaje, inner) { }
+
+        #endregion
     }
 }

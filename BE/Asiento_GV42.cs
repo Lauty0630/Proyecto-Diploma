@@ -4,6 +4,8 @@ namespace BE
 {
     public class Asiento_GV42
     {
+        #region Propiedades
+
         public int Id { get; set; }
         public int IdVuelo { get; set; }
 
@@ -16,9 +18,15 @@ namespace BE
 
         public string ClaseTexto { get { return Clase.Texto(); } }
 
+        #endregion
+
+        #region Métodos públicos
+
         public override string ToString()
         {
             return NumeroAsiento + " - " + Ubicacion;
         }
+
+        #endregion
     }
 }

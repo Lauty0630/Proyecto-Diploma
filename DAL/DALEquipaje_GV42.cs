@@ -7,12 +7,22 @@ namespace DAL
 {
     public class DALEquipaje_GV42
     {
+        #region Campos
+
         private readonly Acceso _acceso;
+
+        #endregion
+
+        #region Constructor
 
         public DALEquipaje_GV42()
         {
             _acceso = Acceso.Instancia;
         }
+
+        #endregion
+
+        #region Métodos públicos
 
         // Guarda el equipaje, sus etiquetas y (si corresponde) el cargo por exceso con su cobro,
         // todo en una sola transacción.
@@ -111,5 +121,7 @@ namespace DAL
 
             return e;
         }
+
+        #endregion
     }
 }

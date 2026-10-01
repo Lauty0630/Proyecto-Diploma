@@ -5,6 +5,8 @@ namespace BE
     // Un registro de la bitácora de cambios de vuelos (tabla Vuelo_C): una "versión" del vuelo.
     public class VueloCambio_GV42
     {
+        #region Propiedades
+
         public int Id { get; set; }
         public int IdVuelo { get; set; }
         public string CodigoVuelo { get; set; }
@@ -34,5 +36,7 @@ namespace BE
                        (BorradoLogico ? " | DADO DE BAJA" : string.Empty);
             }
         }
+
+        #endregion
     }
 }

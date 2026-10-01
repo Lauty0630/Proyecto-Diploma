@@ -6,6 +6,8 @@ namespace BE
     // Pensado para pintar la grilla Fila x Letra en la pantalla de selección de asiento.
     public class AsientoDisponibilidad_GV42
     {
+        #region Propiedades
+
         public Asiento_GV42 Asiento { get; set; }
         public bool Ocupado { get; set; }
 
@@ -14,5 +16,7 @@ namespace BE
 
         public string NumeroAsiento { get { return Asiento != null ? Asiento.NumeroAsiento : string.Empty; } }
         public string Ubicacion { get { return Asiento != null ? Asiento.Ubicacion : string.Empty; } }
+
+        #endregion
     }
 }

@@ -11,6 +11,8 @@ namespace Servicios
     // El archivo contiene ÚNICAMENTE los datos del objeto serializado.
     public static class SerializadorXml_GV42
     {
+        #region Métodos públicos
+
         // hojaEstiloCss (opcional): nombre del .css que se referencia con la instrucción de
         // procesamiento estándar <?xml-stylesheet type="text/css" href="..."?>. Es solo una
         // indicación de presentación para el visor: XmlSerializer la ignora al des-serializar.
@@ -57,5 +59,7 @@ namespace Servicios
                 return (T)serializer.Deserialize(reader);
             }
         }
+
+        #endregion
     }
 }

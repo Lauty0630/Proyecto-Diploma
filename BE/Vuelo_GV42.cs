@@ -4,6 +4,8 @@ namespace BE
 {
     public class Vuelo_GV42
     {
+        #region Propiedades
+
         public int Id { get; set; }
         public string CodigoVuelo { get; set; }
         public Aerolinea_GV42 Aerolinea { get; set; }
@@ -23,5 +25,7 @@ namespace BE
         {
             get { return CodigoVuelo + " - " + (Origen != null ? Origen.CodigoIata : "?") + " -> " + (Destino != null ? Destino.CodigoIata : "?"); }
         }
+
+        #endregion
     }
 }

@@ -11,14 +11,24 @@ namespace DAL
     // cada vez que cambia algo en la tabla Vuelo.
     public class DALVueloHistorial_GV42
     {
+        #region Campos
+
         private readonly Acceso _acceso;
 
         private const string NOMBRE_RUTA = "O.CodigoIata + N' -> ' + D.CodigoIata";
+
+        #endregion
+
+        #region Constructor
 
         public DALVueloHistorial_GV42()
         {
             _acceso = Acceso.Instancia;
         }
+
+        #endregion
+
+        #region Métodos públicos
 
         // Filtros opcionales: código de vuelo, nombre (ruta) y rango de fechas del cambio.
         public List<VueloCambio_GV42> Listar(string codigoVuelo, string nombre, DateTime? fechaIni, DateTime? fechaFin)
@@ -137,5 +147,7 @@ namespace DAL
                 return codigo;
             });
         }
+
+        #endregion
     }
 }

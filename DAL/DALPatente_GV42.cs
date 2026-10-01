@@ -9,12 +9,22 @@ namespace DAL
 
     public class DALPatente_GV42
     {
+        #region Campos
+
         private readonly Acceso _acceso;
+
+        #endregion
+
+        #region Constructor
 
         public DALPatente_GV42()
         {
             _acceso = Acceso.Instancia;
         }
+
+        #endregion
+
+        #region Métodos públicos
 
         public List<Patente_GV42> ListarTodas()
         {
@@ -35,6 +45,10 @@ namespace DAL
             return dt.Rows.Count == 0 ? null : MapearFila(dt.Rows[0]);
         }
 
+        #endregion
+
+        #region Métodos privados
+
         private Patente_GV42 MapearFila(DataRow row)
         {
             return new Patente_GV42
@@ -44,5 +58,7 @@ namespace DAL
                 DataKey = row["DataKey"].ToString()
             };
         }
+
+        #endregion
     }
 }

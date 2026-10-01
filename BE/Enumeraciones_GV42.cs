@@ -1,4 +1,4 @@
-﻿﻿﻿using System;
+﻿using System;
 
 namespace BE
 {
@@ -19,28 +19,38 @@ namespace BE
 
     public static class Textos_GV42
     {
+        #region Propiedades
+
+        // BE no conoce el servicio de idiomas: la UI conecta acá el traductor al arrancar
+        // (Textos_GV42.Traductor = IdiomaManager_GV42.TConDefecto). Sin traductor, queda en español.
+        public static Func<string, string, string> Traductor { get; set; }
+
+        #endregion
+
+        #region Métodos públicos
+
         public static string Texto(this ClaseVuelo_GV42 v)
         {
             switch (v)
             {
-                case ClaseVuelo_GV42.Economica: return "Económica";
-                case ClaseVuelo_GV42.Ejecutiva: return "Ejecutiva";
-                default: return "Primera clase";
+                case ClaseVuelo_GV42.Economica: return Tr("enum.clase.economica", "Económica");
+                case ClaseVuelo_GV42.Ejecutiva: return Tr("enum.clase.ejecutiva", "Ejecutiva");
+                default: return Tr("enum.clase.primera", "Primera clase");
             }
         }
 
         public static string Texto(this TipoViaje_GV42 v)
         {
-            return v == TipoViaje_GV42.Ida ? "Ida" : "Ida y Vuelta";
+            return v == TipoViaje_GV42.Ida ? Tr("enum.viaje.ida", "Ida") : Tr("enum.viaje.idaVuelta", "Ida y Vuelta");
         }
 
         public static string Texto(this EstadoReserva_GV42 v)
         {
             switch (v)
             {
-                case EstadoReserva_GV42.PendienteDePago: return "Pendiente de Pago";
-                case EstadoReserva_GV42.Confirmada: return "Confirmada";
-                default: return "Cancelada";
+                case EstadoReserva_GV42.PendienteDePago: return Tr("enum.estado.pendiente", "Pendiente de Pago");
+                case EstadoReserva_GV42.Confirmada: return Tr("enum.estado.confirmada", "Confirmada");
+                default: return Tr("enum.estado.cancelada", "Cancelada");
             }
         }
 
@@ -48,21 +58,33 @@ namespace BE
         {
             switch (v)
             {
-                case MedioPago_GV42.TarjetaDebito: return "Tarjeta de débito";
-                case MedioPago_GV42.TarjetaCredito: return "Tarjeta de crédito";
-                case MedioPago_GV42.Transferencia: return "Transferencia";
-                default: return "Efectivo";
+                case MedioPago_GV42.TarjetaDebito: return Tr("enum.medio.debito", "Tarjeta de débito");
+                case MedioPago_GV42.TarjetaCredito: return Tr("enum.medio.credito", "Tarjeta de crédito");
+                case MedioPago_GV42.Transferencia: return Tr("enum.medio.transferencia", "Transferencia");
+                default: return Tr("enum.medio.efectivo", "Efectivo");
             }
         }
 
         public static string Texto(this EstadoCheckIn_GV42 v)
         {
-            return v == EstadoCheckIn_GV42.Pendiente ? "Pendiente" : "Realizado";
+            return v == EstadoCheckIn_GV42.Pendiente ? Tr("enum.checkin.pendiente", "Pendiente") : Tr("enum.checkin.realizado", "Realizado");
         }
 
         public static string Texto(this CanalVenta_GV42 v)
         {
-            return v == CanalVenta_GV42.Presencial ? "Presencial" : "Autogestión";
+            return v == CanalVenta_GV42.Presencial ? Tr("enum.canal.presencial", "Presencial") : Tr("enum.canal.autogestion", "Autogestión");
         }
+
+        #endregion
+
+        #region Métodos privados
+
+        private static string Tr(string clave, string enEspanol)
+        {
+            Func<string, string, string> t = Traductor;
+            return t == null ? enEspanol : t(clave, enEspanol);
+        }
+
+        #endregion
     }
 }

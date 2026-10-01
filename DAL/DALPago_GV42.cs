@@ -7,12 +7,22 @@ namespace DAL
 {
     public class DALPago_GV42
     {
+        #region Campos
+
         private readonly Acceso _acceso;
+
+        #endregion
+
+        #region Constructor
 
         public DALPago_GV42()
         {
             _acceso = Acceso.Instancia;
         }
+
+        #endregion
+
+        #region Métodos públicos
 
         // En una sola transacción: registra el pago, pasa la reserva a "Confirmada",
         // emite un boleto por pasajero y deja creado el check-in (Pendiente) de cada pasajero.
@@ -104,5 +114,7 @@ namespace DAL
                 LoginVendedor = DALUtil_GV42.Str(r, "LoginVendedor")
             };
         }
+
+        #endregion
     }
 }

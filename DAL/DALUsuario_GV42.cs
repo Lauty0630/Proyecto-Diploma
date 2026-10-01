@@ -12,6 +12,7 @@ namespace DAL
 
     public class DALUsuario_GV42
     {
+        #region Campos
 
         private readonly Acceso _acceso;
         private readonly DALIntegridad_GV42 _dalIntegridad;
@@ -24,17 +25,19 @@ namespace DAL
             "FROM Usuario U " +
             "INNER JOIN Roles R ON R.Id = U.IdRol";
 
+        #endregion
+
+        #region Constructor
+
         public DALUsuario_GV42()
         {
             _acceso = Acceso.Instancia;
             _dalIntegridad = new DALIntegridad_GV42();
         }
 
-        private void RecalcularIntegridadUsuario()
-        {
-            if (DALIntegridad_GV42.IntegridadConocidamenteRota) return;
-            try { _dalIntegridad.RecalcularTabla("Usuario"); } catch { }
-        }
+        #endregion
+
+        #region Métodos públicos
 
         public bool ExisteDNI(string dni)
         {
@@ -248,6 +251,48 @@ namespace DAL
             return filas;
         }
 
+        public List<Rol_GV42> ListarRoles()
+        {
+            string query = "SELECT Id, Nombre FROM Roles ORDER BY Nombre";
+            DataTable dt = _acceso.leer(query, null);
+
+            List<Rol_GV42> lista = new List<Rol_GV42>();
+            foreach (DataRow row in dt.Rows)
+            {
+                lista.Add(new Rol_GV42
+                {
+                    Id = Convert.ToInt32(row["Id"]),
+                    Nombre = row["Nombre"].ToString()
+                });
+            }
+            return lista;
+        }
+
+        public Rol_GV42 BuscarPorNombre(string nombre)
+        {
+            string query = "SELECT Id, Nombre FROM Roles WHERE Nombre = @Nombre";
+            SqlParameter[] p = { new SqlParameter("@Nombre", nombre) };
+            DataTable dt = _acceso.leer(query, p);
+
+            if (dt.Rows.Count == 0) return null;
+
+            return new Rol_GV42
+            {
+                Id = Convert.ToInt32(dt.Rows[0]["Id"]),
+                Nombre = dt.Rows[0]["Nombre"].ToString()
+            };
+        }
+
+        #endregion
+
+        #region Métodos privados
+
+        private void RecalcularIntegridadUsuario()
+        {
+            if (DALIntegridad_GV42.IntegridadConocidamenteRota) return;
+            try { _dalIntegridad.RecalcularTabla("Usuario"); } catch { }
+        }
+
         private List<Usuario_GV42> MapearLista(DataTable dt)
         {
             List<Usuario_GV42> lista = new List<Usuario_GV42>();
@@ -286,36 +331,6 @@ namespace DAL
             };
         }
 
-        public List<Rol_GV42> ListarRoles()
-        {
-            string query = "SELECT Id, Nombre FROM Roles ORDER BY Nombre";
-            DataTable dt = _acceso.leer(query, null);
-
-            List<Rol_GV42> lista = new List<Rol_GV42>();
-            foreach (DataRow row in dt.Rows)
-            {
-                lista.Add(new Rol_GV42
-                {
-                    Id = Convert.ToInt32(row["Id"]),
-                    Nombre = row["Nombre"].ToString()
-                });
-            }
-            return lista;
-        }
-
-        public Rol_GV42 BuscarPorNombre(string nombre)
-        {
-            string query = "SELECT Id, Nombre FROM Roles WHERE Nombre = @Nombre";
-            SqlParameter[] p = { new SqlParameter("@Nombre", nombre) };
-            DataTable dt = _acceso.leer(query, p);
-
-            if (dt.Rows.Count == 0) return null;
-
-            return new Rol_GV42
-            {
-                Id = Convert.ToInt32(dt.Rows[0]["Id"]),
-                Nombre = dt.Rows[0]["Nombre"].ToString()
-            };
-        }
+        #endregion
     }
 }

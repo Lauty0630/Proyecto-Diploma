@@ -1,5 +1,6 @@
 ﻿using BE;
 using DAL;
+using Servicios;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -11,33 +12,41 @@ namespace BLL
     // pasajero con los datos de la reserva (vuelo, asiento, tarifa, pago) y lo exporta a PDF.
     public class BLLBoleto_GV42
     {
+        #region Constantes
+
         // El embarque empieza 40 minutos antes de la salida y cierra 15 minutos antes.
         public const int MINUTOS_INICIO_EMBARQUE = 40;
         public const int MINUTOS_CIERRE_EMBARQUE = 15;
 
+        #endregion
+
+        #region Campos
+
         private readonly BLLReserva_GV42 _bllReserva = new BLLReserva_GV42();
         private readonly DALBoleto_GV42 _dalBoleto = new DALBoleto_GV42();
+
+        #endregion
+
+        #region Armado de boletos
 
         public List<BoletoElectronico_GV42> ObtenerBoletosElectronicos(string numeroReserva)
         {
             // BuscarReserva ya controla que un cliente solo vea sus propias reservas.
             Reserva_GV42 reserva = _bllReserva.BuscarReserva(numeroReserva);
             if (reserva == null)
-                throw new NegocioException_GV42("No existe una reserva con el número indicado.");
+                throw new NegocioException_GV42(IdiomaManager_GV42.T("neg.reserva.noExiste"));
             if (reserva.Estado == EstadoReserva_GV42.Cancelada)
-                throw new NegocioException_GV42("La reserva " + reserva.NumeroReserva + " está cancelada: sus boletos ya no son válidos.");
+                throw new NegocioException_GV42(IdiomaManager_GV42.T("neg.boleto.reservaCancelada", reserva.NumeroReserva));
             if (reserva.Estado != EstadoReserva_GV42.Confirmada)
-                throw new NegocioException_GV42("La reserva todavía no está paga: los boletos se emiten al registrar el pago.");
+                throw new NegocioException_GV42(IdiomaManager_GV42.T("neg.boleto.noPaga"));
 
             List<Boleto_GV42> boletos = _dalBoleto.ListarPorReserva(reserva.NumeroReserva);
             if (boletos.Count == 0)
-                throw new NegocioException_GV42("La reserva no tiene boletos emitidos.");
+                throw new NegocioException_GV42(IdiomaManager_GV42.T("neg.boleto.sinBoletos"));
 
             Vuelo_GV42 v = reserva.Vuelo;
             int cantidad = Math.Max(1, reserva.CantidadPasajeros);
-            string servicios = reserva.Adicionales == null || reserva.Adicionales.Count == 0
-                ? "sin servicios adicionales"
-                : string.Join(", ", reserva.Adicionales.Select(a => a.TipoNombre + " x" + a.Cantidad));
+            string servicios = TextoServicios(reserva.Adicionales);
 
             var lista = new List<BoletoElectronico_GV42>();
             int n = 0;
@@ -81,20 +90,39 @@ namespace BLL
                     TotalReserva = reserva.ImporteTotal,
                     ServiciosAdicionales = servicios,
                     FormaPago = reserva.Pago != null ? reserva.Pago.MedioPagoTexto : "-",
-                    Estado = "CONFIRMADO",
-                    CodigoBarras = CodigoDeBarras(b.NumeroBoleto, v.CodigoVuelo, asiento?.NumeroAsiento)
+                    Estado = IdiomaManager_GV42.T("boleto.estadoConfirmado"),
+                    CodigoBarras = CodigoDeBarras(b.NumeroBoleto, v.CodigoVuelo, asiento?.NumeroAsiento),
+
+                    // Valores sin traducir: el diseño los vuelve a traducir al dibujar (cambio de idioma en caliente).
+                    ClaseValor = reserva.VueloClase.Clase,
+                    TipoViajeValor = reserva.TipoViaje,
+                    MedioPagoValor = reserva.Pago != null ? reserva.Pago.MedioPago : (MedioPago_GV42?)null,
+                    EstadoValor = reserva.Estado,
+                    Adicionales = reserva.Adicionales
                 });
             }
             return lista;
         }
 
+        // "Equipaje extra x1, Comida especial x2" en el idioma actual (o "sin servicios adicionales").
+        internal static string TextoServicios(List<AdicionalReserva_GV42> adicionales)
+        {
+            return adicionales == null || adicionales.Count == 0
+                ? IdiomaManager_GV42.T("boleto.sinServicios")
+                : string.Join(", ", adicionales.Select(a => BLLNegocioUtil_GV42.NombreAdicional(a.TipoNombre) + " x" + a.Cantidad));
+        }
+
+        #endregion
+
+        #region Exportación a PDF
+
         // Guarda los boletos en un PDF: dos por hoja (horizontal), igual a como se ven en pantalla.
         public void ExportarPdf(string ruta, List<BoletoElectronico_GV42> boletos)
         {
             if (string.IsNullOrWhiteSpace(ruta))
-                throw new NegocioException_GV42("Indique dónde guardar el PDF.");
+                throw new NegocioException_GV42(IdiomaManager_GV42.T("neg.pdf.indiqueRuta"));
             if (boletos == null || boletos.Count == 0)
-                throw new NegocioException_GV42("No hay boletos para exportar.");
+                throw new NegocioException_GV42(IdiomaManager_GV42.T("neg.boleto.nadaExportar"));
 
             var pdf = new LienzoPdf_GV42();
             float x = (pdf.AnchoPagina - DisenioBoleto_GV42.ANCHO) / 2;
@@ -114,18 +142,24 @@ namespace BLL
             }
             catch (IOException ex)
             {
-                throw new NegocioException_GV42("No se pudo guardar el PDF (¿está abierto en otro programa?). " + ex.Message);
+                throw new NegocioException_GV42(IdiomaManager_GV42.T("neg.pdf.noSePudoGuardar", ex.Message));
             }
             catch (UnauthorizedAccessException)
             {
-                throw new NegocioException_GV42("No hay permiso para escribir en la carpeta elegida.");
+                throw new NegocioException_GV42(IdiomaManager_GV42.T("neg.pdf.sinPermisoCarpeta"));
             }
         }
+
+        #endregion
+
+        #region Métodos privados
 
         // Texto del código de barras: boleto + vuelo + asiento (solo caracteres ASCII).
         private static string CodigoDeBarras(string boleto, string vuelo, string asiento)
         {
             return (boleto ?? "") + " " + (vuelo ?? "") + (string.IsNullOrEmpty(asiento) ? "" : " " + asiento);
         }
+
+        #endregion
     }
 }

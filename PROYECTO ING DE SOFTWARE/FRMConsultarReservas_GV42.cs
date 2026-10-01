@@ -3,7 +3,6 @@ using BLL;
 using Servicios;
 using System;
 using System.Collections.Generic;
-using System.Drawing;
 using System.Linq;
 using System.Windows.Forms;
 
@@ -14,8 +13,243 @@ namespace PROYECTO_ING_DE_SOFTWARE
     //    Solo ve el botón Cancelar si además tiene Reservas.Cancelar.
     //  - Pasajero (Reservas.ConsultarPropia): "Mis reservas", sin buscador; ve y cancela solo las suyas
     //    (Reservas.CancelarPropia).
-    public class FRMConsultarReservas_GV42 : Form
+    // El diseño está en FRMConsultarReservas_GV42.Designer.cs (Form Designer).
+    public partial class FRMConsultarReservas_GV42 : Form, IObservadorIdioma_GV42
     {
+        #region Campos
+
+        private readonly BLLReserva_GV42 _bll = new BLLReserva_GV42();
+        private readonly bool _esVendedor;
+        private readonly bool _puedeCancelar;
+        private List<Reserva_GV42> _reservas = new List<Reserva_GV42>();
+
+        #endregion
+
+        #region Constructor
+
+        public FRMConsultarReservas_GV42()
+        {
+            InitializeComponent();
+
+            _esVendedor = _bll.PuedeConsultarTodas();
+            _puedeCancelar = _bll.PuedeCancelar();
+
+            dgvReservas.AutoGenerateColumns = false;
+            ConfigurarSegunPermisos();
+
+            IdiomaManager_GV42.Instancia.Suscribir(this);
+            FormClosed += (s, e) => IdiomaManager_GV42.Instancia.Desuscribir(this);
+            ActualizarIdioma();
+            // Las reservas se cargan en Load (FRMConsultarReservas_GV42_Load).
+        }
+
+        #endregion
+
+        #region Idioma (Observer)
+
+        public void ActualizarIdioma()
+        {
+            Text = IdiomaManager_GV42.T(_esVendedor ? "consulta.tituloVendedor" : "consulta.tituloPropias");
+            lblTitulo.Text = Text;
+            lblSubtitulo.Text = IdiomaManager_GV42.T(_esVendedor ? "consulta.subtituloVendedor" : "consulta.subtituloPropias");
+
+            lblBuscar.Text = IdiomaManager_GV42.T("consulta.buscarPor");
+            btnBuscar.Text = IdiomaManager_GV42.T("consulta.buscar");
+            lblAyudaBusqueda.Text = IdiomaManager_GV42.T("consulta.ayudaBusqueda");
+            lblAyudaAcciones.Text = IdiomaManager_GV42.T("consulta.ayudaAcciones");
+            btnVerBoletos.Text = IdiomaManager_GV42.T("consulta.verBoletos");
+            btnCancelar.Text = IdiomaManager_GV42.T(_esVendedor ? "consulta.cancelarSeleccionada" : "consulta.cancelarMia");
+
+            colReserva.HeaderText = IdiomaManager_GV42.T("consulta.colReserva");
+            colDni.HeaderText = IdiomaManager_GV42.T("consulta.colDni");
+            colCliente.HeaderText = IdiomaManager_GV42.T("consulta.colCliente");
+            colVuelo.HeaderText = IdiomaManager_GV42.T("consulta.colVuelo");
+            colRuta.HeaderText = IdiomaManager_GV42.T("consulta.colRuta");
+            colSalida.HeaderText = IdiomaManager_GV42.T("consulta.colSalida");
+            colClase.HeaderText = IdiomaManager_GV42.T("consulta.colClase");
+            colEstado.HeaderText = IdiomaManager_GV42.T("consulta.colEstado");
+            colImporte.HeaderText = IdiomaManager_GV42.T("consulta.colImporte");
+
+            // Clase y estado de cada fila se traducen: se vuelven a armar las filas (sin ir a la base).
+            MostrarReservas();
+        }
+
+        #endregion
+
+        #region Carga de datos
+
+        // Vendedor: buscador y columnas del cliente. Pasajero: solo sus reservas, sin buscador.
+        private void ConfigurarSegunPermisos()
+        {
+            pnlBusqueda.Visible = _esVendedor;
+            pnlSeparadorArriba.Visible = _esVendedor;
+            colDni.Visible = _esVendedor;
+            colCliente.Visible = _esVendedor;
+            btnCancelar.Visible = _puedeCancelar;
+        }
+
+        private void CargarReservas()
+        {
+            try
+            {
+                _reservas = _esVendedor
+                    ? _bll.BuscarReservas(txtBusqueda.Text)
+                    : _bll.ListarMisReservas();
+                MostrarReservas();
+            }
+            catch (NegocioException_GV42 ex)
+            {
+                MessageBox.Show(ex.Message, IdiomaManager_GV42.T("general.revisarDatos"), MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            }
+            catch (Exception ex)
+            {
+                Tema_GV42.MostrarErrorInesperado(IdiomaManager_GV42.T("consulta.accionCargar"), ex);
+            }
+        }
+
+        // Arma las filas de la grilla a partir de las reservas ya cargadas, conservando la selección.
+        private void MostrarReservas()
+        {
+            Reserva_GV42 anterior = ObtenerSeleccionada();
+
+            var filas = (_reservas ?? new List<Reserva_GV42>()).Select(r => new FilaReserva
+            {
+                NumeroReserva = r.NumeroReserva,
+                Cliente = r.Cliente.NombreCompleto,
+                DniCliente = r.Cliente.DNI,
+                Vuelo = r.VueloClase.CodigoVuelo,
+                Ruta = r.VueloClase.OrigenDescripcion + " -> " + r.VueloClase.DestinoDescripcion,
+                Salida = r.VueloClase.FechaHoraSalida,
+                Clase = r.VueloClase.ClaseTexto,
+                Estado = r.EstadoTexto,
+                ImporteTotal = r.ImporteTotal,
+                Reserva = r
+            }).ToList();
+
+            dgvReservas.DataSource = null;
+            dgvReservas.DataSource = filas;
+
+            if (anterior != null)
+            {
+                foreach (DataGridViewRow fila in dgvReservas.Rows)
+                {
+                    if (((FilaReserva)fila.DataBoundItem).NumeroReserva == anterior.NumeroReserva)
+                    {
+                        fila.Selected = true;
+                        break;
+                    }
+                }
+            }
+            ActualizarBotones();
+        }
+
+        private Reserva_GV42 ObtenerSeleccionada()
+        {
+            if (dgvReservas.SelectedRows.Count == 0) return null;
+            var fila = dgvReservas.SelectedRows[0].DataBoundItem as FilaReserva;
+            return fila != null ? fila.Reserva : null;
+        }
+
+        // Boletos: solo para reservas confirmadas (pagas). Cancelar: no si ya está cancelada
+        // o si el vuelo ya salió (la BLL igual lo controla).
+        private void ActualizarBotones()
+        {
+            Reserva_GV42 sel = ObtenerSeleccionada();
+            btnVerBoletos.Enabled = sel != null && sel.Estado == EstadoReserva_GV42.Confirmada;
+            if (!_puedeCancelar) { btnCancelar.Visible = false; return; }
+            btnCancelar.Enabled = sel != null && sel.Estado != EstadoReserva_GV42.Cancelada &&
+                                  sel.VueloClase.FechaHoraSalida > DateTime.Now;
+        }
+
+        #endregion
+
+        #region Eventos
+
+        private void FRMConsultarReservas_GV42_Load(object sender, EventArgs e)
+        {
+            CargarReservas();
+        }
+
+        private void btnBuscar_Click(object sender, EventArgs e)
+        {
+            CargarReservas();
+        }
+
+        private void txtBusqueda_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.KeyCode == Keys.Enter)
+            {
+                e.SuppressKeyPress = true;
+                CargarReservas();
+            }
+        }
+
+        private void dgvReservas_SelectionChanged(object sender, EventArgs e)
+        {
+            ActualizarBotones();
+        }
+
+        // El estado se pinta con el color de la paleta: confirmada (verde), pendiente (naranja), cancelada (rojo).
+        private void dgvReservas_CellFormatting(object sender, DataGridViewCellFormattingEventArgs e)
+        {
+            if (e.RowIndex < 0 || e.ColumnIndex != colEstado.Index) return;
+            var fila = dgvReservas.Rows[e.RowIndex].DataBoundItem as FilaReserva;
+            if (fila == null) return;
+            e.CellStyle.ForeColor = fila.Reserva.Estado == EstadoReserva_GV42.Confirmada ? Tema_GV42.Exito
+                                  : fila.Reserva.Estado == EstadoReserva_GV42.Cancelada ? Tema_GV42.Error
+                                  : Tema_GV42.Advertencia;
+            e.CellStyle.SelectionForeColor = e.CellStyle.ForeColor;
+        }
+
+        private void btnVerBoletos_Click(object sender, EventArgs e)
+        {
+            Reserva_GV42 sel = ObtenerSeleccionada();
+            if (sel != null) FRMBoletos_GV42.Mostrar(this, sel.NumeroReserva);
+        }
+
+        private void btnCancelar_Click(object sender, EventArgs e)
+        {
+            Reserva_GV42 sel = ObtenerSeleccionada();
+            if (sel == null) return;
+
+            // Pendiente de pago: no se cobró nada, así que no hay penalidad (igual que en la BLL).
+            decimal porcentaje = sel.Estado == EstadoReserva_GV42.PendienteDePago
+                ? 0m : _bll.CalcularPorcentajePenalidad(sel.VueloClase.FechaHoraSalida);
+            decimal estimado = Math.Round(sel.ImporteTotal * porcentaje, 2);
+
+            string mensaje = IdiomaManager_GV42.T("consulta.confirmarCancelar", sel.NumeroReserva);
+            mensaje += "\n\n" + (porcentaje > 0
+                ? IdiomaManager_GV42.T("consulta.conPenalidad", estimado.ToString("C2"), porcentaje * 100)
+                : (sel.Estado == EstadoReserva_GV42.PendienteDePago
+                    ? IdiomaManager_GV42.T("consulta.sinPenalidadImpaga")
+                    : IdiomaManager_GV42.T("consulta.sinPenalidad")));
+
+            if (MessageBox.Show(mensaje, IdiomaManager_GV42.T("consulta.confirmarTitulo"),
+                                MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes)
+                return;
+
+            try
+            {
+                _bll.CancelarReserva(sel.NumeroReserva);
+                MessageBox.Show(IdiomaManager_GV42.T("consulta.cancelada"), IdiomaManager_GV42.T("consulta.listo"),
+                                MessageBoxButtons.OK, MessageBoxIcon.Information);
+                CargarReservas();
+            }
+            catch (NegocioException_GV42 ex)
+            {
+                MessageBox.Show(ex.Message, IdiomaManager_GV42.T("consulta.noSePudoCancelar"), MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            }
+            catch (Exception ex)
+            {
+                Tema_GV42.MostrarErrorInesperado(IdiomaManager_GV42.T("consulta.accionCancelar"), ex);
+            }
+        }
+
+        #endregion
+
+        #region Tipos anidados
+
+        // Fila de la grilla: los textos (clase, estado, ruta) ya vienen armados para mostrar.
         private class FilaReserva
         {
             public string NumeroReserva { get; set; }
@@ -30,202 +264,6 @@ namespace PROYECTO_ING_DE_SOFTWARE
             public Reserva_GV42 Reserva { get; set; }
         }
 
-        private readonly BLLReserva_GV42 _bll = new BLLReserva_GV42();
-        private readonly bool _esVendedor;
-        private readonly bool _puedeCancelar;
-
-        private TextBox txtBusqueda;
-        private DataGridView dgv;
-        private Button btnCancelar;
-        private Button btnVerBoletos;
-        private List<Reserva_GV42> _reservas = new List<Reserva_GV42>();
-
-        public FRMConsultarReservas_GV42()
-        {
-            _esVendedor = _bll.PuedeConsultarTodas();
-            _puedeCancelar = _bll.PuedeCancelar();
-
-            ConstruirUI();
-            CargarReservas();
-        }
-
-        private void ConstruirUI()
-        {
-            Text = _esVendedor ? "Consultar reservas" : "Mis reservas";
-            BackColor = Tema_GV42.Fondo;
-            ClientSize = new Size(900, 560);
-            StartPosition = FormStartPosition.CenterScreen;
-            Font = new Font("Segoe UI", 9F);
-
-            var card = Tema_GV42.CrearCard();
-            card.Dock = DockStyle.Fill;
-            card.Margin = new Padding(20);
-            card.Padding = new Padding(20);
-            var contenedor = new Panel { Dock = DockStyle.Fill, Padding = new Padding(20) };
-            contenedor.Controls.Add(card);
-            Controls.Add(contenedor);
-
-            var lblTitulo = new Label
-            {
-                Text = _esVendedor ? "Consultar reservas" : "Mis reservas",
-                Font = Tema_GV42.FuenteTitulo, ForeColor = Tema_GV42.Acento,
-                AutoSize = true, Location = new Point(0, 0)
-            };
-            // Zonas acopladas: título/búsqueda arriba, botón abajo y la grilla ocupa el resto
-            // (antes, con tamaños fijos y anclajes, la grilla y el botón quedaban cortados).
-            var pnlArriba = new Panel { Dock = DockStyle.Top };
-            var pnlAbajo = new Panel { Dock = DockStyle.Bottom, Height = 50 };
-            pnlArriba.Controls.Add(lblTitulo);
-
-            int yBajoTitulo = 45;
-
-            if (_esVendedor)
-            {
-                var lblBuscar = Tema_GV42.CrearLabel("Buscar por número, DNI o apellido del cliente");
-                lblBuscar.Location = new Point(0, yBajoTitulo);
-                txtBusqueda = Tema_GV42.CrearTextBox();
-                txtBusqueda.Location = new Point(0, yBajoTitulo + 20);
-                txtBusqueda.Size = new Size(320, 24);
-                var btnBuscar = new Button { Text = "Buscar", Location = new Point(330, yBajoTitulo + 19), Size = new Size(100, 26) };
-                Tema_GV42.EstilizarBotonSecundario(btnBuscar);
-                btnBuscar.Click += (s, e) => CargarReservas();
-                pnlArriba.Controls.Add(lblBuscar);
-                pnlArriba.Controls.Add(txtBusqueda);
-                pnlArriba.Controls.Add(btnBuscar);
-                yBajoTitulo += 60;
-            }
-            pnlArriba.Height = yBajoTitulo;
-
-            dgv = new DataGridView { Dock = DockStyle.Fill };
-            Tema_GV42.EstilizarGrilla(dgv);
-            dgv.AutoGenerateColumns = false;
-            dgv.Columns.Add(new DataGridViewTextBoxColumn { DataPropertyName = "NumeroReserva", HeaderText = "Reserva" });
-            if (_esVendedor)
-            {
-                dgv.Columns.Add(new DataGridViewTextBoxColumn { DataPropertyName = "DniCliente", HeaderText = "DNI cliente" });
-                dgv.Columns.Add(new DataGridViewTextBoxColumn { DataPropertyName = "Cliente", HeaderText = "Cliente" });
-            }
-            dgv.Columns.Add(new DataGridViewTextBoxColumn { DataPropertyName = "Vuelo", HeaderText = "Vuelo" });
-            dgv.Columns.Add(new DataGridViewTextBoxColumn { DataPropertyName = "Ruta", HeaderText = "Ruta" });
-            dgv.Columns.Add(new DataGridViewTextBoxColumn { DataPropertyName = "Salida", HeaderText = "Salida", DefaultCellStyle = new DataGridViewCellStyle { Format = "dd/MM/yyyy HH:mm" } });
-            dgv.Columns.Add(new DataGridViewTextBoxColumn { DataPropertyName = "Clase", HeaderText = "Clase" });
-            dgv.Columns.Add(new DataGridViewTextBoxColumn { DataPropertyName = "Estado", HeaderText = "Estado" });
-            dgv.Columns.Add(new DataGridViewTextBoxColumn { DataPropertyName = "ImporteTotal", HeaderText = "Importe", DefaultCellStyle = new DataGridViewCellStyle { Format = "C2" } });
-            dgv.SelectionChanged += (s, e) => ActualizarBotonCancelar();
-
-            // Boletos: solo para reservas confirmadas (pagas).
-            btnVerBoletos = new Button { Text = "Ver boletos", Location = new Point(0, 10), Size = new Size(160, 36), Enabled = false };
-            Tema_GV42.EstilizarBotonPrimario(btnVerBoletos);
-            btnVerBoletos.Click += (s, e) =>
-            {
-                Reserva_GV42 sel = ObtenerSeleccionada();
-                if (sel != null) FRMBoletos_GV42.Mostrar(this, sel.NumeroReserva);
-            };
-            pnlAbajo.Controls.Add(btnVerBoletos);
-
-            btnCancelar = new Button
-            {
-                Text = _esVendedor ? "Cancelar reserva seleccionada" : "Cancelar mi reserva",
-                Location = new Point(170, 10),
-                Size = new Size(240, 36),
-                Visible = _puedeCancelar
-            };
-            Tema_GV42.EstilizarBotonSecundario(btnCancelar);
-            btnCancelar.Click += btnCancelar_Click;
-            pnlAbajo.Controls.Add(btnCancelar);
-
-            // Orden de acoplamiento: Fill primero, después Bottom y Top.
-            card.Controls.Add(dgv);
-            card.Controls.Add(pnlAbajo);
-            card.Controls.Add(pnlArriba);
-        }
-
-        private void CargarReservas()
-        {
-            try
-            {
-                _reservas = _esVendedor
-                    ? _bll.BuscarReservas(txtBusqueda?.Text)
-                    : _bll.ListarMisReservas();
-
-                var filas = _reservas.Select(r => new FilaReserva
-                {
-                    NumeroReserva = r.NumeroReserva,
-                    Cliente = r.Cliente.NombreCompleto,
-                    DniCliente = r.Cliente.DNI,
-                    Vuelo = r.VueloClase.CodigoVuelo,
-                    Ruta = r.VueloClase.OrigenDescripcion + " -> " + r.VueloClase.DestinoDescripcion,
-                    Salida = r.VueloClase.FechaHoraSalida,
-                    Clase = r.VueloClase.ClaseTexto,
-                    Estado = r.EstadoTexto,
-                    ImporteTotal = r.ImporteTotal,
-                    Reserva = r
-                }).ToList();
-
-                dgv.DataSource = null;
-                dgv.DataSource = filas;
-                ActualizarBotonCancelar();
-            }
-            catch (NegocioException_GV42 ex)
-            {
-                MessageBox.Show(ex.Message, "Revisá los datos", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-            }
-            catch (Exception ex)
-            {
-                Tema_GV42.MostrarErrorInesperado("cargar las reservas", ex);
-            }
-        }
-
-        private Reserva_GV42 ObtenerSeleccionada()
-        {
-            if (dgv.SelectedRows.Count == 0) return null;
-            return ((FilaReserva)dgv.SelectedRows[0].DataBoundItem).Reserva;
-        }
-
-        private void ActualizarBotonCancelar()
-        {
-            Reserva_GV42 sel = ObtenerSeleccionada();
-            btnVerBoletos.Enabled = sel != null && sel.Estado == EstadoReserva_GV42.Confirmada;
-            if (!_puedeCancelar) { btnCancelar.Visible = false; return; }
-            // No se ofrece cancelar si ya está cancelada o si el vuelo ya salió (la BLL igual lo controla).
-            btnCancelar.Enabled = sel != null && sel.Estado != EstadoReserva_GV42.Cancelada &&
-                                  sel.VueloClase.FechaHoraSalida > DateTime.Now;
-        }
-
-        private void btnCancelar_Click(object sender, EventArgs e)
-        {
-            Reserva_GV42 sel = ObtenerSeleccionada();
-            if (sel == null) return;
-
-            // Pendiente de pago: no se cobró nada, así que no hay penalidad (igual que en la BLL).
-            decimal porcentaje = sel.Estado == EstadoReserva_GV42.PendienteDePago
-                ? 0m : _bll.CalcularPorcentajePenalidad(sel.VueloClase.FechaHoraSalida);
-            decimal estimado = Math.Round(sel.ImporteTotal * porcentaje, 2);
-
-            string mensaje = "¿Cancelar la reserva " + sel.NumeroReserva + "?";
-            mensaje += porcentaje > 0
-                ? "\n\nPor la cercanía del vuelo se aplica una penalidad estimada de " + estimado.ToString("C2") + " (" + (porcentaje * 100) + "% del total)."
-                : (sel.Estado == EstadoReserva_GV42.PendienteDePago
-                    ? "\n\nLa reserva todavía no se pagó: se cancela sin penalidad."
-                    : "\n\nTodavía falta tiempo para el vuelo: no se aplica penalidad.");
-
-            if (MessageBox.Show(mensaje, "Confirmar cancelación", MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes)
-                return;
-
-            try
-            {
-                _bll.CancelarReserva(sel.NumeroReserva);
-                MessageBox.Show("Reserva cancelada.", "Listo", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                CargarReservas();
-            }
-            catch (NegocioException_GV42 ex)
-            {
-                MessageBox.Show(ex.Message, "No se pudo cancelar", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-            }
-            catch (Exception ex)
-            {
-                Tema_GV42.MostrarErrorInesperado("cancelar la reserva", ex);
-            }
-        }
+        #endregion
     }
 }

@@ -1,19 +1,27 @@
-using BLL;
+﻿using BLL;
 using Servicios;
 using System;
-using System.Collections.Generic;
-using System.Drawing;
 using System.Windows.Forms;
 
 namespace PROYECTO_ING_DE_SOFTWARE
 {
     public partial class FRMIntegridad : Form, IObservadorIdioma_GV42
     {
+        #region Campos
+
         private readonly BLLIntegridad_GV42 _bll;
         private readonly ResultadoIntegridad _resultado;
 
+        #endregion
+
+        #region Propiedades
+
         public bool SeRestauroBackup { get; private set; }
         public bool SeRecalcularon { get; private set; }
+
+        #endregion
+
+        #region Constructor
 
         public FRMIntegridad(ResultadoIntegridad resultado)
             : this(resultado, puedeRecalcular: true, puedeRestaurar: true)
@@ -29,82 +37,48 @@ namespace PROYECTO_ING_DE_SOFTWARE
             IdiomaManager_GV42.Instancia.Suscribir(this);
             this.FormClosed += (s, e) => IdiomaManager_GV42.Instancia.Desuscribir(this);
 
-            AplicarEstilos();
-            CargarTablas();
+            // ActualizarIdioma también arma la lista de tablas / registros afectados.
             ActualizarIdioma();
 
-            if (btnRestore != null) btnRestore.Visible = puedeRecalcular;
-            if (btnBackup != null)  btnBackup.Visible  = puedeRestaurar;
+            btnRestore.Visible = puedeRecalcular;
+            btnBackup.Visible = puedeRestaurar;
         }
 
-        private void AplicarEstilos()
+        #endregion
+
+        #region Idioma (Observer)
+
+        public void ActualizarIdioma()
         {
-            Color azulOscuro    = Color.FromArgb(13, 71, 161);
-            Color azulClaro     = Color.FromArgb(227, 242, 253);
-            Color rojo          = Color.FromArgb(198, 40, 40);
-            Color blanco        = Color.White;
-            Font  fuenteBase    = new Font("Segoe UI", 10F);
-            Font  fuenteTitulo  = new Font("Segoe UI Semibold", 16F, FontStyle.Bold);
-            Font  fuenteIcono   = new Font("Segoe UI Semibold", 32F, FontStyle.Bold);
-            Font  fuenteBtn     = new Font("Segoe UI Semibold", 10F, FontStyle.Bold);
+            this.Text = IdiomaManager_GV42.T("integridad.titulo");
+            lblTitulo.Text = IdiomaManager_GV42.T("integridad.tituloAlerta");
+            lblSubtitulo.Text = IdiomaManager_GV42.T("integridad.titulo");
+            lblMensaje.Text = IdiomaManager_GV42.T("integridad.mensaje");
+            lblTablas.Text = (_resultado?.Detalles != null && _resultado.Detalles.Count > 0)
+                ? IdiomaManager_GV42.T("integridad.detallesTitulo")
+                : IdiomaManager_GV42.T("integridad.tablasAfectadas");
+            btnRestore.Text = IdiomaManager_GV42.T("integridad.botonRestore");
+            btnBackup.Text = IdiomaManager_GV42.T("integridad.botonBackup");
+            btnCancelar.Text = IdiomaManager_GV42.T("general.cancelar");
 
-            this.BackColor = azulClaro;
-            this.Font = fuenteBase;
-
-            pnlIcono.BackColor = rojo;
-            lblIcono.ForeColor = blanco;
-            lblIcono.Font = fuenteIcono;
-
-            lblTitulo.ForeColor = rojo;
-            lblTitulo.Font = fuenteTitulo;
-            lblMensaje.ForeColor = azulOscuro;
-            lblMensaje.Font = fuenteBase;
-            lblTablas.ForeColor = azulOscuro;
-            lblTablas.Font = new Font("Segoe UI Semibold", 9F, FontStyle.Bold);
-
-            lstTablas.BackColor = blanco;
-            lstTablas.BorderStyle = BorderStyle.FixedSingle;
-            lstTablas.Font = new Font("Consolas", 10F);
-            lstTablas.ForeColor = azulOscuro;
-
-            EstilarBotonPrimario(btnRestore, azulOscuro, blanco, fuenteBtn);
-            EstilarBotonPrimario(btnBackup,  azulOscuro, blanco, fuenteBtn);
-            EstilarBotonSecundario(btnCancelar, azulOscuro, blanco, fuenteBtn);
+            CargarTablas();
         }
 
-        private static void EstilarBotonPrimario(Button btn, Color fondo, Color texto, Font fuente)
-        {
-            btn.BackColor = fondo;
-            btn.ForeColor = texto;
-            btn.FlatStyle = FlatStyle.Flat;
-            btn.FlatAppearance.BorderSize = 0;
-            btn.Font = fuente;
-            btn.Cursor = Cursors.Hand;
-            btn.UseVisualStyleBackColor = false;
-        }
+        #endregion
 
-        private static void EstilarBotonSecundario(Button btn, Color borde, Color blanco, Font fuente)
-        {
-            btn.BackColor = blanco;
-            btn.ForeColor = borde;
-            btn.FlatStyle = FlatStyle.Flat;
-            btn.FlatAppearance.BorderColor = borde;
-            btn.FlatAppearance.BorderSize = 1;
-            btn.Font = fuente;
-            btn.Cursor = Cursors.Hand;
-            btn.UseVisualStyleBackColor = false;
-        }
+        #region Carga de datos
 
         private void CargarTablas()
         {
             lstTablas.Items.Clear();
+            if (_resultado == null) return;
 
             if (_resultado.Detalles != null && _resultado.Detalles.Count > 0)
             {
                 foreach (var d in _resultado.Detalles)
                 {
                     string accion = TraducirTipoTampering(d.Tipo);
-                    lstTablas.Items.Add($"• [{accion}] {d.Tabla} → registro {d.IdRegistro}");
+                    lstTablas.Items.Add(IdiomaManager_GV42.T("integridad.lineaDetalle", accion, d.Tabla, d.IdRegistro));
                 }
             }
             else
@@ -125,21 +99,9 @@ namespace PROYECTO_ING_DE_SOFTWARE
             }
         }
 
-        public void ActualizarIdioma()
-        {
-            this.Text = IdiomaManager_GV42.T("integridad.titulo");
-            if (lblTitulo != null) lblTitulo.Text = IdiomaManager_GV42.T("integridad.tituloAlerta");
-            if (lblMensaje != null) lblMensaje.Text = IdiomaManager_GV42.T("integridad.mensaje");
-            if (lblTablas != null)
-            {
-                lblTablas.Text = (_resultado?.Detalles != null && _resultado.Detalles.Count > 0)
-                    ? IdiomaManager_GV42.T("integridad.detallesTitulo")
-                    : IdiomaManager_GV42.T("integridad.tablasAfectadas");
-            }
-            if (btnRestore != null) btnRestore.Text = IdiomaManager_GV42.T("integridad.botonRestore");
-            if (btnBackup != null) btnBackup.Text = IdiomaManager_GV42.T("integridad.botonBackup");
-            if (btnCancelar != null) btnCancelar.Text = IdiomaManager_GV42.T("general.cancelar");
-        }
+        #endregion
+
+        #region Eventos
 
         private void btnRestore_Click(object sender, EventArgs e)
         {
@@ -172,7 +134,7 @@ namespace PROYECTO_ING_DE_SOFTWARE
 
             using (OpenFileDialog ofd = new OpenFileDialog())
             {
-                ofd.Title  = IdiomaManager_GV42.T("backup.ofdTitulo");
+                ofd.Title = IdiomaManager_GV42.T("backup.ofdTitulo");
                 ofd.Filter = IdiomaManager_GV42.T("backup.ofdFiltro");
                 ofd.CheckFileExists = true;
 
@@ -218,5 +180,7 @@ namespace PROYECTO_ING_DE_SOFTWARE
             this.DialogResult = DialogResult.Cancel;
             this.Close();
         }
+
+        #endregion
     }
 }

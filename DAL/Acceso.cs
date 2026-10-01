@@ -12,17 +12,27 @@ namespace DAL
 
     public class Acceso
     {
+        #region Campos
+
         private static Acceso _instancia;
 
         protected SqlConnection conexion = null;
 
-        public static string ConnectionString { get; set; }
-        public static string InstanciaActual { get; set; }
+        #endregion
+
+        #region Constructor
 
         private Acceso()
         {
             conexion = new SqlConnection();
         }
+
+        #endregion
+
+        #region Propiedades
+
+        public static string ConnectionString { get; set; }
+        public static string InstanciaActual { get; set; }
 
         public static Acceso Instancia
         {
@@ -35,6 +45,10 @@ namespace DAL
                 return _instancia;
             }
         }
+
+        #endregion
+
+        #region Métodos públicos
 
         public void conectar()
         {
@@ -126,7 +140,7 @@ namespace DAL
                 comando.CommandText = query;
                 if (parametro != null)
                 {
-                    foreach(SqlParameter param in parametro)
+                    foreach (SqlParameter param in parametro)
                     {
                         comando.Parameters.AddWithValue(param.ParameterName, param.Value);
                     }
@@ -205,9 +219,8 @@ namespace DAL
             return resultado;
         }
 
-      
         // Soporte para operaciones de negocio que escriben en varias tablas.
-        
+
 
         // Ejecuta 'trabajo' dentro de una única transacción. Si algo falla hace rollback
         // y relanza la excepción; si termina bien hace commit.
@@ -263,6 +276,10 @@ namespace DAL
             return dt;
         }
 
+        #endregion
+
+        #region Métodos privados
+
         private SqlCommand CrearComando(SqlTransaction tx, string query, SqlParameter[] parametro)
         {
             SqlCommand comando = new SqlCommand(query, tx.Connection, tx);
@@ -275,5 +292,7 @@ namespace DAL
             }
             return comando;
         }
+
+        #endregion
     }
 }

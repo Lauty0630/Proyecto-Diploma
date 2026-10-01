@@ -9,6 +9,8 @@ namespace Servicios
 {
     public static class CalculadorIntegridad_GV42
     {
+        #region Métodos públicos
+
         public static string CalcularDVH(params object[] campos)
         {
             var sb = new StringBuilder();
@@ -28,6 +30,10 @@ namespace Servicios
             return Sha256Hex(sb.ToString());
         }
 
+        #endregion
+
+        #region Métodos privados
+
         private static string Sha256Hex(string input)
         {
             using (var sha = SHA256.Create())
@@ -41,8 +47,10 @@ namespace Servicios
         {
             if (v == null || v == DBNull.Value) return "";
             if (v is DateTime dt) return dt.ToString("o", CultureInfo.InvariantCulture);
-            if (v is bool b)      return b ? "1" : "0";
+            if (v is bool b) return b ? "1" : "0";
             return Convert.ToString(v, CultureInfo.InvariantCulture);
         }
+
+        #endregion
     }
 }

@@ -7,6 +7,8 @@ namespace BLL
     // Devuelve el ancho de cada barra/espacio en módulos, empezando por una barra.
     public static class Code128_GV42
     {
+        #region Campos
+
         private static readonly string[] PATRONES =
         {
             "212222","222122","222221","121223","121322","131222","122213","122312","132212","221213",
@@ -23,6 +25,10 @@ namespace BLL
         };
         private const int INICIO_B = 104;
         private const int PARADA = 106;
+
+        #endregion
+
+        #region Métodos públicos
 
         public static List<int> Codificar(string texto)
         {
@@ -62,5 +68,7 @@ namespace BLL
                 barra = !barra;
             }
         }
+
+        #endregion
     }
 }

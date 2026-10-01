@@ -1,4 +1,5 @@
 ﻿using BE;
+using Servicios;
 using System;
 using System.Collections.Generic;
 using System.Drawing;
@@ -10,8 +11,13 @@ namespace PROYECTO_ING_DE_SOFTWARE
     // Selección de asiento estilo cine: una grilla de botones (Fila x Letra) con un pasillo
     // entre las columnas C y D, tal como están sembrados los asientos en la base (A/F ventana,
     // B/E central, C/D pasillo). Un solo control se reutiliza para cada pasajero de la reserva.
+    // El mapa se sigue armando en código porque depende de los asientos que vienen de la base.
+    // Los textos de la leyenda se traducen con ActualizarIdioma (claves "butacas.*"), que llama
+    // el formulario que lo contiene desde su propio Observer de idioma.
     public class CtrlButacas_GV42 : UserControl
     {
+        #region Campos
+
         private const int ANCHO_BOTON = 40;
         private const int ALTO_BOTON = 32;
         private const int ESPACIO = 4;
@@ -22,7 +28,21 @@ namespace PROYECTO_ING_DE_SOFTWARE
         private readonly Dictionary<int, Button> _botonesPorIdAsiento = new Dictionary<int, Button>();
         private List<AsientoDisponibilidad_GV42> _asientos = new List<AsientoDisponibilidad_GV42>();
 
+        // Etiquetas de la leyenda, para poder traducirlas en caliente.
+        private readonly Label _lblLibre;
+        private readonly Label _lblSeleccion;
+        private readonly Label _lblAsignado;
+        private readonly Label _lblOcupado;
+
+        #endregion
+
+        #region Eventos públicos
+
         public event EventHandler<Asiento_GV42> AsientoClickeado;
+
+        #endregion
+
+        #region Constructor
 
         public CtrlButacas_GV42()
         {
@@ -36,20 +56,46 @@ namespace PROYECTO_ING_DE_SOFTWARE
                 FlowDirection = FlowDirection.LeftToRight,
                 Padding = new Padding(4)
             };
-            _pnlReferencias.Controls.Add(CrearReferencia("Libre", Color.White, Tema_GV42.Primario));
-            _pnlReferencias.Controls.Add(CrearReferencia("Tu selección", Tema_GV42.Primario, Tema_GV42.Primario));
-            _pnlReferencias.Controls.Add(CrearReferencia("Asignado (otro pasajero)", Tema_GV42.AsignadoOtroPasajero, Tema_GV42.AsignadoOtroPasajero));
-            _pnlReferencias.Controls.Add(CrearReferencia("Ocupado", Tema_GV42.Ocupado, Tema_GV42.Ocupado));
+            _pnlReferencias.Controls.Add(CrearReferencia(Color.White, Tema_GV42.Primario, out _lblLibre));
+            _pnlReferencias.Controls.Add(CrearReferencia(Tema_GV42.Primario, Tema_GV42.Primario, out _lblSeleccion));
+            _pnlReferencias.Controls.Add(CrearReferencia(Tema_GV42.AsignadoOtroPasajero, Tema_GV42.AsignadoOtroPasajero, out _lblAsignado));
+            _pnlReferencias.Controls.Add(CrearReferencia(Tema_GV42.Ocupado, Tema_GV42.Ocupado, out _lblOcupado));
 
             _pnlGrilla = new Panel { Dock = DockStyle.Fill, AutoScroll = true, BackColor = Color.White };
 
             Controls.Add(_pnlGrilla);
             Controls.Add(_pnlReferencias);
+            ActualizarIdioma();
         }
 
-        private Panel CrearReferencia(string texto, Color relleno, Color borde)
+        #endregion
+
+        #region Idioma
+
+        // TConDefecto: en el diseñador de VS (sin archivo de idioma cargado) se ve el texto en español.
+        public void ActualizarIdioma()
         {
-            var cont = new Panel { Size = new Size(160, 24), Margin = new Padding(4, 2, 4, 2) };
+            _lblLibre.Text = IdiomaManager_GV42.TConDefecto("butacas.libre", "Libre");
+            _lblSeleccion.Text = IdiomaManager_GV42.TConDefecto("butacas.seleccion", "Tu selección");
+            _lblAsignado.Text = IdiomaManager_GV42.TConDefecto("butacas.asignado", "Asignado (otro pasajero)");
+            _lblOcupado.Text = IdiomaManager_GV42.TConDefecto("butacas.ocupado", "Ocupado");
+        }
+
+        #endregion
+
+        #region Leyenda
+
+        // El contenedor se ajusta al largo del texto (en inglés algunos textos son más largos).
+        private Panel CrearReferencia(Color relleno, Color borde, out Label lbl)
+        {
+            var cont = new Panel
+            {
+                Size = new Size(160, 24),
+                MinimumSize = new Size(60, 24),
+                AutoSize = true,
+                AutoSizeMode = AutoSizeMode.GrowAndShrink,
+                Margin = new Padding(4, 2, 12, 2)
+            };
             var cuadro = new Panel
             {
                 Size = new Size(16, 16),
@@ -57,9 +103,8 @@ namespace PROYECTO_ING_DE_SOFTWARE
                 BackColor = relleno,
                 BorderStyle = BorderStyle.FixedSingle
             };
-            var lbl = new Label
+            lbl = new Label
             {
-                Text = texto,
                 Location = new Point(22, 3),
                 AutoSize = true,
                 Font = new Font("Segoe UI", 8F),
@@ -69,6 +114,10 @@ namespace PROYECTO_ING_DE_SOFTWARE
             cont.Controls.Add(lbl);
             return cont;
         }
+
+        #endregion
+
+        #region Mapa de asientos
 
         // ocupadosLocalmente: asientos ya elegidos por OTROS pasajeros de esta misma reserva (todavía
         // no persistidos en la base). seleccionActualId: el asiento del pasajero que se está editando ahora.
@@ -162,5 +211,7 @@ namespace PROYECTO_ING_DE_SOFTWARE
 
             return b;
         }
+
+        #endregion
     }
 }

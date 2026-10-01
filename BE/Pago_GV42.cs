@@ -4,6 +4,8 @@ namespace BE
 {
     public class Pago_GV42
     {
+        #region Propiedades
+
         public int Id { get; set; }
         public int IdReserva { get; set; }
         public string NumeroReserva { get; set; }
@@ -14,5 +16,7 @@ namespace BE
         public string LoginVendedor { get; set; }
 
         public string MedioPagoTexto { get { return MedioPago.Texto(); } }
+
+        #endregion
     }
 }

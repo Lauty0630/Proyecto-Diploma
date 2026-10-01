@@ -49,8 +49,17 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="FRMAviso_GV42.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="FRMAviso_GV42.Designer.cs">
+      <DependentUpon>FRMAviso_GV42.cs</DependentUpon>
+    </Compile>
     <Compile Include="FRMBackupManual.cs">
       <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="FRMBackupManual.Designer.cs">
+      <DependentUpon>FRMBackupManual.cs</DependentUpon>
     </Compile>
     <Compile Include="FRMBitacoraDeEventos.cs">
       <SubType>Form</SubType>
@@ -103,16 +112,46 @@
     <Compile Include="FRMSeleccionInstancia.cs">
       <SubType>Form</SubType>
     </Compile>
+    <Compile Include="FRMSeleccionInstancia.Designer.cs">
+      <DependentUpon>FRMSeleccionInstancia.cs</DependentUpon>
+    </Compile>
     <Compile Include="FRMRegistroCliente_GV42.cs">
       <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="FRMRegistroCliente_GV42.Designer.cs">
+      <DependentUpon>FRMRegistroCliente_GV42.cs</DependentUpon>
     </Compile>
     <Compile Include="FRMReservarVuelo_GV42.cs">
       <SubType>Form</SubType>
     </Compile>
+    <Compile Include="FRMReservarVuelo_GV42.Designer.cs">
+      <DependentUpon>FRMReservarVuelo_GV42.cs</DependentUpon>
+    </Compile>
     <Compile Include="FRMPagoReserva_GV42.cs">
       <SubType>Form</SubType>
     </Compile>
+    <Compile Include="FRMPagoReserva_GV42.Designer.cs">
+      <DependentUpon>FRMPagoReserva_GV42.cs</DependentUpon>
+    </Compile>
     <Compile Include="Tema_GV42.cs" />
+    <Compile Include="BotonModerno_GV42.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="PanelTarjeta_GV42.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="PanelEncabezado_GV42.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="GrillaModerna_GV42.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="TextBoxModerno_GV42.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="MenuModerno_GV42.cs">
+      <SubType>Component</SubType>
+    </Compile>
     <Compile Include="LienzoGdi_GV42.cs" />
     <Compile Include="CtrlBoleto_GV42.cs">
       <SubType>Component</SubType>
@@ -120,20 +159,50 @@
     <Compile Include="FRMBoletos_GV42.cs">
       <SubType>Form</SubType>
     </Compile>
+    <Compile Include="FRMBoletos_GV42.Designer.cs">
+      <DependentUpon>FRMBoletos_GV42.cs</DependentUpon>
+    </Compile>
     <Compile Include="CtrlButacas_GV42.cs">
       <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="CtrlPasajero_GV42.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="CtrlPasajero_GV42.Designer.cs">
+      <DependentUpon>CtrlPasajero_GV42.cs</DependentUpon>
+    </Compile>
+    <Compile Include="CtrlAdicional_GV42.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="CtrlAdicional_GV42.Designer.cs">
+      <DependentUpon>CtrlAdicional_GV42.cs</DependentUpon>
+    </Compile>
+    <Compile Include="CtrlVistaTarjeta_GV42.cs">
+      <SubType>Component</SubType>
     </Compile>
     <Compile Include="FRMGestionVuelos_GV42.cs">
       <SubType>Form</SubType>
     </Compile>
+    <Compile Include="FRMGestionVuelos_GV42.Designer.cs">
+      <DependentUpon>FRMGestionVuelos_GV42.cs</DependentUpon>
+    </Compile>
     <Compile Include="FRMBitacoraVuelos_GV42.cs">
       <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="FRMBitacoraVuelos_GV42.Designer.cs">
+      <DependentUpon>FRMBitacoraVuelos_GV42.cs</DependentUpon>
     </Compile>
     <Compile Include="FRMConsultarReservas_GV42.cs">
       <SubType>Form</SubType>
     </Compile>
+    <Compile Include="FRMConsultarReservas_GV42.Designer.cs">
+      <DependentUpon>FRMConsultarReservas_GV42.cs</DependentUpon>
+    </Compile>
     <Compile Include="FRMReporteReservas_GV42.cs">
       <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="FRMReporteReservas_GV42.Designer.cs">
+      <DependentUpon>FRMReporteReservas_GV42.cs</DependentUpon>
     </Compile>
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

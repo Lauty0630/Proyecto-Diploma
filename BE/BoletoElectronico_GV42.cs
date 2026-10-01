@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 
 namespace BE
 {
@@ -7,6 +8,8 @@ namespace BE
     // asiento, puerta, horario de embarque, franquicia de equipaje, tarifa y forma de pago.
     public class BoletoElectronico_GV42
     {
+        #region Propiedades
+
         public string NumeroBoleto { get; set; }
         public string NumeroReserva { get; set; }
         public DateTime FechaEmision { get; set; }
@@ -48,10 +51,30 @@ namespace BE
         // Texto codificado en el código de barras (Code 128).
         public string CodigoBarras { get; set; }
 
+        #endregion
+
+        #region Valores sin traducir
+
+        // Los textos de arriba (Clase, TipoViaje, FormaPago, Estado, ServiciosAdicionales) quedan en el
+        // idioma que había al armar el boleto. Con estos valores el diseño del boleto los vuelve a
+        // traducir cada vez que se dibuja, así cambian de idioma en caliente (Observer).
+        // Son opcionales: si vienen en null se usan los textos.
+        public ClaseVuelo_GV42? ClaseValor { get; set; }
+        public TipoViaje_GV42? TipoViajeValor { get; set; }
+        public MedioPago_GV42? MedioPagoValor { get; set; }
+        public EstadoReserva_GV42? EstadoValor { get; set; }
+        public List<AdicionalReserva_GV42> Adicionales { get; set; }
+
+        #endregion
+
+        #region Propiedades calculadas
+
         // Formato de los boletos reales: APELLIDO / NOMBRE.
         public string PasajeroParaBoleto =>
             ((PasajeroApellido ?? "").Trim() + " / " + (PasajeroNombre ?? "").Trim()).ToUpperInvariant();
 
         public TimeSpan Duracion => FechaHoraLlegada - FechaHoraSalida;
+
+        #endregion
     }
 }

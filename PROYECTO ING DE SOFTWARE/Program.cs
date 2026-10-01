@@ -3,7 +3,6 @@ using Servicios;
 using Servicios.Instalacion;
 using System;
 using System.Collections.Generic;
-using System.Drawing;
 using System.Linq;
 using System.Windows.Forms;
 
@@ -11,7 +10,13 @@ namespace PROYECTO_ING_DE_SOFTWARE
 {
     internal static class Program
     {
+        #region Campos
+
         private const string INSTANCIA_DEBUG_DEFAULT = @"(localdb)\MSSQLLocalDB";
+
+        #endregion
+
+        #region Punto de entrada
 
         [STAThread]
         static void Main()
@@ -25,12 +30,18 @@ namespace PROYECTO_ING_DE_SOFTWARE
             Application.ThreadException += (s, e) => MostrarErrorNoControlado(e.Exception);
             AppDomain.CurrentDomain.UnhandledException += (s, e) => MostrarErrorNoControlado(e.ExceptionObject as Exception);
 
+            // El idioma se carga antes de cualquier mensaje o pantalla (instalación, login).
+            BE.Textos_GV42.Traductor = IdiomaManager_GV42.TConDefecto;
             IdiomaManager_GV42.Instancia.CambiarIdioma(IdiomaManager_GV42.IDIOMA_POR_DEFECTO);
 
             if (!ConfigurarConexionBD()) return;
 
             Application.Run(new FRMIniciarSesion());
         }
+
+        #endregion
+
+        #region Ventanas
 
         // El login es el formulario principal de Application.Run, pero después de loguearse queda
         // oculto (Hide) y la navegación sigue en otros formularios. Si el usuario cerraba el menú
@@ -51,6 +62,34 @@ namespace PROYECTO_ING_DE_SOFTWARE
                     Application.Exit();
             };
         }
+
+        // Ventanita de "espere" mientras se trabaja con la base (se cierra con Dispose).
+        // El diseño está en FRMAviso_GV42; acá solo se indica la clave del mensaje.
+        private static Form CrearAviso(string claveMensaje)
+        {
+            return FRMAviso_GV42.Mostrar(claveMensaje);
+        }
+
+        private static void MostrarErrorNoControlado(Exception ex)
+        {
+            try
+            {
+                // TConDefecto: si el error ocurre antes de cargar el idioma, igual se ve un texto claro.
+                string detalle = ex == null
+                    ? IdiomaManager_GV42.TConDefecto("instalacion.errorDesconocido", "Error desconocido.")
+                    : (ex.InnerException != null ? ex.InnerException.Message : ex.Message);
+                string mensaje = IdiomaManager_GV42.TConDefecto("instalacion.errorInesperado",
+                    "Ocurrió un error inesperado. La operación no se completó.\n\n{0}");
+                MessageBox.Show(string.Format(mensaje, detalle),
+                                IdiomaManager_GV42.TConDefecto("general.error", "Error"),
+                                MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+            catch { }
+        }
+
+        #endregion
+
+        #region Base de datos
 
         private static bool ConfigurarConexionBD()
         {
@@ -75,7 +114,7 @@ namespace PROYECTO_ING_DE_SOFTWARE
 #if DEBUG
                     try
                     {
-                        using (var aviso = CrearAviso("Instalando la base de datos por primera vez...\nPuede tardar unos minutos."))
+                        using (var aviso = CrearAviso("instalacion.avisoInstalando"))
                             BLLInstalador_GV42.InstalarBaseDatos(instancia);
                         if (!PrepararBaseDatos(instancia)) return false;
                         BLLInstalador_GV42.ConfigurarConexion(instancia);
@@ -83,9 +122,9 @@ namespace PROYECTO_ING_DE_SOFTWARE
                     }
                     catch (Exception ex)
                     {
-                        MessageBox.Show("No se pudo instalar la base de datos en " + instancia + ".\n\n" + ex.Message +
-                                        "\n\nElegí la instancia de SQL Server en la siguiente pantalla.",
-                                        "Instalación", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                        MessageBox.Show(IdiomaManager_GV42.T("instalacion.errorInstalarEn", instancia, ex.Message),
+                                        IdiomaManager_GV42.T("instalacion.tituloInstalacion"),
+                                        MessageBoxButtons.OK, MessageBoxIcon.Warning);
                     }
 #endif
                 }
@@ -106,18 +145,6 @@ namespace PROYECTO_ING_DE_SOFTWARE
             }
         }
 
-        private static void MostrarErrorNoControlado(Exception ex)
-        {
-            try
-            {
-                string detalle = ex == null ? "Error desconocido." :
-                    (ex.InnerException != null ? ex.InnerException.Message : ex.Message);
-                MessageBox.Show("Ocurrió un error inesperado. La operación no se completó.\n\n" + detalle,
-                                "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-            }
-            catch { }
-        }
-
         // Deja la base lista para esta versión del sistema, en cualquier computadora:
         //  1) Si es demasiado vieja (le faltan tablas del negocio) ofrece reinstalarla.
         //  2) Si es de una versión anterior, la actualiza conservando los datos.
@@ -129,40 +156,39 @@ namespace PROYECTO_ING_DE_SOFTWARE
                 List<string> faltan = BLLInstalador_GV42.ObjetosFaltantes(instancia);
                 if (faltan.Count > 0)
                 {
+                    string listaFaltantes = string.Join(", ", faltan.Take(5)) + (faltan.Count > 5 ? "..." : "");
                     DialogResult r = MessageBox.Show(
-                        "La base de datos \"" + BLLInstalador_GV42.NombreBD + "\" de esta computadora es de una versión " +
-                        "anterior del sistema y no se puede actualizar (le falta: " + string.Join(", ", faltan.Take(5)) +
-                        (faltan.Count > 5 ? "..." : "") + ").\n\n" +
-                        "¿Querés reemplazarla por la base de esta versión?\n" +
-                        "Se pierden los datos cargados en esta computadora (usuarios, reservas, etc.).",
-                        "Base de datos desactualizada", MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
+                        IdiomaManager_GV42.T("instalacion.baseViejaMensaje", BLLInstalador_GV42.NombreBD, listaFaltantes),
+                        IdiomaManager_GV42.T("instalacion.baseViejaTitulo"),
+                        MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
                     if (r != DialogResult.Yes) return false;
 
-                    using (CrearAviso("Reinstalando la base de datos...\nPuede tardar unos minutos."))
+                    using (CrearAviso("instalacion.avisoReinstalando"))
                         BLLInstalador_GV42.ReinstalarBaseDatos(instancia);
                 }
                 else if (BLLInstalador_GV42.NecesitaActualizacion(instancia))
                 {
                     try
                     {
-                        using (CrearAviso("Actualizando la base de datos a la versión actual...\nLos datos existentes se conservan."))
+                        using (CrearAviso("instalacion.avisoActualizando"))
                             BLLInstalador_GV42.ActualizarBaseDatos(instancia);
                     }
                     catch (Exception ex)
                     {
                         DialogResult r = MessageBox.Show(
-                            "No se pudo actualizar la base de datos:\n" + ex.Message + "\n\n" +
-                            "¿Querés reinstalarla? Se pierden los datos cargados en esta computadora.",
-                            "Actualización", MessageBoxButtons.YesNo, MessageBoxIcon.Error);
+                            IdiomaManager_GV42.T("instalacion.errorActualizar", ex.Message),
+                            IdiomaManager_GV42.T("instalacion.tituloActualizacion"),
+                            MessageBoxButtons.YesNo, MessageBoxIcon.Error);
                         if (r != DialogResult.Yes) return false;
-                        using (CrearAviso("Reinstalando la base de datos...\nPuede tardar unos minutos."))
+                        using (CrearAviso("instalacion.avisoReinstalando"))
                             BLLInstalador_GV42.ReinstalarBaseDatos(instancia);
                     }
                 }
             }
             catch (Exception ex)
             {
-                MessageBox.Show("No se pudo preparar la base de datos.\n\n" + ex.Message, "Error",
+                MessageBox.Show(IdiomaManager_GV42.T("instalacion.errorPreparar", ex.Message),
+                                IdiomaManager_GV42.T("general.error"),
                                 MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return false;
             }
@@ -174,51 +200,26 @@ namespace PROYECTO_ING_DE_SOFTWARE
             }
             catch (Exception ex)
             {
-                MessageBox.Show("No se pudieron completar las tareas de actualización de la base.\n\n" + ex.Message,
-                                "Actualización", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                MessageBox.Show(IdiomaManager_GV42.T("instalacion.errorTareas", ex.Message),
+                                IdiomaManager_GV42.T("instalacion.tituloActualizacion"),
+                                MessageBoxButtons.OK, MessageBoxIcon.Warning);
             }
 
             // Vuelos: si falla no se bloquea el ingreso (el resto del sistema funciona igual).
             try
             {
-                using (CrearAviso("Actualizando los vuelos disponibles..."))
+                using (CrearAviso("instalacion.avisoVuelos"))
                     BLLInstalador_GV42.AsegurarVuelosDisponibles(instancia);
             }
             catch (Exception ex)
             {
-                MessageBox.Show("No se pudieron generar los vuelos de los próximos días.\n\n" + ex.Message,
-                                "Vuelos", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                MessageBox.Show(IdiomaManager_GV42.T("instalacion.errorVuelos", ex.Message),
+                                IdiomaManager_GV42.T("instalacion.tituloVuelos"),
+                                MessageBoxButtons.OK, MessageBoxIcon.Warning);
             }
             return true;
         }
 
-        // Ventanita de "espere" mientras se trabaja con la base (se cierra con Dispose).
-        private static Form CrearAviso(string texto)
-        {
-            var aviso = new Form
-            {
-                FormBorderStyle = FormBorderStyle.FixedDialog,
-                ControlBox = false,
-                StartPosition = FormStartPosition.CenterScreen,
-                ClientSize = new Size(420, 110),
-                Text = "Gestión de reservas",
-                BackColor = Tema_GV42.Fondo,
-                ShowInTaskbar = true,
-                TopMost = true
-            };
-            aviso.Controls.Add(new Label
-            {
-                Text = texto,
-                Dock = DockStyle.Fill,
-                TextAlign = ContentAlignment.MiddleCenter,
-                Font = Tema_GV42.FuenteTexto,
-                ForeColor = Tema_GV42.Acento
-            });
-            aviso.Show();
-            aviso.Refresh();
-            Application.DoEvents();
-            Cursor.Current = Cursors.WaitCursor;
-            return aviso;
-        }
+        #endregion
     }
 }

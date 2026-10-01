@@ -8,6 +8,27 @@ namespace DAL
     // Utilidades compartidas por las clases DAL del negocio (no es parte de la API pública).
     internal static class DALUtil_GV42
     {
+        #region Campos
+
+        // ---- Vuelo + clase: SELECT y mapeo compartidos por varias consultas ----
+
+        public const string COLUMNAS_VUELO_CLASE =
+            "V.Id AS IdVuelo, V.CodigoVuelo, V.FechaHoraSalida, V.FechaHoraLlegada, V.PuertaEmbarque, V.CostoKiloExceso, " +
+            "AL.Id AS IdAerolinea, AL.Nombre AS AerolineaNombre, " +
+            "O.Id AS IdOrigen, O.CodigoIata AS OrigenIata, O.Nombre AS OrigenNombre, O.Ciudad AS OrigenCiudad, O.Pais AS OrigenPais, " +
+            "D.Id AS IdDestino, D.CodigoIata AS DestinoIata, D.Nombre AS DestinoNombre, D.Ciudad AS DestinoCiudad, D.Pais AS DestinoPais, " +
+            "VC.IdClase, VC.PrecioBase, VC.CapacidadAsientos, VC.AsientosReservados, VC.FranquiciaEquipajeKg";
+
+        // Requiere que la consulta ya tenga Vuelo con alias V.
+        public const string JOINS_VUELO =
+            " INNER JOIN Aerolinea AL ON AL.Id = V.IdAerolinea" +
+            " INNER JOIN Aeropuerto O ON O.Id = V.IdOrigen" +
+            " INNER JOIN Aeropuerto D ON D.Id = V.IdDestino";
+
+        #endregion
+
+        #region Métodos públicos
+
         public static object ADb(object valor)
         {
             return valor ?? DBNull.Value;
@@ -62,21 +83,6 @@ namespace DAL
             p.Telefono = Str(r, pref + "Telefono");
         }
 
-        // ---- Vuelo + clase: SELECT y mapeo compartidos por varias consultas ----
-
-        public const string COLUMNAS_VUELO_CLASE =
-            "V.Id AS IdVuelo, V.CodigoVuelo, V.FechaHoraSalida, V.FechaHoraLlegada, V.PuertaEmbarque, V.CostoKiloExceso, " +
-            "AL.Id AS IdAerolinea, AL.Nombre AS AerolineaNombre, " +
-            "O.Id AS IdOrigen, O.CodigoIata AS OrigenIata, O.Nombre AS OrigenNombre, O.Ciudad AS OrigenCiudad, O.Pais AS OrigenPais, " +
-            "D.Id AS IdDestino, D.CodigoIata AS DestinoIata, D.Nombre AS DestinoNombre, D.Ciudad AS DestinoCiudad, D.Pais AS DestinoPais, " +
-            "VC.IdClase, VC.PrecioBase, VC.CapacidadAsientos, VC.AsientosReservados, VC.FranquiciaEquipajeKg";
-
-        // Requiere que la consulta ya tenga Vuelo con alias V.
-        public const string JOINS_VUELO =
-            " INNER JOIN Aerolinea AL ON AL.Id = V.IdAerolinea" +
-            " INNER JOIN Aeropuerto O ON O.Id = V.IdOrigen" +
-            " INNER JOIN Aeropuerto D ON D.Id = V.IdDestino";
-
         public static VueloClase_GV42 MapearVueloClase(DataRow r)
         {
             var vuelo = new Vuelo_GV42
@@ -120,5 +126,7 @@ namespace DAL
                 FranquiciaEquipajeKg = Dec(r, "FranquiciaEquipajeKg")
             };
         }
+
+        #endregion
     }
 }

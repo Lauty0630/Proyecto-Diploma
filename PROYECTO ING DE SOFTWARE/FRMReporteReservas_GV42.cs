@@ -1,5 +1,6 @@
 ﻿using BE;
 using BLL;
+using Servicios;
 using System;
 using System.Collections.Generic;
 using System.Drawing;
@@ -13,235 +14,128 @@ namespace PROYECTO_ING_DE_SOFTWARE
     // clase, estado y pasajero. Se exporta a PDF igual que la bitácora de eventos.
     //  - Reportes.Reservas: ver el reporte.
     //  - Reportes.ReservasExportarPDF: botón "Exportar PDF".
-    public class FRMReporteReservas_GV42 : Form
+    // El diseño está en FRMReporteReservas_GV42.Designer.cs (Form Designer).
+    public partial class FRMReporteReservas_GV42 : Form, IObservadorIdioma_GV42
     {
-        private class FilaReporte
-        {
-            public string NumeroReserva { get; set; }
-            public DateTime FechaReserva { get; set; }
-            public string Pasajero { get; set; }
-            public string Dni { get; set; }
-            public string Email { get; set; }
-            public string Telefono { get; set; }
-            public string Vuelo { get; set; }
-            public string Origen { get; set; }
-            public string Destino { get; set; }
-            public DateTime Salida { get; set; }
-            public DateTime Llegada { get; set; }
-            public string Clase { get; set; }
-            public int Pasajeros { get; set; }
-            public string Adicionales { get; set; }
-            public decimal ImporteBase { get; set; }
-            public decimal Impuestos { get; set; }
-            public decimal ImporteTotal { get; set; }
-            public string Estado { get; set; }
-            public EstadoReserva_GV42 EstadoValor { get; set; }
-        }
-
-        private class Opcion<T>
-        {
-            public string Texto { get; set; }
-            public T Valor { get; set; }
-            public override string ToString() => Texto;
-        }
+        #region Campos
 
         private readonly BLLReporteReserva_GV42 _bll = new BLLReporteReserva_GV42();
         private readonly bool _puedeExportar;
-
-        private CheckBox chkFecha;
-        private ComboBox cboTipoFecha;
-        private DateTimePicker dtpDesde;
-        private DateTimePicker dtpHasta;
-        private TextBox txtVuelo;
-        private ComboBox cboClase;
-        private ComboBox cboEstado;
-        private TextBox txtPasajero;
-        private Button btnAplicar;
-        private Button btnLimpiar;
-        private Button btnExportar;
-        private DataGridView dgv;
-        private Label lblResumen;
         private readonly Font _fuenteEstado = new Font("Segoe UI", 9F, FontStyle.Bold);
 
         private List<ReporteReserva_GV42> _resultado = new List<ReporteReserva_GV42>();
         private FiltroReporteReservas_GV42 _filtroAplicado = new FiltroReporteReservas_GV42();
 
+        #endregion
+
+        #region Constructor
+
         public FRMReporteReservas_GV42()
         {
             _puedeExportar = _bll.PuedeExportar();
-            ConstruirUI();
-            Load += (s, e) => Aplicar();
-        }
 
-        private void ConstruirUI()
-        {
-            Text = "Reporte de reservas";
-            BackColor = Tema_GV42.Fondo;
-            ClientSize = new Size(1100, 640);
-            StartPosition = FormStartPosition.CenterScreen;
-            Font = new Font("Segoe UI", 9F);
-
-            var card = Tema_GV42.CrearCard();
-            card.Dock = DockStyle.Fill;
-            card.Padding = new Padding(20);
-            var contenedor = new Panel { Dock = DockStyle.Fill, Padding = new Padding(20) };
-            contenedor.Controls.Add(card);
-            Controls.Add(contenedor);
-
-            // ---- Filtros (arriba) ----
-            var pnlArriba = new Panel { Dock = DockStyle.Top, Height = 190 };
-
-            var lblTitulo = new Label
-            {
-                Text = "Reporte de reservas",
-                Font = Tema_GV42.FuenteTitulo, ForeColor = Tema_GV42.Acento,
-                AutoSize = true, Location = new Point(0, 0)
-            };
-            var lblSub = new Label
-            {
-                Text = "RFN 1 – Reserva de vuelo: seguimiento de reservas, ocupación y servicios adicionales.",
-                Font = Tema_GV42.FuenteSubtitulo, ForeColor = Color.DimGray,
-                AutoSize = true, Location = new Point(2, 34)
-            };
-
-            chkFecha = new CheckBox
-            {
-                Text = "Filtrar por", AutoSize = true, Location = new Point(0, 70),
-                Font = Tema_GV42.FuenteLabel, ForeColor = Tema_GV42.Acento
-            };
-            cboTipoFecha = new ComboBox { DropDownStyle = ComboBoxStyle.DropDownList, Location = new Point(100, 67), Width = 150 };
-            cboTipoFecha.Items.Add(new Opcion<FechaReporte_GV42> { Texto = "Fecha de reserva", Valor = FechaReporte_GV42.Realizacion });
-            cboTipoFecha.Items.Add(new Opcion<FechaReporte_GV42> { Texto = "Fecha de salida", Valor = FechaReporte_GV42.Salida });
-
-            var lblDesde = Tema_GV42.CrearLabel("Desde");
-            lblDesde.Location = new Point(270, 70);
-            dtpDesde = new DateTimePicker { Format = DateTimePickerFormat.Short, Location = new Point(320, 67), Width = 110 };
-            var lblHasta = Tema_GV42.CrearLabel("Hasta");
-            lblHasta.Location = new Point(450, 70);
-            dtpHasta = new DateTimePicker { Format = DateTimePickerFormat.Short, Location = new Point(498, 67), Width = 110 };
-            chkFecha.CheckedChanged += (s, e) => HabilitarFechas();
-
-            var lblVuelo = Tema_GV42.CrearLabel("Vuelo");
-            lblVuelo.Location = new Point(0, 104);
-            txtVuelo = Tema_GV42.CrearTextBox();
-            txtVuelo.Location = new Point(0, 124);
-            txtVuelo.Size = new Size(130, 24);
-            txtVuelo.MaxLength = 20;
-            txtVuelo.CharacterCasing = CharacterCasing.Upper;
-
-            var lblClase = Tema_GV42.CrearLabel("Clase");
-            lblClase.Location = new Point(150, 104);
-            cboClase = new ComboBox { DropDownStyle = ComboBoxStyle.DropDownList, Location = new Point(150, 124), Width = 150 };
-            cboClase.Items.Add(new Opcion<ClaseVuelo_GV42?> { Texto = "(Todas)", Valor = null });
-            foreach (ClaseVuelo_GV42 c in Enum.GetValues(typeof(ClaseVuelo_GV42)))
-                cboClase.Items.Add(new Opcion<ClaseVuelo_GV42?> { Texto = c.Texto(), Valor = c });
-
-            var lblEstado = Tema_GV42.CrearLabel("Estado");
-            lblEstado.Location = new Point(320, 104);
-            cboEstado = new ComboBox { DropDownStyle = ComboBoxStyle.DropDownList, Location = new Point(320, 124), Width = 160 };
-            cboEstado.Items.Add(new Opcion<EstadoReserva_GV42?> { Texto = "(Todos)", Valor = null });
-            foreach (EstadoReserva_GV42 e in Enum.GetValues(typeof(EstadoReserva_GV42)))
-                cboEstado.Items.Add(new Opcion<EstadoReserva_GV42?> { Texto = e.Texto(), Valor = e });
-
-            var lblPasajero = Tema_GV42.CrearLabel("Pasajero (DNI, nombre o apellido)");
-            lblPasajero.Location = new Point(500, 104);
-            txtPasajero = Tema_GV42.CrearTextBox();
-            txtPasajero.Location = new Point(500, 124);
-            txtPasajero.Size = new Size(240, 24);
-            txtPasajero.MaxLength = 60;
-
-            btnAplicar = new Button { Text = "Aplicar", Location = new Point(0, 156), Size = new Size(110, 30) };
-            Tema_GV42.EstilizarBotonPrimario(btnAplicar);
-            btnAplicar.Click += (s, e) => Aplicar();
-
-            btnLimpiar = new Button { Text = "Limpiar", Location = new Point(120, 156), Size = new Size(110, 30) };
-            Tema_GV42.EstilizarBotonSecundario(btnLimpiar);
-            btnLimpiar.Click += (s, e) => { LimpiarFiltros(); Aplicar(); };
-
-            btnExportar = new Button
-            {
-                Text = "Exportar PDF", Location = new Point(760, 120), Size = new Size(140, 30),
-                Visible = _puedeExportar
-            };
-            Tema_GV42.EstilizarBotonPrimario(btnExportar);
-            btnExportar.Click += btnExportar_Click;
-
-            var tips = new ToolTip();
-            tips.SetToolTip(btnAplicar, "Aplica los filtros y actualiza el reporte.");
-            tips.SetToolTip(btnLimpiar, "Quita todos los filtros y muestra todas las reservas.");
-            tips.SetToolTip(btnExportar, "Guarda en PDF las reservas que se ven en la grilla.");
-            tips.SetToolTip(txtPasajero, "Busca en el titular y en todos los pasajeros de la reserva.");
-
-            // Enter en los cuadros de texto aplica los filtros.
-            txtVuelo.KeyDown += EnterAplica;
-            txtPasajero.KeyDown += EnterAplica;
-
-            pnlArriba.Controls.AddRange(new Control[]
-            {
-                lblTitulo, lblSub, chkFecha, cboTipoFecha, lblDesde, dtpDesde, lblHasta, dtpHasta,
-                lblVuelo, txtVuelo, lblClase, cboClase, lblEstado, cboEstado, lblPasajero, txtPasajero,
-                btnAplicar, btnLimpiar, btnExportar
-            });
-
-            // ---- Resumen (abajo) ----
-            var pnlAbajo = new Panel { Dock = DockStyle.Bottom, Height = 48 };
-            lblResumen = new Label
-            {
-                Dock = DockStyle.Fill, Font = Tema_GV42.FuenteTexto, ForeColor = Tema_GV42.Acento,
-                TextAlign = ContentAlignment.MiddleLeft
-            };
-            pnlAbajo.Controls.Add(lblResumen);
-
-            // ---- Grilla (resto) ----
-            dgv = new DataGridView { Dock = DockStyle.Fill };
-            Tema_GV42.EstilizarGrilla(dgv);
-            dgv.AutoGenerateColumns = false;
+            InitializeComponent();
             // Son muchas columnas: se ajustan al contenido y la grilla se desplaza horizontalmente.
-            dgv.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.AllCells;
-            dgv.ScrollBars = ScrollBars.Both;
+            dgvReporte.AutoGenerateColumns = false;
+            btnExportar.Visible = _puedeExportar;
 
-            Columna("NumeroReserva", "N° reserva");
-            Columna("FechaReserva", "Fecha reserva", "dd/MM/yyyy HH:mm");
-            Columna("Pasajero", "Titular");
-            Columna("Dni", "DNI");
-            Columna("Email", "Email");
-            Columna("Telefono", "Teléfono");
-            Columna("Vuelo", "Vuelo");
-            Columna("Origen", "Origen");
-            Columna("Destino", "Destino");
-            Columna("Salida", "Salida", "dd/MM/yyyy HH:mm");
-            Columna("Llegada", "Llegada", "dd/MM/yyyy HH:mm");
-            Columna("Clase", "Clase");
-            Columna("Pasajeros", "Pax", null, true);
-            Columna("Adicionales", "Adicionales (tipo, cant., costo)");
-            Columna("ImporteBase", "Importe base", "C2", true);
-            Columna("Impuestos", "Impuestos", "C2", true);
-            Columna("ImporteTotal", "Total final", "C2", true);
-            Columna("Estado", "Estado");
-            dgv.CellFormatting += dgv_CellFormatting;
-
-            // Orden de acoplamiento: Fill primero, después Bottom y Top.
-            card.Controls.Add(dgv);
-            card.Controls.Add(pnlAbajo);
-            card.Controls.Add(pnlArriba);
+            IdiomaManager_GV42.Instancia.Suscribir(this);
+            FormClosed += (s, e) => IdiomaManager_GV42.Instancia.Desuscribir(this);
+            ActualizarIdioma();
 
             LimpiarFiltros();
         }
 
-        private void Columna(string propiedad, string titulo, string formato = null, bool derecha = false)
+        #endregion
+
+        #region Idioma (Observer)
+
+        public void ActualizarIdioma()
         {
-            var col = new DataGridViewTextBoxColumn { DataPropertyName = propiedad, Name = propiedad, HeaderText = titulo };
-            if (formato != null) col.DefaultCellStyle.Format = formato;
-            if (derecha) col.DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleRight;
-            dgv.Columns.Add(col);
+            Text = IdiomaManager_GV42.T("reporte.titulo");
+            lblTitulo.Text = IdiomaManager_GV42.T("reporte.titulo");
+            lblSubtitulo.Text = IdiomaManager_GV42.T("reporte.subtitulo");
+            lblSeccionLista.Text = IdiomaManager_GV42.T("reporte.seccionLista");
+            lblResumenTitulo.Text = IdiomaManager_GV42.T("reporte.resumen");
+            lblAyuda.Text = IdiomaManager_GV42.T("reporte.ayuda");
+
+            chkFecha.Text = IdiomaManager_GV42.T("reporte.filtrarPor");
+            lblDesde.Text = IdiomaManager_GV42.T("reporte.desde");
+            lblHasta.Text = IdiomaManager_GV42.T("reporte.hasta");
+            lblVuelo.Text = IdiomaManager_GV42.T("reporte.vuelo");
+            lblClase.Text = IdiomaManager_GV42.T("reporte.clase");
+            lblEstado.Text = IdiomaManager_GV42.T("reporte.estado");
+            lblPasajero.Text = IdiomaManager_GV42.T("reporte.pasajero");
+
+            btnAplicar.Text = IdiomaManager_GV42.T("reporte.aplicar");
+            btnLimpiar.Text = IdiomaManager_GV42.T("reporte.limpiar");
+            btnExportar.Text = IdiomaManager_GV42.T("reporte.exportar");
+
+            toolTip1.SetToolTip(btnAplicar, IdiomaManager_GV42.T("reporte.tipAplicar"));
+            toolTip1.SetToolTip(btnLimpiar, IdiomaManager_GV42.T("reporte.tipLimpiar"));
+            toolTip1.SetToolTip(btnExportar, IdiomaManager_GV42.T("reporte.tipExportar"));
+            toolTip1.SetToolTip(txtPasajero, IdiomaManager_GV42.T("reporte.tipPasajero"));
+
+            colNumeroReserva.HeaderText = IdiomaManager_GV42.T("reporte.colNumero");
+            colFechaReserva.HeaderText = IdiomaManager_GV42.T("reporte.colFechaReserva");
+            colPasajero.HeaderText = IdiomaManager_GV42.T("reporte.colTitular");
+            colDni.HeaderText = IdiomaManager_GV42.T("reporte.colDni");
+            colEmail.HeaderText = IdiomaManager_GV42.T("reporte.colEmail");
+            colTelefono.HeaderText = IdiomaManager_GV42.T("reporte.colTelefono");
+            colVuelo.HeaderText = IdiomaManager_GV42.T("reporte.vuelo");
+            colOrigen.HeaderText = IdiomaManager_GV42.T("reporte.colOrigen");
+            colDestino.HeaderText = IdiomaManager_GV42.T("reporte.colDestino");
+            colSalida.HeaderText = IdiomaManager_GV42.T("reporte.colSalida");
+            colLlegada.HeaderText = IdiomaManager_GV42.T("reporte.colLlegada");
+            colClase.HeaderText = IdiomaManager_GV42.T("reporte.clase");
+            colPasajeros.HeaderText = IdiomaManager_GV42.T("reporte.colPax");
+            colAdicionales.HeaderText = IdiomaManager_GV42.T("reporte.colAdicionales");
+            colImporteBase.HeaderText = IdiomaManager_GV42.T("reporte.colImporteBase");
+            colImpuestos.HeaderText = IdiomaManager_GV42.T("reporte.colImpuestos");
+            colImporteTotal.HeaderText = IdiomaManager_GV42.T("reporte.colTotal");
+            colEstado.HeaderText = IdiomaManager_GV42.T("reporte.estado");
+
+            CargarOpcionesFiltros();
+
+            // Con datos cargados se regeneran la grilla (clase, estado) y el resumen en el idioma nuevo,
+            // sin volver a consultar la base.
+            if (dgvReporte.DataSource != null) MostrarResultado();
         }
 
-        private void EnterAplica(object sender, KeyEventArgs e)
+        // Arma (o vuelve a armar, al cambiar el idioma) los ítems de los combos de filtros
+        // conservando la opción elegida.
+        private void CargarOpcionesFiltros()
         {
-            if (e.KeyCode != Keys.Enter) return;
-            e.SuppressKeyPress = true;
-            Aplicar();
+            ReemplazarItems(cboTipoFecha, new object[]
+            {
+                new Opcion<FechaReporte_GV42> { Texto = IdiomaManager_GV42.T("reporte.fechaReserva"), Valor = FechaReporte_GV42.Realizacion },
+                new Opcion<FechaReporte_GV42> { Texto = IdiomaManager_GV42.T("reporte.fechaSalida"), Valor = FechaReporte_GV42.Salida }
+            });
+
+            var clases = new List<object> { new Opcion<ClaseVuelo_GV42?> { Texto = IdiomaManager_GV42.T("reporte.todas"), Valor = null } };
+            foreach (ClaseVuelo_GV42 c in Enum.GetValues(typeof(ClaseVuelo_GV42)))
+                clases.Add(new Opcion<ClaseVuelo_GV42?> { Texto = c.Texto(), Valor = c });
+            ReemplazarItems(cboClase, clases.ToArray());
+
+            var estados = new List<object> { new Opcion<EstadoReserva_GV42?> { Texto = IdiomaManager_GV42.T("reporte.todos"), Valor = null } };
+            foreach (EstadoReserva_GV42 e in Enum.GetValues(typeof(EstadoReserva_GV42)))
+                estados.Add(new Opcion<EstadoReserva_GV42?> { Texto = e.Texto(), Valor = e });
+            ReemplazarItems(cboEstado, estados.ToArray());
         }
+
+        private static void ReemplazarItems(ComboBox combo, object[] items)
+        {
+            int seleccionado = combo.SelectedIndex;
+            combo.BeginUpdate();
+            combo.Items.Clear();
+            combo.Items.AddRange(items);
+            combo.SelectedIndex = seleccionado >= 0 && seleccionado < items.Length ? seleccionado : 0;
+            combo.EndUpdate();
+        }
+
+        #endregion
+
+        #region Filtros
 
         private void HabilitarFechas()
         {
@@ -279,6 +173,10 @@ namespace PROYECTO_ING_DE_SOFTWARE
             return f;
         }
 
+        #endregion
+
+        #region Generación del reporte
+
         private void Aplicar()
         {
             try
@@ -290,11 +188,11 @@ namespace PROYECTO_ING_DE_SOFTWARE
             }
             catch (NegocioException_GV42 ex)
             {
-                MessageBox.Show(ex.Message, "Revisá los filtros", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                MessageBox.Show(ex.Message, IdiomaManager_GV42.T("reporte.revisarFiltros"), MessageBoxButtons.OK, MessageBoxIcon.Warning);
             }
             catch (Exception ex)
             {
-                MessageBox.Show("No se pudo generar el reporte.\n\n" + ex.Message, "Error",
+                MessageBox.Show(IdiomaManager_GV42.T("reporte.errorGenerar", ex.Message), IdiomaManager_GV42.T("general.error"),
                                 MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
@@ -324,23 +222,59 @@ namespace PROYECTO_ING_DE_SOFTWARE
                 EstadoValor = r.Estado
             }).ToList();
 
-            dgv.DataSource = null;
-            dgv.DataSource = filas;
+            dgvReporte.DataSource = null;
+            dgvReporte.DataSource = filas;
+            // Al regenerar (por ejemplo, al cambiar de idioma) se recalcula el ancho de cada columna.
+            dgvReporte.AutoResizeColumns(DataGridViewAutoSizeColumnsMode.AllCells);
 
+            // Los renglones del resumen los arma la BLL (los mismos que van al pie del PDF).
             lblResumen.Text = string.Join(Environment.NewLine, _bll.Resumen(_resultado));
             btnExportar.Enabled = _resultado.Count > 0;
         }
 
-        private void dgv_CellFormatting(object sender, DataGridViewCellFormattingEventArgs e)
+        #endregion
+
+        #region Eventos
+
+        private void FRMReporteReservas_GV42_Load(object sender, EventArgs e)
         {
-            if (e.RowIndex < 0 || dgv.Columns[e.ColumnIndex].Name != "Estado") return;
-            var fila = dgv.Rows[e.RowIndex].DataBoundItem as FilaReporte;
+            Aplicar();
+        }
+
+        private void chkFecha_CheckedChanged(object sender, EventArgs e)
+        {
+            HabilitarFechas();
+        }
+
+        // Enter en los cuadros de texto aplica los filtros.
+        private void txtFiltro_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.KeyCode != Keys.Enter) return;
+            e.SuppressKeyPress = true;
+            Aplicar();
+        }
+
+        private void btnAplicar_Click(object sender, EventArgs e)
+        {
+            Aplicar();
+        }
+
+        private void btnLimpiar_Click(object sender, EventArgs e)
+        {
+            LimpiarFiltros();
+            Aplicar();
+        }
+
+        private void dgvReporte_CellFormatting(object sender, DataGridViewCellFormattingEventArgs e)
+        {
+            if (e.RowIndex < 0 || dgvReporte.Columns[e.ColumnIndex] != colEstado) return;
+            var fila = dgvReporte.Rows[e.RowIndex].DataBoundItem as FilaReporte;
             if (fila == null) return;
 
             e.CellStyle.Font = _fuenteEstado;
             switch (fila.EstadoValor)
             {
-                case EstadoReserva_GV42.Confirmada: e.CellStyle.ForeColor = Color.FromArgb(46, 125, 50); break;
+                case EstadoReserva_GV42.Confirmada: e.CellStyle.ForeColor = Tema_GV42.Exito; break;
                 case EstadoReserva_GV42.PendienteDePago: e.CellStyle.ForeColor = Tema_GV42.Advertencia; break;
                 default: e.CellStyle.ForeColor = Tema_GV42.Error; break;
             }
@@ -350,37 +284,74 @@ namespace PROYECTO_ING_DE_SOFTWARE
         {
             if (_resultado.Count == 0)
             {
-                MessageBox.Show("No hay reservas para exportar con los filtros aplicados.", "Información",
+                MessageBox.Show(IdiomaManager_GV42.T("reporte.sinDatos"), IdiomaManager_GV42.T("general.informacion"),
                                 MessageBoxButtons.OK, MessageBoxIcon.Information);
                 return;
             }
 
             using (var sfd = new SaveFileDialog())
             {
-                sfd.Filter = "Archivo PDF (*.pdf)|*.pdf";
-                sfd.Title = "Guardar reporte de reservas";
-                sfd.FileName = $"ReporteReservas_{DateTime.Now:yyyyMMdd_HHmmss}.pdf";
+                sfd.Filter = IdiomaManager_GV42.T("reporte.sfdFiltro");
+                sfd.Title = IdiomaManager_GV42.T("reporte.sfdTitulo");
+                sfd.FileName = $"{IdiomaManager_GV42.T("reporte.archivo")}_{DateTime.Now:yyyyMMdd_HHmmss}.pdf";
                 if (sfd.ShowDialog() != DialogResult.OK) return;
 
                 try
                 {
                     // Se exporta exactamente lo que se ve (los filtros aplicados con el último "Aplicar").
+                    // Los textos del PDF (título, encabezados, resumen) los arma la BLL.
                     _bll.ExportarPdf(sfd.FileName, _resultado, _filtroAplicado);
 
-                    if (MessageBox.Show("PDF generado correctamente:\n" + sfd.FileName + "\n\n¿Desea abrirlo ahora?",
-                                        "Éxito", MessageBoxButtons.YesNo, MessageBoxIcon.Information) == DialogResult.Yes)
+                    if (MessageBox.Show(IdiomaManager_GV42.T("reporte.pdfGenerado", sfd.FileName), IdiomaManager_GV42.T("general.exito"),
+                                        MessageBoxButtons.YesNo, MessageBoxIcon.Information) == DialogResult.Yes)
                         System.Diagnostics.Process.Start(sfd.FileName);
                 }
                 catch (NegocioException_GV42 ex)
                 {
-                    MessageBox.Show(ex.Message, "No se pudo exportar", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    MessageBox.Show(ex.Message, IdiomaManager_GV42.T("reporte.errorExportar"), MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 }
                 catch (Exception ex)
                 {
-                    MessageBox.Show("Error al generar el PDF.\n\n" + ex.Message, "Error",
+                    MessageBox.Show(IdiomaManager_GV42.T("reporte.errorPdf", ex.Message), IdiomaManager_GV42.T("general.error"),
                                     MessageBoxButtons.OK, MessageBoxIcon.Error);
                 }
             }
         }
+
+        #endregion
+
+        #region Tipos anidados
+
+        private class FilaReporte
+        {
+            public string NumeroReserva { get; set; }
+            public DateTime FechaReserva { get; set; }
+            public string Pasajero { get; set; }
+            public string Dni { get; set; }
+            public string Email { get; set; }
+            public string Telefono { get; set; }
+            public string Vuelo { get; set; }
+            public string Origen { get; set; }
+            public string Destino { get; set; }
+            public DateTime Salida { get; set; }
+            public DateTime Llegada { get; set; }
+            public string Clase { get; set; }
+            public int Pasajeros { get; set; }
+            public string Adicionales { get; set; }
+            public decimal ImporteBase { get; set; }
+            public decimal Impuestos { get; set; }
+            public decimal ImporteTotal { get; set; }
+            public string Estado { get; set; }
+            public EstadoReserva_GV42 EstadoValor { get; set; }
+        }
+
+        private class Opcion<T>
+        {
+            public string Texto { get; set; }
+            public T Valor { get; set; }
+            public override string ToString() => Texto;
+        }
+
+        #endregion
     }
 }

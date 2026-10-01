@@ -12,6 +12,8 @@ namespace DAL
 
     public class DALBitacora_GV42
     {
+        #region Campos
+
         private readonly Acceso _acceso;
         private const string SELECT_BASE =
             "SELECT E.UserName, " +
@@ -22,10 +24,18 @@ namespace DAL
             "INNER JOIN Modulo M     ON M.Id = E.IdModulo " +
             "INNER JOIN TipoEvento T ON T.Id = E.IdTipoEvento";
 
+        #endregion
+
+        #region Constructor
+
         public DALBitacora_GV42()
         {
             _acceso = Acceso.Instancia;
         }
+
+        #endregion
+
+        #region Métodos públicos
 
         public void Guardar(Bitacora_GV42 registro)
         {
@@ -107,32 +117,6 @@ namespace DAL
             return MapearLista(_acceso.leer(sb.ToString(), parametros.ToArray()));
         }
 
-        private List<Bitacora_GV42> MapearLista(DataTable dt)
-        {
-            List<Bitacora_GV42> lista = new List<Bitacora_GV42>();
-            foreach (DataRow row in dt.Rows)
-            {
-                lista.Add(new Bitacora_GV42
-                {
-                    Login = row["UserName"].ToString(),
-                    Modulo = new Modulo_GV42
-                    {
-                        Id = Convert.ToInt32(row["IdModulo"]),
-                        Nombre = row["ModuloNombre"].ToString()
-                    },
-                    TipoEvento = new TipoEvento_GV42
-                    {
-                        Id = Convert.ToInt32(row["IdTipoEvento"]),
-                        Nombre = row["TipoEventoNombre"].ToString()
-                    },
-                    Detalle = row["Detalle"] == DBNull.Value ? "" : row["Detalle"].ToString(),
-                    Criticidad = row["Criticidad"].ToString(),
-                    FechaHora = Convert.ToDateTime(row["FechaHora"])
-                });
-            }
-            return lista;
-        }
-
         public List<string> ListarTiposEvento()
         {
             List<TipoEvento_GV42> entidades = ListarEventos();
@@ -147,34 +131,6 @@ namespace DAL
             List<string> modulos = new List<string>();
             foreach (Modulo_GV42 m in entidades) modulos.Add(m.Nombre);
             return modulos;
-        }
-
-        private int ResolverIdModulo(Modulo_GV42 m)
-        {
-            if (m == null)
-                throw new Exception(IdiomaManager_GV42.T("err.bitacoraSinModulo"));
-
-            if (m.Id > 0) return m.Id;
-
-            Modulo_GV42 enBase = BuscarModulo(m.Nombre);
-            if (enBase == null)
-                throw new Exception($"El módulo '{m.Nombre}' no existe en la tabla Modulo. " +
-                                    "Agregalo al catálogo antes de registrar el evento.");
-            return enBase.Id;
-        }
-
-        private int ResolverIdTipoEvento(TipoEvento_GV42 t)
-        {
-            if (t == null)
-                throw new Exception(IdiomaManager_GV42.T("err.bitacoraSinTipoEvento"));
-
-            if (t.Id > 0) return t.Id;
-
-            TipoEvento_GV42 enBase = BuscarEvento(t.Nombre);
-            if (enBase == null)
-                throw new Exception($"El tipo de evento '{t.Nombre}' no existe en la tabla TipoEvento. " +
-                                    "Agregalo al catálogo antes de registrar el evento.");
-            return enBase.Id;
         }
 
         public List<TipoEvento_GV42> ListarEventos()
@@ -240,5 +196,65 @@ namespace DAL
                 Nombre = dt.Rows[0]["Nombre"].ToString()
             };
         }
+
+        #endregion
+
+        #region Métodos privados
+
+        private List<Bitacora_GV42> MapearLista(DataTable dt)
+        {
+            List<Bitacora_GV42> lista = new List<Bitacora_GV42>();
+            foreach (DataRow row in dt.Rows)
+            {
+                lista.Add(new Bitacora_GV42
+                {
+                    Login = row["UserName"].ToString(),
+                    Modulo = new Modulo_GV42
+                    {
+                        Id = Convert.ToInt32(row["IdModulo"]),
+                        Nombre = row["ModuloNombre"].ToString()
+                    },
+                    TipoEvento = new TipoEvento_GV42
+                    {
+                        Id = Convert.ToInt32(row["IdTipoEvento"]),
+                        Nombre = row["TipoEventoNombre"].ToString()
+                    },
+                    Detalle = row["Detalle"] == DBNull.Value ? "" : row["Detalle"].ToString(),
+                    Criticidad = row["Criticidad"].ToString(),
+                    FechaHora = Convert.ToDateTime(row["FechaHora"])
+                });
+            }
+            return lista;
+        }
+
+        private int ResolverIdModulo(Modulo_GV42 m)
+        {
+            if (m == null)
+                throw new Exception(IdiomaManager_GV42.T("err.bitacoraSinModulo"));
+
+            if (m.Id > 0) return m.Id;
+
+            Modulo_GV42 enBase = BuscarModulo(m.Nombre);
+            if (enBase == null)
+                throw new Exception($"El módulo '{m.Nombre}' no existe en la tabla Modulo. " +
+                                    "Agregalo al catálogo antes de registrar el evento.");
+            return enBase.Id;
+        }
+
+        private int ResolverIdTipoEvento(TipoEvento_GV42 t)
+        {
+            if (t == null)
+                throw new Exception(IdiomaManager_GV42.T("err.bitacoraSinTipoEvento"));
+
+            if (t.Id > 0) return t.Id;
+
+            TipoEvento_GV42 enBase = BuscarEvento(t.Nombre);
+            if (enBase == null)
+                throw new Exception($"El tipo de evento '{t.Nombre}' no existe en la tabla TipoEvento. " +
+                                    "Agregalo al catálogo antes de registrar el evento.");
+            return enBase.Id;
+        }
+
+        #endregion
     }
 }

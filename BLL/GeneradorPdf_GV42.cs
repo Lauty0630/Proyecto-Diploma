@@ -4,22 +4,48 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text;
+using Servicios;
 
 namespace BLL
 {
 
+    // Genera PDF sin librerías externas (fuentes estándar Helvetica). Los textos propios del PDF
+    // ("Pagina x de y") salen del archivo de idioma; títulos, encabezados y filas llegan ya traducidos.
     public class GeneradorPdf_GV42
     {
+        #region Constantes
+
         private const int ANCHO_PAGINA = 792;
         private const int ALTO_PAGINA = 612;
         private const int MARGEN = 50;
         private const int ALTO_FILA = 18;
         private const int FILAS_POR_PAGINA = 22;
 
+        internal const float ANCHO_PAGINA_PT = ANCHO_PAGINA;
+        internal const float ALTO_PAGINA_PT = ALTO_PAGINA;
+
+        #endregion
+
+        #region Campos
+
         private static readonly CultureInfo INV = CultureInfo.InvariantCulture;
 
         private MemoryStream _buffer;
         private List<long> _offsetsObjetos;
+
+        private static readonly int[] ANCHOS_HELVETICA =
+        {
+            278, 278, 355, 556, 556, 889, 667, 191, 333, 333, 389, 584, 278, 333, 278, 278,
+            556, 556, 556, 556, 556, 556, 556, 556, 556, 556, 278, 278, 584, 584, 584, 556,
+            1015, 667, 667, 722, 722, 667, 611, 778, 722, 278, 500, 667, 556, 833, 722, 778,
+            667, 778, 722, 667, 611, 722, 667, 944, 667, 667, 611, 278, 278, 278, 469, 556,
+            333, 556, 556, 500, 556, 556, 278, 556, 556, 222, 222, 500, 222, 833, 556, 556,
+            556, 556, 333, 500, 278, 556, 500, 722, 500, 500, 500, 334, 260, 334, 584
+        };
+
+        #endregion
+
+        #region Tabla simple (bitácora de eventos)
 
         public void Generar(string ruta, string titulo, string subtitulo,
                             string[] headers, float[] anchosProporcionales,
@@ -84,7 +110,7 @@ namespace BLL
                 content.Append("0.45 0.45 0.45 rg\n");
                 content.Append("/F1 9 Tf\n");
                 content.AppendFormat(INV, "1 0 0 1 {0} {1} Tm\n", MARGEN, yActual);
-                string subtitFinal = subtitulo + (totalPaginas > 1 ? $"   |   Pagina {p + 1} de {totalPaginas}" : "");
+                string subtitFinal = subtitulo + (totalPaginas > 1 ? "   |   " + IdiomaManager_GV42.T("pdf.pagina", p + 1, totalPaginas) : "");
                 content.AppendFormat(INV, "({0}) Tj\n", EscaparTexto(subtitFinal));
                 content.Append("ET\n");
                 yActual -= 20;
@@ -156,6 +182,10 @@ namespace BLL
 
             File.WriteAllBytes(ruta, _buffer.ToArray());
         }
+
+        #endregion
+
+        #region Tabla multilínea (reporte de reservas)
 
         // ------------------------------------------------------------------------------------
         // Tabla con celdas de varias líneas (reportes con muchas columnas, p. ej. reservas).
@@ -302,7 +332,7 @@ namespace BLL
 
                 if (totalPaginas > 1)
                 {
-                    string pie = $"Pagina {p + 1} de {totalPaginas}";
+                    string pie = IdiomaManager_GV42.T("pdf.pagina", p + 1, totalPaginas);
                     float anchoPie = AnchoTexto(pie, 8, false);
                     Texto(sb, "F1", 8, 0.45f, ANCHO_PAGINA - MARGEN_M - anchoPie, MARGEN_M - 6, pie);
                 }
@@ -315,6 +345,10 @@ namespace BLL
             EscribirTrailer(idCatalog, xrefOffset);
             File.WriteAllBytes(ruta, _buffer.ToArray());
         }
+
+        #endregion
+
+        #region Métodos privados de dibujo
 
         private void Texto(StringBuilder sb, string fuente, float tam, float gris, float x, float y, string texto)
         {
@@ -368,6 +402,10 @@ namespace BLL
             return renglones;
         }
 
+        #endregion
+
+        #region Medición de texto
+
         // Ancho aproximado en puntos usando las métricas estándar de Helvetica (1/1000 del tamaño).
         private static float AnchoTexto(string texto, float tam, bool negrita)
         {
@@ -391,15 +429,14 @@ namespace BLL
             return i >= 0 ? sin[i] : c;
         }
 
-        private static readonly int[] ANCHOS_HELVETICA =
-        {
-            278, 278, 355, 556, 556, 889, 667, 191, 333, 333, 389, 584, 278, 333, 278, 278,
-            556, 556, 556, 556, 556, 556, 556, 556, 556, 556, 278, 278, 584, 584, 584, 556,
-            1015, 667, 667, 722, 722, 667, 611, 778, 722, 278, 500, 667, 556, 833, 722, 778,
-            667, 778, 722, 667, 611, 722, 667, 944, 667, 667, 611, 278, 278, 278, 469, 556,
-            333, 556, 556, 500, 556, 556, 278, 556, 556, 222, 222, 500, 222, 833, 556, 556,
-            556, 556, 333, 500, 278, 556, 500, 722, 500, 500, 500, 334, 260, 334, 584
-        };
+        internal static float MedirHelvetica(string texto, float tam, bool negrita) => AnchoTexto(texto, tam, negrita);
+
+        internal static string EscaparPdf(string s) =>
+            (s ?? "").Replace("\\", "\\\\").Replace("(", "\\(").Replace(")", "\\)");
+
+        #endregion
+
+        #region Documento con páginas ya dibujadas (boletos)
 
         // Escribe un PDF con páginas ya dibujadas (contenido de cada página en operadores PDF).
         // Lo usa LienzoPdf_GV42 para los boletos; mismo tamaño de página y fuentes que el resto.
@@ -432,13 +469,9 @@ namespace BLL
             File.WriteAllBytes(ruta, _buffer.ToArray());
         }
 
-        internal const float ANCHO_PAGINA_PT = ANCHO_PAGINA;
-        internal const float ALTO_PAGINA_PT = ALTO_PAGINA;
+        #endregion
 
-        internal static float MedirHelvetica(string texto, float tam, bool negrita) => AnchoTexto(texto, tam, negrita);
-
-        internal static string EscaparPdf(string s) =>
-            (s ?? "").Replace("\\", "\\\\").Replace("(", "\\(").Replace(")", "\\)");
+        #region Estructura del PDF
 
         private void EscribirHeader()
         {
@@ -500,5 +533,7 @@ namespace BLL
                 .Replace("(", "\\(")
                 .Replace(")", "\\)");
         }
+
+        #endregion
     }
 }

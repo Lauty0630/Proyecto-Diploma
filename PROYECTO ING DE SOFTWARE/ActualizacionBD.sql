@@ -617,3 +617,33 @@ BEGIN
     VALUES (2, N'Revisión de validaciones: integridad de usuario y reserva, bitácora sin FK, reglas de negocio');
 END
 GO
+
+/* =====================================================================================
+   VERSIÓN 3 - Servicios adicionales con tope por pasajero
+   ===================================================================================== */
+
+/* ---------- 10) TipoAdicional.MaxPorPasajero ----------
+   Cuántas unidades de cada servicio puede pedir un pasajero por tramo. El sistema limita la
+   cantidad de la reserva a MaxPorPasajero x pasajeros x tramos (antes se podían pedir 20
+   comidas especiales para un solo pasajero). */
+IF COL_LENGTH('dbo.TipoAdicional', 'MaxPorPasajero') IS NULL
+    ALTER TABLE dbo.TipoAdicional ADD MaxPorPasajero TINYINT NOT NULL
+        CONSTRAINT DF_TipoAdicional_MaxPorPasajero DEFAULT (1)
+        CONSTRAINT CK_TipoAdicional_MaxPorPasajero CHECK (MaxPorPasajero BETWEEN 1 AND 10);
+GO
+
+IF NOT EXISTS (SELECT 1 FROM dbo.VersionBD_GV42 WHERE Version = 3)
+BEGIN
+    UPDATE dbo.TipoAdicional
+    SET MaxPorPasajero = CASE Nombre
+            WHEN N'Equipaje extra'         THEN 2
+            WHEN N'Asiento preferencial'   THEN 1
+            WHEN N'Comida especial'        THEN 1
+            WHEN N'Asistencia prioritaria' THEN 1
+            WHEN N'Otro'                   THEN 2
+            ELSE 1 END;
+
+    INSERT INTO dbo.VersionBD_GV42 (Version, Descripcion)
+    VALUES (3, N'Servicios adicionales con tope por pasajero; pago con tarjeta validado con Luhn');
+END
+GO

@@ -4,6 +4,8 @@ namespace BE
 {
     public class TarjetaEmbarque_GV42
     {
+        #region Propiedades
+
         public int Id { get; set; }
 
         // Autogenerado por la base de datos (ej: TE-000001).
@@ -23,5 +25,7 @@ namespace BE
         public DateTime FechaHoraEmision { get; set; }
 
         public string ClaseTexto { get { return Clase.Texto(); } }
+
+        #endregion
     }
 }

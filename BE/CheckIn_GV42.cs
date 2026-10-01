@@ -7,6 +7,8 @@ namespace BE
     // Id vale 0 si la reserva todavía no generó el registro de check-in (reserva sin pago confirmado).
     public class CheckIn_GV42
     {
+        #region Propiedades
+
         public int Id { get; set; }
         public int IdReserva { get; set; }
         public string NumeroReserva { get; set; }
@@ -26,5 +28,7 @@ namespace BE
         public Vuelo_GV42 Vuelo { get { return VueloClase != null ? VueloClase.Vuelo : null; } }
         public string EstadoReservaTexto { get { return EstadoReserva.Texto(); } }
         public string EstadoTexto { get { return Estado.Texto(); } }
+
+        #endregion
     }
 }

@@ -8,17 +8,31 @@ namespace BLL
     // (el PDF tiene el origen abajo a la izquierda, por eso se invierte la coordenada y).
     public class LienzoPdf_GV42 : ILienzo_GV42
     {
+        #region Campos
+
         private static readonly CultureInfo INV = CultureInfo.InvariantCulture;
         private readonly List<StringBuilder> _paginas = new List<StringBuilder>();
         private StringBuilder _actual;
 
-        public float AnchoPagina => GeneradorPdf_GV42.ANCHO_PAGINA_PT;
-        public float AltoPagina => GeneradorPdf_GV42.ALTO_PAGINA_PT;
+        #endregion
+
+        #region Constructor
 
         public LienzoPdf_GV42()
         {
             NuevaPagina();
         }
+
+        #endregion
+
+        #region Propiedades
+
+        public float AnchoPagina => GeneradorPdf_GV42.ANCHO_PAGINA_PT;
+        public float AltoPagina => GeneradorPdf_GV42.ALTO_PAGINA_PT;
+
+        #endregion
+
+        #region Métodos públicos
 
         public void NuevaPagina()
         {
@@ -31,14 +45,6 @@ namespace BLL
             var contenidos = new List<string>();
             foreach (StringBuilder sb in _paginas) contenidos.Add(sb.ToString());
             new GeneradorPdf_GV42().EscribirDocumento(ruta, contenidos);
-        }
-
-        private float Y(float y) => AltoPagina - y;
-
-        private static string Color(int rgb)
-        {
-            return string.Format(INV, "{0:0.###} {1:0.###} {2:0.###}",
-                ((rgb >> 16) & 0xFF) / 255f, ((rgb >> 8) & 0xFF) / 255f, (rgb & 0xFF) / 255f);
         }
 
         public void Rectangulo(float x, float y, float ancho, float alto, int? relleno, int? borde, float grosor = 0.8f)
@@ -79,5 +85,19 @@ namespace BLL
         {
             return GeneradorPdf_GV42.MedirHelvetica(texto, tamanio, negrita);
         }
+
+        #endregion
+
+        #region Métodos privados
+
+        private float Y(float y) => AltoPagina - y;
+
+        private static string Color(int rgb)
+        {
+            return string.Format(INV, "{0:0.###} {1:0.###} {2:0.###}",
+                ((rgb >> 16) & 0xFF) / 255f, ((rgb >> 8) & 0xFF) / 255f, (rgb & 0xFF) / 255f);
+        }
+
+        #endregion
     }
 }

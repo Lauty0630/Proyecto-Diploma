@@ -8,16 +8,25 @@ using System.Windows.Forms;
 
 namespace PROYECTO_ING_DE_SOFTWARE
 {
-
+    // Gestión de permisos (Composite): catálogo de patentes, familias y roles.
+    // El diseño está en FRMGestionPermisos.Designer.cs (Form Designer); acá va solo la lógica.
     public partial class FRMGestionPermisos : Form, IObservadorIdioma_GV42
     {
+        #region Campos
+
         private readonly BLLPermisos_GV42 _bll;
 
         private string _modoFamilia = "Crear";
         private int _idFamiliaEdicion = 0;
+        private string _nombreFamiliaEdicion = string.Empty;
 
         private string _modoRol = "Crear";
         private int _idRolEdicion = 0;
+        private string _nombreRolEdicion = string.Empty;
+
+        #endregion
+
+        #region Constructor
 
         public FRMGestionPermisos()
         {
@@ -25,163 +34,118 @@ namespace PROYECTO_ING_DE_SOFTWARE
             _bll = new BLLPermisos_GV42();
 
             IdiomaManager_GV42.Instancia.Suscribir(this);
-            this.FormClosed += (s, e) => IdiomaManager_GV42.Instancia.Desuscribir(this);
-
-            AplicarEstilos();
+            FormClosed += (s, e) => IdiomaManager_GV42.Instancia.Desuscribir(this);
+            ActualizarIdioma();
         }
 
-        private void AplicarEstilos()
+        #endregion
+
+        #region Idioma (Observer)
+
+        public void ActualizarIdioma()
         {
-            Color azulOscuro    = Color.FromArgb(13, 71, 161);
-            Color azulClaro     = Color.FromArgb(227, 242, 253);
-            Color blanco        = Color.White;
-            Font  fuenteBase    = new Font("Segoe UI", 9F);
-            Font  fuenteTitulo  = new Font("Segoe UI Semibold", 12F, FontStyle.Bold);
-            Font  fuenteGroup   = new Font("Segoe UI Semibold", 10F, FontStyle.Bold);
-            Font  fuenteBtn     = new Font("Segoe UI Semibold", 9F, FontStyle.Bold);
-            Font  fuenteTabs    = new Font("Segoe UI Semibold", 10F, FontStyle.Bold);
+            Text = IdiomaManager_GV42.T("permisos.titulo");
+            lblTitulo.Text = IdiomaManager_GV42.T("permisos.titulo");
+            lblSubtitulo.Text = IdiomaManager_GV42.T("permisos.subtitulo");
 
-            this.BackColor = azulClaro;
-            this.Font = fuenteBase;
+            tabPatentes.Text = IdiomaManager_GV42.T("permisos.tabPatentes");
+            tabFamilias.Text = IdiomaManager_GV42.T("permisos.tabFamilias");
+            tabRoles.Text = IdiomaManager_GV42.T("permisos.tabRoles");
 
-            tabControl.Font = fuenteTabs;
-            tabControl.SizeMode = TabSizeMode.Fixed;
-            tabControl.ItemSize = new Size(140, 34);
-            tabControl.DrawMode = TabDrawMode.OwnerDrawFixed;
-            tabControl.DrawItem += TabControl_DrawItem;
+            lblTitPatentes.Text = IdiomaManager_GV42.T("permisos.titPatentes");
 
-            tabPatentes.BackColor = azulClaro;
-            tabFamilias.BackColor = azulClaro;
-            tabRoles.BackColor    = azulClaro;
+            lblTitFamilias.Text = IdiomaManager_GV42.T("permisos.titFamilias");
+            btnModificarFamilia.Text = IdiomaManager_GV42.T("permisos.modificarFamilia");
+            btnEliminarFamilia.Text = IdiomaManager_GV42.T("permisos.eliminarFamilia");
+            lblNombreFamilia.Text = IdiomaManager_GV42.T("permisos.nombre");
+            lblPatentesFamilia.Text = IdiomaManager_GV42.T("permisos.patentesAIncluir");
+            lblSubfamilias.Text = IdiomaManager_GV42.T("permisos.subfamilias");
+            btnGuardarFamilia.Text = IdiomaManager_GV42.T("permisos.guardar");
+            ActualizarTextosModoFamilia();
 
-            EstilarTitulo(lblTitPatentes, azulOscuro, fuenteTitulo);
-            EstilarTitulo(lblTitFamilias, azulOscuro, fuenteTitulo);
-            EstilarTitulo(lblTitRoles,    azulOscuro, fuenteTitulo);
+            lblTitRoles.Text = IdiomaManager_GV42.T("permisos.titRoles");
+            btnModificarRol.Text = IdiomaManager_GV42.T("permisos.modificarRol");
+            btnEliminarRol.Text = IdiomaManager_GV42.T("permisos.eliminarRol");
+            lblNombreRol.Text = IdiomaManager_GV42.T("permisos.nombre");
+            lblPatentesRol.Text = IdiomaManager_GV42.T("permisos.patentesIndividuales");
+            lblFamiliasRol.Text = IdiomaManager_GV42.T("permisos.familias");
+            btnGuardarRol.Text = IdiomaManager_GV42.T("permisos.guardar");
+            ActualizarTextosModoRol();
 
-            EstilarGrilla(dgvPatentes, azulOscuro, azulClaro, blanco, fuenteBase);
-            EstilarGrilla(dgvFamilias, azulOscuro, azulClaro, blanco, fuenteBase);
-            EstilarGrilla(dgvRoles,    azulOscuro, azulClaro, blanco, fuenteBase);
+            // Las pestañas son dibujadas a mano: se repintan para mostrar el texto nuevo.
+            tabControl.Invalidate();
 
-            EstilarGroupBox(gbCrearFamilia, azulOscuro, fuenteGroup);
-            EstilarGroupBox(gbCrearRol,     azulOscuro, fuenteGroup);
-
-            foreach (Label lbl in new[] { lblNombreFamilia, lblPatentesFamilia, lblSubfamilias,
-                                          lblNombreRol, lblPatentesRol, lblFamiliasRol })
+            // Nombres de patentes y encabezados de grillas. No se recarga en medio de una edición:
+            // vaciaba los checklists que se estaban modificando.
+            if (dgvPatentes.Columns.Count > 0 && _idFamiliaEdicion == 0 && _idRolEdicion == 0)
             {
-                lbl.ForeColor = azulOscuro;
-                lbl.Font = fuenteBase;
+                try { RecargarTodo(); }
+                catch (Exception ex) { Tema_GV42.MostrarErrorInesperado(IdiomaManager_GV42.T("permisos.accionRecargar"), ex); }
             }
-
-            foreach (TextBox txt in new[] { txtNombreFamilia, txtNombreRol })
+            else
             {
-                txt.BorderStyle = BorderStyle.FixedSingle;
-                txt.Font = fuenteBase;
-            }
-
-            foreach (CheckedListBox clb in new[] { clbPatentesFamilia, clbSubfamilias,
-                                                   clbPatentesRol, clbFamiliasRol })
-            {
-                clb.BackColor = blanco;
-                clb.BorderStyle = BorderStyle.FixedSingle;
-                clb.Font = fuenteBase;
-            }
-
-            EstilarBotonPrimario(btnModificarFamilia, azulOscuro, blanco, fuenteBtn);
-            EstilarBotonPrimario(btnModificarRol,     azulOscuro, blanco, fuenteBtn);
-            EstilarBotonPrimario(btnGuardarFamilia,   azulOscuro, blanco, fuenteBtn);
-            EstilarBotonPrimario(btnGuardarRol,       azulOscuro, blanco, fuenteBtn);
-
-            EstilarBotonSecundario(btnEliminarFamilia, azulOscuro, blanco, fuenteBtn);
-            EstilarBotonSecundario(btnEliminarRol,     azulOscuro, blanco, fuenteBtn);
-            EstilarBotonSecundario(btnLimpiarFamilia,  azulOscuro, blanco, fuenteBtn);
-            EstilarBotonSecundario(btnLimpiarRol,      azulOscuro, blanco, fuenteBtn);
-        }
-
-        private static void EstilarTitulo(Label lbl, Color color, Font fuente)
-        {
-            lbl.ForeColor = color;
-            lbl.Font = fuente;
-        }
-
-        private static void EstilarGroupBox(GroupBox gb, Color color, Font fuente)
-        {
-            gb.ForeColor = color;
-            gb.Font = fuente;
-        }
-
-        private static void EstilarGrilla(DataGridView dgv, Color azulOscuro, Color azulClaro, Color blanco, Font fuente)
-        {
-            dgv.AllowUserToAddRows = false;
-            dgv.AllowUserToDeleteRows = false;
-            dgv.AllowUserToResizeRows = false;
-            dgv.AllowUserToResizeColumns = false;
-            dgv.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
-            dgv.BackgroundColor = blanco;
-            dgv.BorderStyle = BorderStyle.None;
-            dgv.CellBorderStyle = DataGridViewCellBorderStyle.SingleHorizontal;
-            dgv.ColumnHeadersBorderStyle = DataGridViewHeaderBorderStyle.None;
-            dgv.ColumnHeadersDefaultCellStyle.BackColor = azulOscuro;
-            dgv.ColumnHeadersDefaultCellStyle.ForeColor = blanco;
-            dgv.ColumnHeadersDefaultCellStyle.Font = new Font("Segoe UI Semibold", 9F, FontStyle.Bold);
-            dgv.ColumnHeadersDefaultCellStyle.SelectionBackColor = azulOscuro;
-            dgv.ColumnHeadersDefaultCellStyle.Padding = new Padding(4);
-            dgv.ColumnHeadersHeight = 32;
-            dgv.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.DisableResizing;
-            dgv.DefaultCellStyle.BackColor = blanco;
-            dgv.DefaultCellStyle.ForeColor = Color.Black;
-            dgv.DefaultCellStyle.Font = fuente;
-            dgv.DefaultCellStyle.SelectionBackColor = azulOscuro;
-            dgv.DefaultCellStyle.SelectionForeColor = blanco;
-            dgv.DefaultCellStyle.Padding = new Padding(2);
-            dgv.AlternatingRowsDefaultCellStyle.BackColor = azulClaro;
-            dgv.EnableHeadersVisualStyles = false;
-            dgv.GridColor = azulClaro;
-            dgv.MultiSelect = false;
-            dgv.ReadOnly = true;
-            dgv.RowHeadersVisible = false;
-            dgv.RowTemplate.Height = 26;
-            dgv.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
-        }
-
-        private static void EstilarBotonPrimario(Button btn, Color azulOscuro, Color blanco, Font fuente)
-        {
-            btn.BackColor = azulOscuro;
-            btn.ForeColor = blanco;
-            btn.FlatStyle = FlatStyle.Flat;
-            btn.FlatAppearance.BorderSize = 0;
-            btn.Font = fuente;
-            btn.Cursor = Cursors.Hand;
-            btn.UseVisualStyleBackColor = false;
-        }
-
-        private static void EstilarBotonSecundario(Button btn, Color azulOscuro, Color blanco, Font fuente)
-        {
-            btn.BackColor = blanco;
-            btn.ForeColor = azulOscuro;
-            btn.FlatStyle = FlatStyle.Flat;
-            btn.FlatAppearance.BorderColor = azulOscuro;
-            btn.FlatAppearance.BorderSize = 1;
-            btn.Font = fuente;
-            btn.Cursor = Cursors.Hand;
-            btn.UseVisualStyleBackColor = false;
-        }
-
-        private void FRMGestionPermisos_Load(object sender, EventArgs e)
-        {
-            // Largo máximo = columnas Roles.Nombre (50) y Familia.Nombre (100).
-            txtNombreFamilia.MaxLength = Validaciones_GV42.MAX_NOMBRE_FAMILIA;
-            txtNombreRol.MaxLength = Validaciones_GV42.MAX_NOMBRE_ROL;
-            try
-            {
-                AplicarPermisosTabs();
-                RecargarTodo();
-                ActualizarIdioma();
-            }
-            catch (Exception ex)
-            {
-                Tema_GV42.MostrarErrorInesperado("cargar los permisos", ex);
+                AplicarHeadersPatentes();
+                AplicarHeadersFamilias();
+                AplicarHeadersRoles();
             }
         }
+
+        // Título de la tarjeta de alta/edición y texto del botón Limpiar/Cancelar según el modo.
+        private void ActualizarTextosModoFamilia()
+        {
+            lblCrearFamilia.Text = _modoFamilia == "Modificar"
+                ? $"{IdiomaManager_GV42.T("permisos.editandoFamilia")} {_nombreFamiliaEdicion}"
+                : (_modoFamilia == "Eliminar"
+                    ? IdiomaManager_GV42.T("permisos.confirmarEliminacion")
+                    : IdiomaManager_GV42.T("permisos.crearFamilia"));
+            btnLimpiarFamilia.Text = _modoFamilia == "Crear"
+                ? IdiomaManager_GV42.T("permisos.limpiar")
+                : IdiomaManager_GV42.T("general.cancelar");
+        }
+
+        private void ActualizarTextosModoRol()
+        {
+            lblCrearRol.Text = _modoRol == "Modificar"
+                ? $"{IdiomaManager_GV42.T("permisos.editandoRol")} {_nombreRolEdicion}"
+                : (_modoRol == "Eliminar"
+                    ? IdiomaManager_GV42.T("permisos.confirmarEliminacion")
+                    : IdiomaManager_GV42.T("permisos.crearRol"));
+            btnLimpiarRol.Text = _modoRol == "Crear"
+                ? IdiomaManager_GV42.T("permisos.limpiar")
+                : IdiomaManager_GV42.T("general.cancelar");
+        }
+
+        private string TraducirNombrePatente(Patente_GV42 p)
+        {
+            if (p == null || string.IsNullOrEmpty(p.DataKey)) return p?.Nombre ?? string.Empty;
+            string clave = "patente." + p.DataKey;
+            string traducido = IdiomaManager_GV42.T(clave);
+            return traducido == clave ? p.Nombre : traducido;
+        }
+
+        private void AplicarHeadersPatentes()
+        {
+            if (dgvPatentes.Columns.Contains("Nombre"))
+                dgvPatentes.Columns["Nombre"].HeaderText = IdiomaManager_GV42.T("permisos.colNombre");
+            if (dgvPatentes.Columns.Contains("DataKey"))
+                dgvPatentes.Columns["DataKey"].HeaderText = IdiomaManager_GV42.T("permisos.colDataKey");
+        }
+
+        private void AplicarHeadersFamilias()
+        {
+            if (dgvFamilias.Columns.Contains("Nombre"))
+                dgvFamilias.Columns["Nombre"].HeaderText = IdiomaManager_GV42.T("permisos.colNombre");
+        }
+
+        private void AplicarHeadersRoles()
+        {
+            if (dgvRoles.Columns.Contains("Nombre"))
+                dgvRoles.Columns["Nombre"].HeaderText = IdiomaManager_GV42.T("permisos.colNombre");
+        }
+
+        #endregion
+
+        #region Permisos
 
         private void AplicarPermisosTabs()
         {
@@ -197,16 +161,45 @@ namespace PROYECTO_ING_DE_SOFTWARE
 
             bool puedePatentes = dataKeys.Contains("Permisos.Patentes");
             bool puedeFamilias = dataKeys.Contains("Permisos.Familias");
-            bool puedeRoles    = dataKeys.Contains("Permisos.Roles");
+            bool puedeRoles = dataKeys.Contains("Permisos.Roles");
 
             if (tabControl.TabPages.Contains(tabPatentes)) tabControl.TabPages.Remove(tabPatentes);
             if (tabControl.TabPages.Contains(tabFamilias)) tabControl.TabPages.Remove(tabFamilias);
-            if (tabControl.TabPages.Contains(tabRoles))    tabControl.TabPages.Remove(tabRoles);
+            if (tabControl.TabPages.Contains(tabRoles)) tabControl.TabPages.Remove(tabRoles);
 
             if (puedePatentes) tabControl.TabPages.Add(tabPatentes);
             if (puedeFamilias) tabControl.TabPages.Add(tabFamilias);
-            if (puedeRoles)    tabControl.TabPages.Add(tabRoles);
+            if (puedeRoles) tabControl.TabPages.Add(tabRoles);
         }
+
+        private bool EsRolDelUsuarioActual(int idRol)
+        {
+            Usuario_GV42 actual = SessionManager_GV42.Instancia.ObtenerUsuarioActual();
+            return actual != null && actual.Rol != null && actual.Rol.Id == idRol;
+        }
+
+        private void ForzarReloginPorCambioDePropioRol()
+        {
+            MessageBox.Show(
+                IdiomaManager_GV42.T("permisos.mensajeRolPropio"),
+                IdiomaManager_GV42.T("permisos.tituloRolPropio"),
+                MessageBoxButtons.OK, MessageBoxIcon.Information);
+
+            BLLUsuario_GV42.CerrarSesión();
+
+            var login = new FRMIniciarSesion();
+            login.Show();
+
+            var menuPrincipal = Application.OpenForms
+                .OfType<FRMMenuPrincipalAdmin>()
+                .FirstOrDefault();
+            if (menuPrincipal != null)
+                menuPrincipal.Close();
+        }
+
+        #endregion
+
+        #region Carga de datos
 
         private void RecargarTodo()
         {
@@ -237,34 +230,6 @@ namespace PROYECTO_ING_DE_SOFTWARE
                 clbPatentesFamilia.Items.Add(p, false);
                 clbPatentesRol.Items.Add(p, false);
             }
-        }
-
-        private string TraducirNombrePatente(Patente_GV42 p)
-        {
-            if (p == null || string.IsNullOrEmpty(p.DataKey)) return p?.Nombre ?? string.Empty;
-            string clave = "patente." + p.DataKey;
-            string traducido = IdiomaManager_GV42.T(clave);
-            return traducido == clave ? p.Nombre : traducido;
-        }
-
-        private void AplicarHeadersPatentes()
-        {
-            if (dgvPatentes.Columns.Contains("Nombre"))
-                dgvPatentes.Columns["Nombre"].HeaderText = IdiomaManager_GV42.T("permisos.colNombre");
-            if (dgvPatentes.Columns.Contains("DataKey"))
-                dgvPatentes.Columns["DataKey"].HeaderText = IdiomaManager_GV42.T("permisos.colDataKey");
-        }
-
-        private void AplicarHeadersFamilias()
-        {
-            if (dgvFamilias.Columns.Contains("Nombre"))
-                dgvFamilias.Columns["Nombre"].HeaderText = IdiomaManager_GV42.T("permisos.colNombre");
-        }
-
-        private void AplicarHeadersRoles()
-        {
-            if (dgvRoles.Columns.Contains("Nombre"))
-                dgvRoles.Columns["Nombre"].HeaderText = IdiomaManager_GV42.T("permisos.colNombre");
         }
 
         private void CargarFamilias()
@@ -300,19 +265,9 @@ namespace PROYECTO_ING_DE_SOFTWARE
             AplicarHeadersRoles();
         }
 
-        // ═══════════════════════════════════════════════════════════════════
-        // FAMILIAS
-        // ═══════════════════════════════════════════════════════════════════
+        #endregion
 
-        private void btnGuardarFamilia_Click(object sender, EventArgs e)
-        {
-            switch (_modoFamilia)
-            {
-                case "Crear":     CrearFamilia();     break;
-                case "Modificar": ModificarFamilia(); break;
-                case "Eliminar":  EliminarFamilia();  break;
-            }
-        }
+        #region Familias
 
         private void CrearFamilia()
         {
@@ -326,7 +281,7 @@ namespace PROYECTO_ING_DE_SOFTWARE
                 return;
             }
 
-            List<int> idsPatentes    = clbPatentesFamilia.CheckedItems.Cast<Patente_GV42>().Select(p => p.Id).ToList();
+            List<int> idsPatentes = clbPatentesFamilia.CheckedItems.Cast<Patente_GV42>().Select(p => p.Id).ToList();
             List<int> idsSubfamilias = clbSubfamilias.CheckedItems.Cast<Familia_GV42>().Select(f => f.Id).ToList();
 
             try
@@ -357,7 +312,7 @@ namespace PROYECTO_ING_DE_SOFTWARE
                 return;
             }
 
-            List<int> idsPatentes    = clbPatentesFamilia.CheckedItems.Cast<Patente_GV42>().Select(p => p.Id).ToList();
+            List<int> idsPatentes = clbPatentesFamilia.CheckedItems.Cast<Patente_GV42>().Select(p => p.Id).ToList();
             List<int> idsSubfamilias = clbSubfamilias.CheckedItems.Cast<Familia_GV42>().Select(f => f.Id).ToList();
 
             try
@@ -405,100 +360,34 @@ namespace PROYECTO_ING_DE_SOFTWARE
             }
         }
 
-        private void btnModificarFamilia_Click(object sender, EventArgs e)
-        {
-            if (dgvFamilias.CurrentRow == null)
-            {
-                MessageBox.Show(IdiomaManager_GV42.T("permisos.seleccioneFamilia"),
-                                IdiomaManager_GV42.T("general.advertencia"),
-                                MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                return;
-            }
-
-            Familia_GV42 fam = dgvFamilias.CurrentRow.DataBoundItem as Familia_GV42;
-            if (fam == null) return;
-
-            Familia_GV42 arbol;
-            try { arbol = _bll.ObtenerArbolFamilia(fam.Id); }
-            catch (Exception ex) { Tema_GV42.MostrarErrorInesperado("leer la familia", ex); return; }
-            if (arbol == null) return;
-
-            txtNombreFamilia.Text = arbol.Nombre;
-
-            HashSet<int> idsPat = new HashSet<int>(arbol.Hijos.OfType<Patente_GV42>().Select(p => p.Id));
-            HashSet<int> idsSub = new HashSet<int>(arbol.Hijos.OfType<Familia_GV42>().Select(f => f.Id));
-
-            for (int i = 0; i < clbPatentesFamilia.Items.Count; i++)
-            {
-                var p = (Patente_GV42)clbPatentesFamilia.Items[i];
-                clbPatentesFamilia.SetItemChecked(i, idsPat.Contains(p.Id));
-            }
-            for (int i = 0; i < clbSubfamilias.Items.Count; i++)
-            {
-                var f = (Familia_GV42)clbSubfamilias.Items[i];
-                clbSubfamilias.SetItemChecked(i, idsSub.Contains(f.Id));
-            }
-
-            EntrarAModoFamilia("Modificar", fam.Id);
-        }
-
-        private void btnEliminarFamilia_Click(object sender, EventArgs e)
-        {
-            if (dgvFamilias.CurrentRow == null)
-            {
-                MessageBox.Show(IdiomaManager_GV42.T("permisos.seleccioneFamilia"),
-                                IdiomaManager_GV42.T("general.advertencia"),
-                                MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                return;
-            }
-            EntrarAModoFamilia("Eliminar", ((Familia_GV42)dgvFamilias.CurrentRow.DataBoundItem).Id);
-        }
-
-        private void btnLimpiarFamilia_Click(object sender, EventArgs e)
-        {
-            VolverAModoCrearFamilia();
-        }
-
         private void EntrarAModoFamilia(string modo, int idFamilia)
         {
             _modoFamilia = modo;
             _idFamiliaEdicion = idFamilia;
+            _nombreFamiliaEdicion = txtNombreFamilia.Text;
             btnEliminarFamilia.Enabled = false;
             btnModificarFamilia.Enabled = false;
             dgvFamilias.Enabled = false;
-            btnLimpiarFamilia.Text = IdiomaManager_GV42.T("general.cancelar");
-            gbCrearFamilia.Text = modo == "Modificar"
-                ? $"{IdiomaManager_GV42.T("permisos.editandoFamilia")} {txtNombreFamilia.Text}"
-                : (modo == "Eliminar"
-                    ? IdiomaManager_GV42.T("permisos.confirmarEliminacion")
-                    : IdiomaManager_GV42.T("permisos.crearFamilia"));
+            ActualizarTextosModoFamilia();
         }
 
         private void VolverAModoCrearFamilia()
         {
             _modoFamilia = "Crear";
             _idFamiliaEdicion = 0;
+            _nombreFamiliaEdicion = string.Empty;
             txtNombreFamilia.Clear();
             for (int i = 0; i < clbPatentesFamilia.Items.Count; i++) clbPatentesFamilia.SetItemChecked(i, false);
             for (int i = 0; i < clbSubfamilias.Items.Count; i++) clbSubfamilias.SetItemChecked(i, false);
             btnEliminarFamilia.Enabled = true;
             btnModificarFamilia.Enabled = true;
             dgvFamilias.Enabled = true;
-            btnLimpiarFamilia.Text = IdiomaManager_GV42.T("permisos.limpiar");
-            gbCrearFamilia.Text = IdiomaManager_GV42.T("permisos.crearFamilia");
+            ActualizarTextosModoFamilia();
         }
 
+        #endregion
 
-
-        private void btnGuardarRol_Click(object sender, EventArgs e)
-        {
-            switch (_modoRol)
-            {
-                case "Crear":     CrearRol();     break;
-                case "Modificar": ModificarRol(); break;
-                case "Eliminar":  EliminarRol();  break;
-            }
-        }
+        #region Roles
 
         private void CrearRol()
         {
@@ -569,31 +458,6 @@ namespace PROYECTO_ING_DE_SOFTWARE
             }
         }
 
-        private bool EsRolDelUsuarioActual(int idRol)
-        {
-            Usuario_GV42 actual = SessionManager_GV42.Instancia.ObtenerUsuarioActual();
-            return actual != null && actual.Rol != null && actual.Rol.Id == idRol;
-        }
-
-        private void ForzarReloginPorCambioDePropioRol()
-        {
-            MessageBox.Show(
-                IdiomaManager_GV42.T("permisos.mensajeRolPropio"),
-                IdiomaManager_GV42.T("permisos.tituloRolPropio"),
-                MessageBoxButtons.OK, MessageBoxIcon.Information);
-
-            BLLUsuario_GV42.CerrarSesión();
-
-            var login = new FRMIniciarSesion();
-            login.Show();
-
-            var menuPrincipal = Application.OpenForms
-                .OfType<FRMMenuPrincipalAdmin>()
-                .FirstOrDefault();
-            if (menuPrincipal != null)
-                menuPrincipal.Close();
-        }
-
         private void EliminarRol()
         {
             Rol_GV42 rol = _bll.ListarRoles().FirstOrDefault(x => x.Id == _idRolEdicion);
@@ -621,71 +485,65 @@ namespace PROYECTO_ING_DE_SOFTWARE
             }
         }
 
-     
-
-        private void btnEliminarRol_Click(object sender, EventArgs e)
-        {
-            if (dgvRoles.CurrentRow == null)
-            {
-                MessageBox.Show(IdiomaManager_GV42.T("permisos.seleccioneRol"),
-                                IdiomaManager_GV42.T("general.advertencia"),
-                                MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                return;
-            }
-            EntrarAModoRol("Eliminar", ((Rol_GV42)dgvRoles.CurrentRow.DataBoundItem).Id);
-        }
-
-        private void btnLimpiarRol_Click(object sender, EventArgs e)
-        {
-            VolverAModoCrearRol();
-        }
-
-
         private void EntrarAModoRol(string modo, int idRol)
         {
             _modoRol = modo;
             _idRolEdicion = idRol;
+            _nombreRolEdicion = txtNombreRol.Text;
             btnEliminarRol.Enabled = false;
             btnModificarRol.Enabled = false;
             dgvRoles.Enabled = false;
-            btnLimpiarRol.Text = IdiomaManager_GV42.T("general.cancelar");
-            gbCrearRol.Text = modo == "Modificar"
-                ? $"{IdiomaManager_GV42.T("permisos.editandoRol")} {txtNombreRol.Text}"
-                : (modo == "Eliminar"
-                    ? IdiomaManager_GV42.T("permisos.confirmarEliminacion")
-                    : IdiomaManager_GV42.T("permisos.crearRol"));
+            ActualizarTextosModoRol();
         }
 
         private void VolverAModoCrearRol()
         {
             _modoRol = "Crear";
             _idRolEdicion = 0;
+            _nombreRolEdicion = string.Empty;
             txtNombreRol.Clear();
             for (int i = 0; i < clbPatentesRol.Items.Count; i++) clbPatentesRol.SetItemChecked(i, false);
             for (int i = 0; i < clbFamiliasRol.Items.Count; i++) clbFamiliasRol.SetItemChecked(i, false);
             btnEliminarRol.Enabled = true;
             btnModificarRol.Enabled = true;
             dgvRoles.Enabled = true;
-            btnLimpiarRol.Text = IdiomaManager_GV42.T("permisos.limpiar");
-            gbCrearRol.Text = IdiomaManager_GV42.T("permisos.crearRol");
+            ActualizarTextosModoRol();
         }
 
+        #endregion
 
+        #region Eventos
+
+        private void FRMGestionPermisos_Load(object sender, EventArgs e)
+        {
+            // Largo máximo = columnas Roles.Nombre (50) y Familia.Nombre (100).
+            txtNombreFamilia.MaxLength = Validaciones_GV42.MAX_NOMBRE_FAMILIA;
+            txtNombreRol.MaxLength = Validaciones_GV42.MAX_NOMBRE_ROL;
+            try
+            {
+                AplicarPermisosTabs();
+                // Los textos ya se tradujeron en el constructor (ActualizarIdioma); acá solo se cargan los datos.
+                RecargarTodo();
+            }
+            catch (Exception ex)
+            {
+                Tema_GV42.MostrarErrorInesperado(IdiomaManager_GV42.T("permisos.accionCargar"), ex);
+            }
+        }
+
+        // Pestañas dibujadas a mano (DrawMode = OwnerDrawFixed en el diseñador):
+        // la seleccionada en azul con texto blanco, las demás blancas con texto azul.
         private void TabControl_DrawItem(object sender, DrawItemEventArgs e)
         {
-            Color azulOscuro = Color.FromArgb(13, 71, 161);
-            Color azulClaro  = Color.FromArgb(227, 242, 253);
-            Color blanco     = Color.White;
-
             TabControl tc = (TabControl)sender;
             TabPage page = tc.TabPages[e.Index];
             Rectangle rect = tc.GetTabRect(e.Index);
             bool seleccionada = (e.Index == tc.SelectedIndex);
 
-            using (SolidBrush fondo = new SolidBrush(seleccionada ? azulOscuro : blanco))
+            using (SolidBrush fondo = new SolidBrush(seleccionada ? Tema_GV42.Primario : Color.White))
                 e.Graphics.FillRectangle(fondo, rect);
 
-            using (Pen borde = new Pen(azulOscuro, 1))
+            using (Pen borde = new Pen(seleccionada ? Tema_GV42.Primario : Tema_GV42.BordeGrilla, 1))
                 e.Graphics.DrawRectangle(borde, rect.X, rect.Y, rect.Width - 1, rect.Height - 1);
 
             TextRenderer.DrawText(
@@ -693,52 +551,82 @@ namespace PROYECTO_ING_DE_SOFTWARE
                 page.Text,
                 tc.Font,
                 rect,
-                seleccionada ? blanco : azulOscuro,
+                seleccionada ? Color.White : Tema_GV42.Acento,
                 TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter);
         }
 
-        public void ActualizarIdioma()
+        private void btnGuardarFamilia_Click(object sender, EventArgs e)
         {
-            this.Text = IdiomaManager_GV42.T("permisos.titulo");
-
-            if (tabPatentes != null) tabPatentes.Text = IdiomaManager_GV42.T("permisos.tabPatentes");
-            if (tabFamilias != null) tabFamilias.Text = IdiomaManager_GV42.T("permisos.tabFamilias");
-            if (tabRoles != null) tabRoles.Text = IdiomaManager_GV42.T("permisos.tabRoles");
-
-            if (lblTitPatentes != null) lblTitPatentes.Text = IdiomaManager_GV42.T("permisos.titPatentes");
-
-            if (lblTitFamilias != null) lblTitFamilias.Text = IdiomaManager_GV42.T("permisos.titFamilias");
-            if (btnModificarFamilia != null) btnModificarFamilia.Text = IdiomaManager_GV42.T("permisos.modificarFamilia");
-            if (btnEliminarFamilia != null) btnEliminarFamilia.Text = IdiomaManager_GV42.T("permisos.eliminarFamilia");
-            if (gbCrearFamilia != null) gbCrearFamilia.Text = IdiomaManager_GV42.T("permisos.crearFamilia");
-            if (lblNombreFamilia != null) lblNombreFamilia.Text = IdiomaManager_GV42.T("permisos.nombre");
-            if (lblPatentesFamilia != null) lblPatentesFamilia.Text = IdiomaManager_GV42.T("permisos.patentesAIncluir");
-            if (lblSubfamilias != null) lblSubfamilias.Text = IdiomaManager_GV42.T("permisos.subfamilias");
-            if (btnGuardarFamilia != null) btnGuardarFamilia.Text = IdiomaManager_GV42.T("permisos.guardar");
-            if (btnLimpiarFamilia != null) btnLimpiarFamilia.Text = IdiomaManager_GV42.T("permisos.limpiar");
-
-            if (lblTitRoles != null) lblTitRoles.Text = IdiomaManager_GV42.T("permisos.titRoles");
-            if (btnModificarRol != null) btnModificarRol.Text = IdiomaManager_GV42.T("permisos.modificarRol");
-            if (btnEliminarRol != null) btnEliminarRol.Text = IdiomaManager_GV42.T("permisos.eliminarRol");
-            if (gbCrearRol != null) gbCrearRol.Text = IdiomaManager_GV42.T("permisos.crearRol");
-            if (lblNombreRol != null) lblNombreRol.Text = IdiomaManager_GV42.T("permisos.nombre");
-            if (lblPatentesRol != null) lblPatentesRol.Text = IdiomaManager_GV42.T("permisos.patentesIndividuales");
-            if (lblFamiliasRol != null) lblFamiliasRol.Text = IdiomaManager_GV42.T("permisos.familias");
-            if (btnGuardarRol != null) btnGuardarRol.Text = IdiomaManager_GV42.T("permisos.guardar");
-            if (btnLimpiarRol != null) btnLimpiarRol.Text = IdiomaManager_GV42.T("permisos.limpiar");
-
-            // No se recarga en medio de una edición: vaciaba los checklists que se estaban modificando.
-            if (dgvPatentes != null && dgvPatentes.Columns.Count > 0 && _idFamiliaEdicion == 0 && _idRolEdicion == 0)
+            switch (_modoFamilia)
             {
-                try { RecargarTodo(); } catch (Exception ex) { Tema_GV42.MostrarErrorInesperado("recargar los permisos", ex); }
+                case "Crear": CrearFamilia(); break;
+                case "Modificar": ModificarFamilia(); break;
+                case "Eliminar": EliminarFamilia(); break;
             }
         }
 
-        
-
-        private void btnModificarRol_Click_1(object sender, EventArgs e)
+        private void btnModificarFamilia_Click(object sender, EventArgs e)
         {
+            if (dgvFamilias.CurrentRow == null)
+            {
+                MessageBox.Show(IdiomaManager_GV42.T("permisos.seleccioneFamilia"),
+                                IdiomaManager_GV42.T("general.advertencia"),
+                                MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
 
+            Familia_GV42 fam = dgvFamilias.CurrentRow.DataBoundItem as Familia_GV42;
+            if (fam == null) return;
+
+            Familia_GV42 arbol;
+            try { arbol = _bll.ObtenerArbolFamilia(fam.Id); }
+            catch (Exception ex) { Tema_GV42.MostrarErrorInesperado(IdiomaManager_GV42.T("permisos.accionLeerFamilia"), ex); return; }
+            if (arbol == null) return;
+
+            txtNombreFamilia.Text = arbol.Nombre;
+
+            HashSet<int> idsPat = new HashSet<int>(arbol.Hijos.OfType<Patente_GV42>().Select(p => p.Id));
+            HashSet<int> idsSub = new HashSet<int>(arbol.Hijos.OfType<Familia_GV42>().Select(f => f.Id));
+
+            for (int i = 0; i < clbPatentesFamilia.Items.Count; i++)
+            {
+                var p = (Patente_GV42)clbPatentesFamilia.Items[i];
+                clbPatentesFamilia.SetItemChecked(i, idsPat.Contains(p.Id));
+            }
+            for (int i = 0; i < clbSubfamilias.Items.Count; i++)
+            {
+                var f = (Familia_GV42)clbSubfamilias.Items[i];
+                clbSubfamilias.SetItemChecked(i, idsSub.Contains(f.Id));
+            }
+
+            EntrarAModoFamilia("Modificar", fam.Id);
+        }
+
+        private void btnEliminarFamilia_Click(object sender, EventArgs e)
+        {
+            if (dgvFamilias.CurrentRow == null)
+            {
+                MessageBox.Show(IdiomaManager_GV42.T("permisos.seleccioneFamilia"),
+                                IdiomaManager_GV42.T("general.advertencia"),
+                                MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+            EntrarAModoFamilia("Eliminar", ((Familia_GV42)dgvFamilias.CurrentRow.DataBoundItem).Id);
+        }
+
+        private void btnLimpiarFamilia_Click(object sender, EventArgs e)
+        {
+            VolverAModoCrearFamilia();
+        }
+
+        private void btnGuardarRol_Click(object sender, EventArgs e)
+        {
+            switch (_modoRol)
+            {
+                case "Crear": CrearRol(); break;
+                case "Modificar": ModificarRol(); break;
+                case "Eliminar": EliminarRol(); break;
+            }
         }
 
         private void btnModificarRol_Click(object sender, EventArgs e)
@@ -756,7 +644,7 @@ namespace PROYECTO_ING_DE_SOFTWARE
 
             Rol_GV42 arbol;
             try { arbol = _bll.ObtenerArbolRol(rol.Id); }
-            catch (Exception ex) { Tema_GV42.MostrarErrorInesperado("leer el rol", ex); return; }
+            catch (Exception ex) { Tema_GV42.MostrarErrorInesperado(IdiomaManager_GV42.T("permisos.accionLeerRol"), ex); return; }
             if (arbol == null) return;
 
             txtNombreRol.Text = arbol.Nombre;
@@ -777,5 +665,24 @@ namespace PROYECTO_ING_DE_SOFTWARE
 
             EntrarAModoRol("Modificar", rol.Id);
         }
+
+        private void btnEliminarRol_Click(object sender, EventArgs e)
+        {
+            if (dgvRoles.CurrentRow == null)
+            {
+                MessageBox.Show(IdiomaManager_GV42.T("permisos.seleccioneRol"),
+                                IdiomaManager_GV42.T("general.advertencia"),
+                                MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+            EntrarAModoRol("Eliminar", ((Rol_GV42)dgvRoles.CurrentRow.DataBoundItem).Id);
+        }
+
+        private void btnLimpiarRol_Click(object sender, EventArgs e)
+        {
+            VolverAModoCrearRol();
+        }
+
+        #endregion
     }
 }

@@ -1,4 +1,4 @@
-﻿﻿using BE;
+﻿using BE;
 using System;
 using System.Collections.Generic;
 using System.Data;
@@ -8,6 +8,8 @@ namespace DAL
 {
     public class DALVuelo_GV42
     {
+        #region Campos
+
         private readonly Acceso _acceso;
 
         private const string SELECT_BASE =
@@ -16,10 +18,30 @@ namespace DAL
             "INNER JOIN VueloClase VC ON VC.IdVuelo = V.Id" +
             DALUtil_GV42.JOINS_VUELO;
 
+        // ---------------------------------------------------------------- ABM de vuelos
+
+        private const string SELECT_ABM =
+            "SELECT V.Id, V.CodigoVuelo, V.FechaHoraSalida, V.FechaHoraLlegada, V.PuertaEmbarque, V.CostoKiloExceso, V.BorradoLogico, " +
+            "       AL.Id AS IdAerolinea, AL.Nombre AS AerolineaNombre, " +
+            "       O.Id AS IdOrigen, O.CodigoIata AS OrigenIata, O.Nombre AS OrigenNombre, O.Ciudad AS OrigenCiudad, O.Pais AS OrigenPais, " +
+            "       D.Id AS IdDestino, D.CodigoIata AS DestinoIata, D.Nombre AS DestinoNombre, D.Ciudad AS DestinoCiudad, D.Pais AS DestinoPais " +
+            "FROM Vuelo V " +
+            "INNER JOIN Aerolinea AL ON AL.Id = V.IdAerolinea " +
+            "INNER JOIN Aeropuerto O ON O.Id = V.IdOrigen " +
+            "INNER JOIN Aeropuerto D ON D.Id = V.IdDestino";
+
+        #endregion
+
+        #region Constructor
+
         public DALVuelo_GV42()
         {
             _acceso = Acceso.Instancia;
         }
+
+        #endregion
+
+        #region Métodos públicos
 
         // Vuelos (uno por clase) que salen en la fecha indicada, entre origen y destino,
         // con asientos suficientes para la cantidad de pasajeros. Solo vuelos futuros.
@@ -63,18 +85,6 @@ namespace DAL
             return dt.Rows.Count == 0 ? null : DALUtil_GV42.MapearVueloClase(dt.Rows[0]);
         }
 
-        // ---------------------------------------------------------------- ABM de vuelos
-
-        private const string SELECT_ABM =
-            "SELECT V.Id, V.CodigoVuelo, V.FechaHoraSalida, V.FechaHoraLlegada, V.PuertaEmbarque, V.CostoKiloExceso, V.BorradoLogico, " +
-            "       AL.Id AS IdAerolinea, AL.Nombre AS AerolineaNombre, " +
-            "       O.Id AS IdOrigen, O.CodigoIata AS OrigenIata, O.Nombre AS OrigenNombre, O.Ciudad AS OrigenCiudad, O.Pais AS OrigenPais, " +
-            "       D.Id AS IdDestino, D.CodigoIata AS DestinoIata, D.Nombre AS DestinoNombre, D.Ciudad AS DestinoCiudad, D.Pais AS DestinoPais " +
-            "FROM Vuelo V " +
-            "INNER JOIN Aerolinea AL ON AL.Id = V.IdAerolinea " +
-            "INNER JOIN Aeropuerto O ON O.Id = V.IdOrigen " +
-            "INNER JOIN Aeropuerto D ON D.Id = V.IdDestino";
-
         // Todos los vuelos, incluidos los dados de baja (para la pantalla de gestión).
         public List<Vuelo_GV42> ListarTodos()
         {
@@ -94,13 +104,19 @@ namespace DAL
                     Aerolinea = new Aerolinea_GV42 { Id = DALUtil_GV42.Int(r, "IdAerolinea"), Nombre = DALUtil_GV42.Str(r, "AerolineaNombre") },
                     Origen = new Aeropuerto_GV42
                     {
-                        Id = DALUtil_GV42.Int(r, "IdOrigen"), CodigoIata = DALUtil_GV42.Str(r, "OrigenIata"),
-                        Nombre = DALUtil_GV42.Str(r, "OrigenNombre"), Ciudad = DALUtil_GV42.Str(r, "OrigenCiudad"), Pais = DALUtil_GV42.Str(r, "OrigenPais")
+                        Id = DALUtil_GV42.Int(r, "IdOrigen"),
+                        CodigoIata = DALUtil_GV42.Str(r, "OrigenIata"),
+                        Nombre = DALUtil_GV42.Str(r, "OrigenNombre"),
+                        Ciudad = DALUtil_GV42.Str(r, "OrigenCiudad"),
+                        Pais = DALUtil_GV42.Str(r, "OrigenPais")
                     },
                     Destino = new Aeropuerto_GV42
                     {
-                        Id = DALUtil_GV42.Int(r, "IdDestino"), CodigoIata = DALUtil_GV42.Str(r, "DestinoIata"),
-                        Nombre = DALUtil_GV42.Str(r, "DestinoNombre"), Ciudad = DALUtil_GV42.Str(r, "DestinoCiudad"), Pais = DALUtil_GV42.Str(r, "DestinoPais")
+                        Id = DALUtil_GV42.Int(r, "IdDestino"),
+                        CodigoIata = DALUtil_GV42.Str(r, "DestinoIata"),
+                        Nombre = DALUtil_GV42.Str(r, "DestinoNombre"),
+                        Ciudad = DALUtil_GV42.Str(r, "DestinoCiudad"),
+                        Pais = DALUtil_GV42.Str(r, "DestinoPais")
                     }
                 });
             }
@@ -158,5 +174,7 @@ namespace DAL
             _acceso.escribir("UPDATE Vuelo SET BorradoLogico = @Baja WHERE Id = @Id",
                 new[] { new SqlParameter("@Baja", baja), new SqlParameter("@Id", idVuelo) });
         }
+
+        #endregion
     }
 }

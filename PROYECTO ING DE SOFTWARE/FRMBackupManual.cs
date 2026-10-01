@@ -1,7 +1,6 @@
 ﻿using BLL;
 using Servicios;
 using System;
-using System.Drawing;
 using System.Linq;
 using System.Windows.Forms;
 
@@ -9,19 +8,18 @@ namespace PROYECTO_ING_DE_SOFTWARE
 {
     public partial class FRMBackupManual : Form, IObservadorIdioma_GV42
     {
+        #region Campos
+
         private readonly BLLIntegridad_GV42 _bll;
 
-        private Label lblTitulo;
-        private Label lblSubtitulo;
-        private Button btnCrear;
-        private Button btnRestaurar;
-        private Button btnCerrar;
+        #endregion
+
+        #region Constructor
 
         public FRMBackupManual()
         {
+            InitializeComponent();
             _bll = new BLLIntegridad_GV42();
-
-            InicializarComponentes();
 
             IdiomaManager_GV42.Instancia.Suscribir(this);
             this.FormClosed += (s, e) => IdiomaManager_GV42.Instancia.Desuscribir(this);
@@ -30,65 +28,9 @@ namespace PROYECTO_ING_DE_SOFTWARE
             ActualizarIdioma();
         }
 
-        private void InicializarComponentes()
-        {
-            Color azulOscuro = Color.FromArgb(13, 71, 161);
-            Color azulClaro  = Color.FromArgb(227, 242, 253);
-            Font  fuenteTit  = new Font("Segoe UI Semibold", 16F, FontStyle.Bold);
-            Font  fuenteSub  = new Font("Segoe UI", 10F);
-            Font  fuenteBtn  = new Font("Segoe UI Semibold", 10F, FontStyle.Bold);
+        #endregion
 
-            this.Size = new Size(600, 320);
-            this.BackColor = azulClaro;
-            this.Font = new Font("Segoe UI", 9.5F);
-            this.FormBorderStyle = FormBorderStyle.None;
-            this.Dock = DockStyle.Fill;
-
-            lblTitulo = new Label
-            {
-                ForeColor = azulOscuro, Font = fuenteTit, AutoSize = true,
-                Location = new Point(30, 30)
-            };
-
-            lblSubtitulo = new Label
-            {
-                ForeColor = Color.DimGray, Font = fuenteSub, AutoSize = false,
-                Size = new Size(540, 60),
-                Location = new Point(30, 65)
-            };
-
-            btnCrear = new Button
-            {
-                Location = new Point(30, 150),
-                Size = new Size(260, 55),
-                BackColor = azulOscuro, ForeColor = Color.White,
-                FlatStyle = FlatStyle.Flat, Font = fuenteBtn
-            };
-            btnCrear.FlatAppearance.BorderSize = 0;
-            btnCrear.Click += BtnCrear_Click;
-
-            btnRestaurar = new Button
-            {
-                Location = new Point(310, 150),
-                Size = new Size(260, 55),
-                BackColor = azulOscuro, ForeColor = Color.White,
-                FlatStyle = FlatStyle.Flat, Font = fuenteBtn
-            };
-            btnRestaurar.FlatAppearance.BorderSize = 0;
-            btnRestaurar.Click += BtnRestaurar_Click;
-
-            btnCerrar = new Button
-            {
-                Location = new Point(450, 240),
-                Size = new Size(120, 35),
-                BackColor = Color.White, ForeColor = azulOscuro,
-                FlatStyle = FlatStyle.Flat, Font = fuenteBtn
-            };
-            btnCerrar.FlatAppearance.BorderColor = azulOscuro;
-            btnCerrar.Click += (s, e) => this.Close();
-
-            this.Controls.AddRange(new Control[] { lblTitulo, lblSubtitulo, btnCrear, btnRestaurar, btnCerrar });
-        }
+        #region Permisos
 
         private void AplicarPermisos()
         {
@@ -103,20 +45,41 @@ namespace PROYECTO_ING_DE_SOFTWARE
                 .Select(p => p.DataKey ?? string.Empty)
                 .ToList();
 
-            btnCrear.Visible     = dataKeys.Contains("Backup.Crear");
-            btnRestaurar.Visible = dataKeys.Contains("Integridad.Restore");
+            bool puedeCrear = dataKeys.Contains("Backup.Crear");
+            bool puedeRestaurar = dataKeys.Contains("Integridad.Restore");
+
+            btnCrear.Visible = puedeCrear;
+            btnRestaurar.Visible = puedeRestaurar;
+
+            // La tarjeta de cada acción se oculta junto con su botón.
+            pnlCrear.Visible = puedeCrear;
+            pnlRestaurar.Visible = puedeRestaurar;
         }
+
+        #endregion
+
+        #region Idioma (Observer)
 
         public void ActualizarIdioma()
         {
-            if (lblTitulo != null)    lblTitulo.Text    = IdiomaManager_GV42.T("backup.titulo");
-            if (lblSubtitulo != null) lblSubtitulo.Text = IdiomaManager_GV42.T("backup.subtitulo");
-            if (btnCrear != null)     btnCrear.Text     = IdiomaManager_GV42.T("backup.btnCrear");
-            if (btnRestaurar != null) btnRestaurar.Text = IdiomaManager_GV42.T("backup.btnRestaurar");
-            if (btnCerrar != null)    btnCerrar.Text    = IdiomaManager_GV42.T("backup.btnCerrar");
+            this.Text = IdiomaManager_GV42.T("backup.titulo");
+            lblTitulo.Text = IdiomaManager_GV42.T("backup.titulo");
+            lblSubtitulo.Text = IdiomaManager_GV42.T("backup.encabezado");
+            lblDescripcion.Text = IdiomaManager_GV42.T("backup.subtitulo");
+            lblCrearTitulo.Text = IdiomaManager_GV42.T("backup.crearTitulo");
+            lblCrearDesc.Text = IdiomaManager_GV42.T("backup.crearDesc");
+            lblRestaurarTitulo.Text = IdiomaManager_GV42.T("backup.restaurarTitulo");
+            lblRestaurarDesc.Text = IdiomaManager_GV42.T("backup.restaurarDesc");
+            btnCrear.Text = IdiomaManager_GV42.T("backup.btnCrear");
+            btnRestaurar.Text = IdiomaManager_GV42.T("backup.btnRestaurar");
+            btnCerrar.Text = IdiomaManager_GV42.T("backup.btnCerrar");
         }
 
-        private void BtnCrear_Click(object sender, EventArgs e)
+        #endregion
+
+        #region Eventos
+
+        private void btnCrear_Click(object sender, EventArgs e)
         {
             this.Cursor = Cursors.WaitCursor;
             try
@@ -139,11 +102,11 @@ namespace PROYECTO_ING_DE_SOFTWARE
             }
         }
 
-        private void BtnRestaurar_Click(object sender, EventArgs e)
+        private void btnRestaurar_Click(object sender, EventArgs e)
         {
             using (OpenFileDialog ofd = new OpenFileDialog())
             {
-                ofd.Title  = IdiomaManager_GV42.T("backup.ofdTitulo");
+                ofd.Title = IdiomaManager_GV42.T("backup.ofdTitulo");
                 ofd.Filter = IdiomaManager_GV42.T("backup.ofdFiltro");
                 ofd.CheckFileExists = true;
 
@@ -184,5 +147,12 @@ namespace PROYECTO_ING_DE_SOFTWARE
                 }
             }
         }
+
+        private void btnCerrar_Click(object sender, EventArgs e)
+        {
+            this.Close();
+        }
+
+        #endregion
     }
 }

@@ -11,10 +11,16 @@ namespace PROYECTO_ING_DE_SOFTWARE
     // unidades "World", así el tamaño sigue la misma escala que el resto del dibujo.
     public sealed class LienzoGdi_GV42 : ILienzo_GV42, IDisposable
     {
+        #region Campos
+
         private const string FAMILIA = "Arial";   // métricas equivalentes a Helvetica (la del PDF)
         private readonly Graphics _g;
         private readonly Dictionary<string, Font> _fuentes = new Dictionary<string, Font>();
         private readonly StringFormat _formato;
+
+        #endregion
+
+        #region Constructor
 
         public LienzoGdi_GV42(Graphics g)
         {
@@ -25,19 +31,9 @@ namespace PROYECTO_ING_DE_SOFTWARE
             _formato.FormatFlags |= StringFormatFlags.MeasureTrailingSpaces | StringFormatFlags.NoWrap;
         }
 
-        private static Color C(int rgb) => Color.FromArgb((rgb >> 16) & 0xFF, (rgb >> 8) & 0xFF, rgb & 0xFF);
+        #endregion
 
-        private Font Fuente(float tam, bool negrita)
-        {
-            string clave = tam.ToString("0.##") + (negrita ? "b" : "");
-            Font f;
-            if (!_fuentes.TryGetValue(clave, out f))
-            {
-                f = new Font(FAMILIA, tam, negrita ? FontStyle.Bold : FontStyle.Regular, GraphicsUnit.World);
-                _fuentes[clave] = f;
-            }
-            return f;
-        }
+        #region Métodos públicos
 
         public void Rectangulo(float x, float y, float ancho, float alto, int? relleno, int? borde, float grosor = 0.8f)
         {
@@ -94,5 +90,25 @@ namespace PROYECTO_ING_DE_SOFTWARE
             _fuentes.Clear();
             _formato.Dispose();
         }
+
+        #endregion
+
+        #region Métodos privados
+
+        private static Color C(int rgb) => Color.FromArgb((rgb >> 16) & 0xFF, (rgb >> 8) & 0xFF, rgb & 0xFF);
+
+        private Font Fuente(float tam, bool negrita)
+        {
+            string clave = tam.ToString("0.##") + (negrita ? "b" : "");
+            Font f;
+            if (!_fuentes.TryGetValue(clave, out f))
+            {
+                f = new Font(FAMILIA, tam, negrita ? FontStyle.Bold : FontStyle.Regular, GraphicsUnit.World);
+                _fuentes[clave] = f;
+            }
+            return f;
+        }
+
+        #endregion
     }
 }

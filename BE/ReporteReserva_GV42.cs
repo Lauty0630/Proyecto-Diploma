@@ -8,6 +8,8 @@ namespace BE
     // de la reserva, su pasajero titular, el vuelo, los adicionales y los importes.
     public class ReporteReserva_GV42
     {
+        #region Propiedades
+
         public int IdReserva { get; set; }
         public string NumeroReserva { get; set; }
         public DateTime FechaRealizacion { get; set; }
@@ -37,6 +39,7 @@ namespace BE
         public decimal Impuestos { get; set; }
         public decimal ImporteTotal { get; set; }
         public EstadoReserva_GV42 Estado { get; set; }
+
         // Penalidad retenida si la reserva se canceló (0 si no corresponde).
         public decimal MontoPenalidad { get; set; }
 
@@ -45,15 +48,21 @@ namespace BE
         public string Destino => DestinoIata + " - " + DestinoCiudad;
         public string ClaseTexto => Clase.Texto();
         public string EstadoTexto => Estado.Texto();
+
+        #endregion
     }
 
     // Servicio adicional incluido en una reserva (tipo, cantidad y costo).
     public class AdicionalReporte_GV42
     {
+        #region Propiedades
+
         public string Tipo { get; set; }
         public int Cantidad { get; set; }
         public decimal CostoUnitario { get; set; }
         public decimal Subtotal { get; set; }
+
+        #endregion
     }
 
     // Por qué fecha se filtra el reporte.
@@ -62,16 +71,23 @@ namespace BE
     // Filtros del reporte. Todos son opcionales: sin filtros se listan todas las reservas.
     public class FiltroReporteReservas_GV42
     {
+        #region Propiedades
+
         public FechaReporte_GV42 TipoFecha { get; set; } = FechaReporte_GV42.Realizacion;
         public DateTime? FechaDesde { get; set; }
         public DateTime? FechaHasta { get; set; }
         public string CodigoVuelo { get; set; }
         public ClaseVuelo_GV42? Clase { get; set; }
         public EstadoReserva_GV42? Estado { get; set; }
+
         // DNI, nombre o apellido de cualquiera de los pasajeros de la reserva.
         public string Pasajero { get; set; }
 
         public bool FiltraPorFecha => FechaDesde.HasValue || FechaHasta.HasValue;
+
+        #endregion
+
+        #region Métodos públicos
 
         // Texto legible de los filtros aplicados (para el subtítulo del PDF y la bitácora).
         public string Descripcion()
@@ -90,5 +106,7 @@ namespace BE
             if (!string.IsNullOrWhiteSpace(Pasajero)) partes.Add("Pasajero: " + Pasajero.Trim());
             return partes.Count == 0 ? "Sin filtros" : string.Join(" | ", partes);
         }
+
+        #endregion
     }
 }

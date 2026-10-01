@@ -11,6 +11,8 @@ namespace DAL
     // Datos del reporte de reservas (RFN 1). Solo lectura.
     public class DALReporteReserva_GV42
     {
+        #region Campos
+
         private readonly Acceso _acceso = Acceso.Instancia;
 
         private const string FROM_RESERVAS =
@@ -19,6 +21,10 @@ namespace DAL
             " INNER JOIN Vuelo V ON V.Id = R.IdVuelo" +
             " INNER JOIN Aeropuerto O ON O.Id = V.IdOrigen" +
             " INNER JOIN Aeropuerto D ON D.Id = V.IdDestino";
+
+        #endregion
+
+        #region Métodos públicos
 
         public List<ReporteReserva_GV42> Listar(FiltroReporteReservas_GV42 filtro)
         {
@@ -75,6 +81,10 @@ namespace DAL
             if (lista.Count > 0) CargarAdicionales(filtro, where, porId);
             return lista;
         }
+
+        #endregion
+
+        #region Métodos privados
 
         // Adicionales de todas las reservas del reporte en una sola consulta (mismos filtros).
         private void CargarAdicionales(FiltroReporteReservas_GV42 filtro, string where,
@@ -144,5 +154,7 @@ namespace DAL
         {
             return texto.Replace("[", "[[]").Replace("%", "[%]").Replace("_", "[_]");
         }
+
+        #endregion
     }
 }

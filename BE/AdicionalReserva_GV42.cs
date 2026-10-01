@@ -4,6 +4,8 @@ namespace BE
 {
     public class AdicionalReserva_GV42
     {
+        #region Propiedades
+
         public int Id { get; set; }
         public TipoAdicional_GV42 TipoAdicional { get; set; }
         public int Cantidad { get; set; }
@@ -18,5 +20,7 @@ namespace BE
         {
             get { return TipoAdicional != null ? TipoAdicional.Nombre : string.Empty; }
         }
+
+        #endregion
     }
 }

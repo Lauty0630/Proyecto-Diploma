@@ -5,10 +5,7 @@ namespace Servicios
 
     public class Patente_GV42 : IComponentePermiso_GV42
     {
-        public int Id { get; set; }
-        public string Nombre { get; set; }
-
-        public string DataKey { get; set; }
+        #region Constructor
 
         public Patente_GV42() { }
 
@@ -19,11 +16,26 @@ namespace Servicios
             DataKey = dataKey;
         }
 
+        #endregion
+
+        #region Propiedades
+
+        public int Id { get; set; }
+        public string Nombre { get; set; }
+
+        public string DataKey { get; set; }
+
+        #endregion
+
+        #region Métodos públicos
+
         public IEnumerable<Patente_GV42> ObtenerPatentes()
         {
             yield return this;
         }
 
         public override string ToString() => Nombre ?? string.Empty;
+
+        #endregion
     }
 }

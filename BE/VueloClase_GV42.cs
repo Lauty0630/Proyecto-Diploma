@@ -6,6 +6,8 @@ namespace BE
     // Es lo que devuelve la búsqueda de vuelos disponibles (RFN 1, paso 4).
     public class VueloClase_GV42
     {
+        #region Propiedades
+
         public Vuelo_GV42 Vuelo { get; set; }
         public ClaseVuelo_GV42 Clase { get; set; }
         public decimal PrecioBase { get; set; }
@@ -28,5 +30,7 @@ namespace BE
         public DateTime FechaHoraSalida { get { return Vuelo != null ? Vuelo.FechaHoraSalida : DateTime.MinValue; } }
         public DateTime FechaHoraLlegada { get { return Vuelo != null ? Vuelo.FechaHoraLlegada : DateTime.MinValue; } }
         public string ClaseTexto { get { return Clase.Texto(); } }
+
+        #endregion
     }
 }

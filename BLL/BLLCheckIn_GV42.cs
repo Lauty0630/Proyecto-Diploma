@@ -2,12 +2,15 @@
 using DAL;
 using System;
 using System.Collections.Generic;
+using Servicios;
 
 namespace BLL
 {
     // RFN 2 - Check-in presencial (Encargado de Check-in + Cliente/Pasajero).
     public class BLLCheckIn_GV42
     {
+        #region Constantes
+
         // El check-in se habilita desde 48 hs antes de la salida y se cierra 60 minutos antes.
         public const int HORAS_APERTURA_CHECKIN = 48;
         public const int MINUTOS_CIERRE_CHECKIN = 60;
@@ -15,10 +18,22 @@ namespace BLL
         // Hora límite de embarque impresa en la tarjeta: 30 minutos antes de la salida.
         public const int MINUTOS_LIMITE_EMBARQUE = 30;
 
+        // Topes razonables del equipaje (y dentro de las columnas decimal(7,2) de la base).
+        public const int MAX_BULTOS = 10;
+        public const decimal MAX_PESO_KG = 500m;
+
+        #endregion
+
+        #region Campos
+
         private readonly DALCheckIn_GV42 _dalCheckIn;
         private readonly DALAsiento_GV42 _dalAsiento;
         private readonly DALEquipaje_GV42 _dalEquipaje;
         private readonly DALTarjetaEmbarque_GV42 _dalTarjeta;
+
+        #endregion
+
+        #region Constructor
 
         public BLLCheckIn_GV42()
         {
@@ -27,6 +42,10 @@ namespace BLL
             _dalEquipaje = new DALEquipaje_GV42();
             _dalTarjeta = new DALTarjetaEmbarque_GV42();
         }
+
+        #endregion
+
+        #region Iniciar check-in
 
         // ---- Pasos 1 a 4: iniciar y verificar la reserva ----
 
@@ -39,13 +58,13 @@ namespace BLL
             dniPasajero = (dniPasajero ?? string.Empty).Trim();
 
             if (numeroReserva.Length == 0)
-                throw new NegocioException_GV42("Debe indicar el número de reserva.");
+                throw new NegocioException_GV42(IdiomaManager_GV42.T("neg.reserva.indiqueNumero"));
             if (!Servicios.Validaciones_GV42.EsDniValido(dniPasajero))
                 throw new NegocioException_GV42(Servicios.Validaciones_GV42.MENSAJE_DNI);
 
             CheckIn_GV42 ci = _dalCheckIn.BuscarPorReservaYDni(numeroReserva, dniPasajero);
             if (ci == null)
-                throw new NegocioException_GV42("No se encontró la reserva, o el DNI no corresponde a un pasajero de esa reserva.");
+                throw new NegocioException_GV42(IdiomaManager_GV42.T("neg.checkin.noEncontrado"));
 
             ValidarPuedeHacerCheckIn(ci);
             return ci;
@@ -54,17 +73,15 @@ namespace BLL
         private void ValidarPuedeHacerCheckIn(CheckIn_GV42 ci)
         {
             if (ci.EstadoReserva != EstadoReserva_GV42.Confirmada)
-                throw new NegocioException_GV42("La reserva " + ci.NumeroReserva + " no está confirmada (estado: " +
-                    ci.EstadoReservaTexto + "). No se puede continuar con el check-in.");
+                throw new NegocioException_GV42(IdiomaManager_GV42.T("neg.checkin.noConfirmada", ci.NumeroReserva, ci.EstadoReservaTexto));
 
             if (ci.Estado == EstadoCheckIn_GV42.Realizado)
-                throw new NegocioException_GV42("El check-in de este pasajero ya fue realizado.");
+                throw new NegocioException_GV42(IdiomaManager_GV42.T("neg.checkin.yaRealizado"));
 
             DateTime salida = ci.Vuelo.FechaHoraSalida;
             DateTime ahora = DateTime.Now;
             if (ahora < salida.AddHours(-HORAS_APERTURA_CHECKIN) || ahora > salida.AddMinutes(-MINUTOS_CIERRE_CHECKIN))
-                throw new NegocioException_GV42("El check-in no puede realizarse: está fuera de la ventana permitida (se habilita " +
-                    HORAS_APERTURA_CHECKIN + " hs antes de la salida y se cierra " + MINUTOS_CIERRE_CHECKIN + " minutos antes).");
+                throw new NegocioException_GV42(IdiomaManager_GV42.T("neg.checkin.fueraDeVentana", HORAS_APERTURA_CHECKIN, MINUTOS_CIERRE_CHECKIN));
         }
 
         // Recarga el check-in y verifica que todavía se pueda operar sobre él.
@@ -72,11 +89,15 @@ namespace BLL
         {
             CheckIn_GV42 ci = _dalCheckIn.BuscarPorId(idCheckIn);
             if (ci == null)
-                throw new NegocioException_GV42("No existe el check-in indicado.");
+                throw new NegocioException_GV42(IdiomaManager_GV42.T("neg.checkin.noExiste"));
 
             ValidarPuedeHacerCheckIn(ci);
             return ci;
         }
+
+        #endregion
+
+        #region Equipaje
 
         // ---- Pasos 5 a 7: equipaje ----
 
@@ -85,7 +106,7 @@ namespace BLL
         public CargoExcesoEquipaje_GV42 CalcularCargoExceso(int idCheckIn, decimal pesoTotalKg)
         {
             if (pesoTotalKg <= 0)
-                throw new NegocioException_GV42("El peso total debe ser mayor a 0 kg.");
+                throw new NegocioException_GV42(IdiomaManager_GV42.T("neg.checkin.pesoMayorCero"));
 
             return CalcularCargo(ObtenerPendiente(idCheckIn), pesoTotalKg);
         }
@@ -106,38 +127,35 @@ namespace BLL
         // Registra el equipaje despachado y genera una etiqueta por bulto. Si el peso supera la franquicia
         // también registra el cargo por exceso y su cobro: en ese caso 'medioCobro' es obligatorio, y el
         // número de transacción lo es salvo en efectivo.
-        public const int MAX_BULTOS = 10;
-        public const decimal MAX_PESO_KG = 500m;
-
         public Equipaje_GV42 RegistrarEquipaje(int idCheckIn, int cantidadBultos, decimal pesoTotalKg,
                                                MedioPago_GV42? medioCobro, string numeroTransaccion)
         {
             if (cantidadBultos < 1)
-                throw new NegocioException_GV42("La cantidad de bultos debe ser al menos 1.");
+                throw new NegocioException_GV42(IdiomaManager_GV42.T("neg.checkin.bultosMinimo"));
             // Topes razonables (y dentro de las columnas decimal(7,2) de la base).
             if (cantidadBultos > MAX_BULTOS)
-                throw new NegocioException_GV42("Se pueden despachar como máximo " + MAX_BULTOS + " bultos por pasajero.");
+                throw new NegocioException_GV42(IdiomaManager_GV42.T("neg.checkin.bultosMaximo", MAX_BULTOS));
             if (pesoTotalKg > MAX_PESO_KG)
-                throw new NegocioException_GV42("El peso total no puede superar los " + MAX_PESO_KG + " kg.");
+                throw new NegocioException_GV42(IdiomaManager_GV42.T("neg.checkin.pesoMaximo", MAX_PESO_KG));
             if (pesoTotalKg <= 0)
-                throw new NegocioException_GV42("El peso total debe ser mayor a 0 kg.");
+                throw new NegocioException_GV42(IdiomaManager_GV42.T("neg.checkin.pesoMayorCero"));
 
             CheckIn_GV42 ci = ObtenerPendiente(idCheckIn);
             if (ci.Equipaje != null)
-                throw new NegocioException_GV42("El pasajero ya despachó equipaje en este check-in.");
+                throw new NegocioException_GV42(IdiomaManager_GV42.T("neg.checkin.yaDespacho"));
 
             CargoExcesoEquipaje_GV42 cargo = CalcularCargo(ci, pesoTotalKg);
             if (cargo.TieneExceso)
             {
                 if (!medioCobro.HasValue)
-                    throw new NegocioException_GV42("El equipaje excede la franquicia en " + cargo.KilosExceso.ToString("0.##") +
-                        " kg (cargo " + BLLNegocioUtil_GV42.Dinero(cargo.ImporteCargo) + "). Debe indicar el medio de cobro.");
+                    throw new NegocioException_GV42(IdiomaManager_GV42.T("neg.checkin.excesoSinMedio",
+                        cargo.KilosExceso.ToString("0.##"), BLLNegocioUtil_GV42.Dinero(cargo.ImporteCargo)));
 
                 numeroTransaccion = (numeroTransaccion ?? string.Empty).Trim();
                 if (numeroTransaccion.Length == 0 && medioCobro.Value != MedioPago_GV42.Efectivo)
-                    throw new NegocioException_GV42("Debe indicar el número de transacción del cobro por exceso de equipaje.");
+                    throw new NegocioException_GV42(IdiomaManager_GV42.T("neg.checkin.faltaTransaccion"));
                 if (numeroTransaccion.Length > Servicios.Validaciones_GV42.MAX_NUMERO_TRANSACCION)
-                    throw new NegocioException_GV42("El número de transacción no puede superar los 40 caracteres.");
+                    throw new NegocioException_GV42(IdiomaManager_GV42.T("neg.checkin.transaccionLarga"));
 
                 cargo.MedioPago = medioCobro;
                 cargo.NumeroTransaccion = numeroTransaccion.Length == 0 ? null : numeroTransaccion;
@@ -169,6 +187,10 @@ namespace BLL
             return guardado;
         }
 
+        #endregion
+
+        #region Asiento
+
         // ---- Paso 8: validar o asignar asiento ----
 
         public List<Asiento_GV42> ListarAsientosLibres(int idCheckIn)
@@ -191,20 +213,20 @@ namespace BLL
 
                 List<Asiento_GV42> libres = _dalAsiento.ListarLibres(ci.Vuelo.Id, ci.VueloClase.Clase);
                 if (libres.Count == 0)
-                    throw new NegocioException_GV42("No quedan asientos libres en clase " + ci.VueloClase.ClaseTexto.ToLower() + ".");
+                    throw new NegocioException_GV42(IdiomaManager_GV42.T("neg.checkin.sinAsientosClase", ci.VueloClase.ClaseTexto.ToLower()));
                 asiento = libres[0];
             }
             else
             {
                 asiento = _dalAsiento.BuscarPorNumero(ci.Vuelo.Id, numeroAsiento);
                 if (asiento == null)
-                    throw new NegocioException_GV42("El asiento " + numeroAsiento + " no existe en este vuelo.");
+                    throw new NegocioException_GV42(IdiomaManager_GV42.T("neg.checkin.asientoNoExiste", numeroAsiento));
                 if (asiento.Clase != ci.VueloClase.Clase)
-                    throw new NegocioException_GV42("El asiento " + numeroAsiento + " es de clase " + asiento.ClaseTexto.ToLower() +
-                        " y la reserva es de clase " + ci.VueloClase.ClaseTexto.ToLower() + ".");
+                    throw new NegocioException_GV42(IdiomaManager_GV42.T("neg.checkin.asientoOtraClase",
+                        numeroAsiento, asiento.ClaseTexto.ToLower(), ci.VueloClase.ClaseTexto.ToLower()));
                 if (ci.Asiento != null && ci.Asiento.Id == asiento.Id) return asiento;
                 if (_dalAsiento.EstaOcupado(asiento.Id))
-                    throw new NegocioException_GV42("El asiento " + numeroAsiento + " ya está ocupado.");
+                    throw new NegocioException_GV42(IdiomaManager_GV42.T("neg.checkin.asientoOcupado", numeroAsiento));
             }
 
             _dalAsiento.Asignar(ci.Id, asiento.Id);
@@ -215,6 +237,10 @@ namespace BLL
             return asiento;
         }
 
+        #endregion
+
+        #region Tarjeta de embarque y cierre
+
         // ---- Paso 9: generar la tarjeta de embarque ----
 
         public TarjetaEmbarque_GV42 GenerarTarjetaEmbarque(int idCheckIn)
@@ -222,7 +248,7 @@ namespace BLL
             CheckIn_GV42 ci = ObtenerPendiente(idCheckIn);
 
             if (ci.Asiento == null)
-                throw new NegocioException_GV42("Primero debe validar o asignar el asiento del pasajero.");
+                throw new NegocioException_GV42(IdiomaManager_GV42.T("neg.checkin.primeroAsiento"));
             if (ci.TarjetaEmbarque != null)
                 return ci.TarjetaEmbarque;
 
@@ -245,7 +271,7 @@ namespace BLL
 
             CheckIn_GV42 ci = ObtenerPendiente(idCheckIn);
             if (ci.TarjetaEmbarque == null)
-                throw new NegocioException_GV42("Primero debe generarse la tarjeta de embarque.");
+                throw new NegocioException_GV42(IdiomaManager_GV42.T("neg.checkin.primeroTarjeta"));
 
             _dalCheckIn.MarcarRealizado(ci.Id, login);
 
@@ -254,5 +280,7 @@ namespace BLL
 
             return _dalCheckIn.BuscarPorId(ci.Id);
         }
+
+        #endregion
     }
 }

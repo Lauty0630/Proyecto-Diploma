@@ -7,12 +7,22 @@ namespace DAL
 {
     public class DALCheckIn_GV42
     {
+        #region Campos
+
         private readonly Acceso _acceso;
+
+        #endregion
+
+        #region Constructor
 
         public DALCheckIn_GV42()
         {
             _acceso = Acceso.Instancia;
         }
+
+        #endregion
+
+        #region Métodos públicos
 
         // Arma el check-in completo de un pasajero de una reserva: reserva, vuelo, servicios adicionales,
         // asiento, equipaje y tarjeta de embarque. Devuelve null si la reserva no existe o el DNI no
@@ -103,5 +113,7 @@ namespace DAL
             if (filas == 0)
                 throw new NegocioException_GV42("El check-in no existe o ya fue realizado.");
         }
+
+        #endregion
     }
 }

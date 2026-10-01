@@ -7,12 +7,22 @@ namespace DAL
 {
     public class DALBoleto_GV42
     {
+        #region Campos
+
         private readonly Acceso _acceso;
+
+        #endregion
+
+        #region Constructor
 
         public DALBoleto_GV42()
         {
             _acceso = Acceso.Instancia;
         }
+
+        #endregion
+
+        #region Métodos públicos
 
         public List<Boleto_GV42> ListarPorReserva(string numeroReserva)
         {
@@ -44,5 +54,7 @@ namespace DAL
             }
             return lista;
         }
+
+        #endregion
     }
 }

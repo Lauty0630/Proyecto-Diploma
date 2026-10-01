@@ -12,159 +12,113 @@ namespace PROYECTO_ING_DE_SOFTWARE
     // Bitácora de cambios de vuelos (tabla Vuelo_C). Muestra todas las versiones por las que pasó cada
     // vuelo, filtrable por código, nombre (ruta) y rango de fechas. El registro con Act = 1 es el que
     // hoy está vigente en la tabla Vuelo; ACTIVAR permite volver a una versión anterior.
-    public class FRMBitacoraVuelos_GV42 : Form
+    // El diseño está en FRMBitacoraVuelos_GV42.Designer.cs (Form Designer).
+    public partial class FRMBitacoraVuelos_GV42 : Form, IObservadorIdioma_GV42
     {
-        private class FilaCambio
-        {
-            public string CodigoVuelo { get; set; }
-            public DateTime Fecha { get; set; }
-            public string Hora { get; set; }
-            public string Nombre { get; set; }
-            public string Descripcion { get; set; }
-            public int Act { get; set; }
-            public VueloCambio_GV42 Cambio { get; set; }
-        }
-
-        private const string TODOS = "(Todos)";
+        #region Campos
 
         private readonly BLLVueloHistorial_GV42 _bll = new BLLVueloHistorial_GV42();
 
-        private DataGridView dgv;
-        private ComboBox cmbCodigo, cmbNombre;
-        private DateTimePicker dtIni, dtFin;
-        private Button btnAplicar, btnLimpiar, btnActivar, btnSalir;
+        // Fuentes y colores del resaltado del registro activo (se crean una sola vez, no por celda).
+        private readonly Font _fuenteActivo = new Font("Segoe UI", 9F, FontStyle.Bold);
+        private readonly Color _fondoActivo = Color.FromArgb(232, 245, 233);
+
+        #endregion
+
+        #region Constructor
 
         public FRMBitacoraVuelos_GV42()
         {
-            ConstruirUI();
+            InitializeComponent();
+            dgvCambios.AutoGenerateColumns = false;
+            btnActivar.Visible = _bll.PuedeActivar();
+
+            IdiomaManager_GV42.Instancia.Suscribir(this);
+            FormClosed += (s, e) => IdiomaManager_GV42.Instancia.Desuscribir(this);
+            ActualizarIdioma();
+
             CargarCombos();
             Aplicar();
         }
 
-        private void ConstruirUI()
+        #endregion
+
+        #region Idioma (Observer)
+
+        public void ActualizarIdioma()
         {
-            Text = "Bitácora de cambios de vuelos";
-            BackColor = Tema_GV42.Fondo;
-            ClientSize = new Size(900, 560);
-            StartPosition = FormStartPosition.CenterScreen;
-            Font = new Font("Segoe UI", 9F);
+            Text = IdiomaManager_GV42.T("bitVuelos.titulo");
+            lblTitulo.Text = IdiomaManager_GV42.T("bitVuelos.titulo");
+            lblSubtitulo.Text = IdiomaManager_GV42.T("bitVuelos.subtitulo");
+            lblSeccionLista.Text = IdiomaManager_GV42.T("bitVuelos.seccionLista");
 
-            var card = Tema_GV42.CrearCard();
-            card.Dock = DockStyle.Fill;
-            card.Margin = new Padding(20);
-            card.Padding = new Padding(20);
-            var contenedor = new Panel { Dock = DockStyle.Fill, Padding = new Padding(20) };
-            contenedor.Controls.Add(card);
-            Controls.Add(contenedor);
+            lblCodigo.Text = IdiomaManager_GV42.T("bitVuelos.codigo");
+            lblNombre.Text = IdiomaManager_GV42.T("bitVuelos.nombreRuta");
+            lblFechaIni.Text = IdiomaManager_GV42.T("bitVuelos.fechaIni");
+            lblFechaFin.Text = IdiomaManager_GV42.T("bitVuelos.fechaFin");
+            lblAyuda.Text = IdiomaManager_GV42.T("bitVuelos.ayuda");
 
-            var lblTitulo = new Label
-            {
-                Text = "BITÁCORA DE CAMBIOS  ·  Vuelo_C",
-                Font = Tema_GV42.FuenteTitulo, ForeColor = Tema_GV42.Acento,
-                AutoSize = true, Location = new Point(0, 0)
-            };
-            // Zonas acopladas: título arriba, filtros y botones abajo y la grilla ocupa el resto
-            // (antes, con tamaños fijos y anclajes, los botones quedaban cortados por abajo).
-            var pnlArriba = new Panel { Dock = DockStyle.Top, Height = 45 };
-            pnlArriba.Controls.Add(lblTitulo);
-            var pnlAbajo = new Panel { Dock = DockStyle.Bottom, Height = 115 };
+            btnAplicar.Text = IdiomaManager_GV42.T("bitVuelos.aplicar");
+            btnLimpiar.Text = IdiomaManager_GV42.T("bitVuelos.limpiar");
+            btnActivar.Text = IdiomaManager_GV42.T("bitVuelos.activar");
+            btnSalir.Text = IdiomaManager_GV42.T("general.salir");
 
-            dgv = new DataGridView { Dock = DockStyle.Fill };
-            Tema_GV42.EstilizarGrilla(dgv);
-            dgv.AutoGenerateColumns = false;
-            dgv.Columns.Add(new DataGridViewTextBoxColumn { DataPropertyName = "CodigoVuelo", HeaderText = "Cod. vuelo", FillWeight = 70 });
-            dgv.Columns.Add(new DataGridViewTextBoxColumn { DataPropertyName = "Fecha", HeaderText = "Fecha", FillWeight = 70, DefaultCellStyle = new DataGridViewCellStyle { Format = "dd/MM/yyyy" } });
-            dgv.Columns.Add(new DataGridViewTextBoxColumn { DataPropertyName = "Hora", HeaderText = "Hora", FillWeight = 45 });
-            dgv.Columns.Add(new DataGridViewTextBoxColumn { DataPropertyName = "Nombre", HeaderText = "Nombre", FillWeight = 75 });
-            dgv.Columns.Add(new DataGridViewTextBoxColumn { DataPropertyName = "Descripcion", HeaderText = "Desc.", FillWeight = 260 });
-            dgv.Columns.Add(new DataGridViewTextBoxColumn { DataPropertyName = "Act", HeaderText = "Act.", FillWeight = 35, DefaultCellStyle = new DataGridViewCellStyle { Alignment = DataGridViewContentAlignment.MiddleCenter } });
-            dgv.CellFormatting += dgv_CellFormatting;
+            colCodigoVuelo.HeaderText = IdiomaManager_GV42.T("bitVuelos.codigo");
+            colFecha.HeaderText = IdiomaManager_GV42.T("bitVuelos.colFecha");
+            colHora.HeaderText = IdiomaManager_GV42.T("bitVuelos.colHora");
+            colNombre.HeaderText = IdiomaManager_GV42.T("bitVuelos.colNombre");
+            colDescripcion.HeaderText = IdiomaManager_GV42.T("bitVuelos.colDescripcion");
+            colAct.HeaderText = IdiomaManager_GV42.T("bitVuelos.colAct");
+            dgvCambios.Invalidate();
 
-            // ---- Filtros
-            int y = 10;
-            var lblCod = Tema_GV42.CrearLabel("Cod. vuelo");
-            lblCod.Location = new Point(0, y);
-            cmbCodigo = new ComboBox { DropDownStyle = ComboBoxStyle.DropDownList, Location = new Point(0, y + 20), Size = new Size(150, 24) };
-
-            var lblNom = Tema_GV42.CrearLabel("Nombre (ruta)");
-            lblNom.Location = new Point(170, y);
-            cmbNombre = new ComboBox { DropDownStyle = ComboBoxStyle.DropDownList, Location = new Point(170, y + 20), Size = new Size(180, 24) };
-
-            var lblIni = Tema_GV42.CrearLabel("Fecha ini.");
-            lblIni.Location = new Point(370, y);
-            dtIni = new DateTimePicker { Location = new Point(370, y + 20), Size = new Size(130, 24), Format = DateTimePickerFormat.Short, ShowCheckBox = true, Checked = false };
-
-            var lblFin = Tema_GV42.CrearLabel("Fecha fin");
-            lblFin.Location = new Point(520, y);
-            dtFin = new DateTimePicker { Location = new Point(520, y + 20), Size = new Size(130, 24), Format = DateTimePickerFormat.Short, ShowCheckBox = true, Checked = false };
-
-            // ---- Botones
-            int yb = 70;
-            btnAplicar = CrearBoton("APLICAR", 0, yb, true);
-            btnAplicar.Click += (s, e) => Aplicar();
-
-            btnLimpiar = CrearBoton("LIMPIAR", 140, yb, false);
-            btnLimpiar.Click += (s, e) => Limpiar();
-
-            btnActivar = CrearBoton("ACTIVAR", 280, yb, false);
-            btnActivar.Click += btnActivar_Click;
-            btnActivar.Visible = _bll.PuedeActivar();
-
-            btnSalir = CrearBoton("SALIR", 420, yb, false);
-            btnSalir.Click += (s, e) => Close();
-
-            pnlAbajo.Controls.AddRange(new Control[] {
-                lblCod, cmbCodigo, lblNom, cmbNombre, lblIni, dtIni, lblFin, dtFin,
-                btnAplicar, btnLimpiar, btnActivar, btnSalir
-            });
-
-            // Orden de acoplamiento: Fill primero, después Bottom y Top.
-            card.Controls.Add(dgv);
-            card.Controls.Add(pnlAbajo);
-            card.Controls.Add(pnlArriba);
+            // El primer ítem de cada combo es "(Todos)": se traduce sin perder lo elegido.
+            TraducirOpcionTodos(cmbCodigo);
+            TraducirOpcionTodos(cmbNombre);
         }
 
-        private Button CrearBoton(string texto, int x, int y, bool primario)
+        private static void TraducirOpcionTodos(ComboBox combo)
         {
-            var b = new Button { Text = texto, Location = new Point(x, y), Size = new Size(130, 34) };
-            if (primario) Tema_GV42.EstilizarBotonPrimario(b); else Tema_GV42.EstilizarBotonSecundario(b);
-            return b;
+            if (combo.Items.Count == 0) return;
+            int seleccionado = combo.SelectedIndex;
+            combo.Items[0] = IdiomaManager_GV42.T("bitVuelos.todos");
+            combo.SelectedIndex = seleccionado;
         }
 
-        // El registro activo (Act = 1) se resalta; los demás son el historial.
-        private void dgv_CellFormatting(object sender, DataGridViewCellFormattingEventArgs e)
-        {
-            if (e.RowIndex < 0) return;
-            var fila = dgv.Rows[e.RowIndex].DataBoundItem as FilaCambio;
-            if (fila != null && fila.Act == 1)
-            {
-                e.CellStyle.BackColor = Color.FromArgb(232, 245, 233);
-                e.CellStyle.Font = new Font("Segoe UI", 9F, FontStyle.Bold);
-            }
-        }
+        #endregion
+
+        #region Carga de datos
 
         private void CargarCombos()
         {
             try
             {
-                string codSel = cmbCodigo.SelectedItem as string;
-                string nomSel = cmbNombre.SelectedItem as string;
+                // El índice 0 es siempre "(Todos)"; se recuerda lo elegido para volver a seleccionarlo.
+                string codSel = cmbCodigo.SelectedIndex > 0 ? cmbCodigo.SelectedItem as string : null;
+                string nomSel = cmbNombre.SelectedIndex > 0 ? cmbNombre.SelectedItem as string : null;
 
                 cmbCodigo.Items.Clear();
-                cmbCodigo.Items.Add(TODOS);
+                cmbCodigo.Items.Add(IdiomaManager_GV42.T("bitVuelos.todos"));
+                cmbCodigo.SelectedIndex = 0;
                 foreach (string c in _bll.ListarCodigos()) cmbCodigo.Items.Add(c);
-                cmbCodigo.SelectedItem = codSel != null && cmbCodigo.Items.Contains(codSel) ? codSel : TODOS;
+                int iCod = codSel != null ? cmbCodigo.Items.IndexOf(codSel) : -1;
+                cmbCodigo.SelectedIndex = iCod > 0 ? iCod : 0;
 
                 cmbNombre.Items.Clear();
-                cmbNombre.Items.Add(TODOS);
+                cmbNombre.Items.Add(IdiomaManager_GV42.T("bitVuelos.todos"));
+                cmbNombre.SelectedIndex = 0;
                 foreach (string n in _bll.ListarNombres()) cmbNombre.Items.Add(n);
-                cmbNombre.SelectedItem = nomSel != null && cmbNombre.Items.Contains(nomSel) ? nomSel : TODOS;
+                int iNom = nomSel != null ? cmbNombre.Items.IndexOf(nomSel) : -1;
+                cmbNombre.SelectedIndex = iNom > 0 ? iNom : 0;
             }
             catch (Exception ex)
             {
-                MessageBox.Show(ex.Message, "No se pudieron cargar los filtros", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                MessageBox.Show(ex.Message, IdiomaManager_GV42.T("bitVuelos.errorFiltros"), MessageBoxButtons.OK, MessageBoxIcon.Warning);
             }
         }
+
+        #endregion
+
+        #region Búsqueda
 
         private void Aplicar()
         {
@@ -188,17 +142,17 @@ namespace PROYECTO_ING_DE_SOFTWARE
                     Cambio = c
                 }).ToList();
 
-                dgv.DataSource = null;
-                dgv.DataSource = filas;
-                dgv.ClearSelection();
+                dgvCambios.DataSource = null;
+                dgvCambios.DataSource = filas;
+                dgvCambios.ClearSelection();
             }
             catch (NegocioException_GV42 ex)
             {
-                MessageBox.Show(ex.Message, "Revisá los datos", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                MessageBox.Show(ex.Message, IdiomaManager_GV42.T("general.revisarDatos"), MessageBoxButtons.OK, MessageBoxIcon.Warning);
             }
             catch (Exception ex)
             {
-                MessageBox.Show(ex.Message, "No se pudo consultar la bitácora", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show(ex.Message, IdiomaManager_GV42.T("bitVuelos.errorConsultar"), MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
 
@@ -211,42 +165,93 @@ namespace PROYECTO_ING_DE_SOFTWARE
             Aplicar();
         }
 
+        #endregion
+
+        #region Eventos
+
+        // El registro activo (Act = 1) se resalta; los demás son el historial.
+        private void dgvCambios_CellFormatting(object sender, DataGridViewCellFormattingEventArgs e)
+        {
+            if (e.RowIndex < 0) return;
+            var fila = dgvCambios.Rows[e.RowIndex].DataBoundItem as FilaCambio;
+            if (fila != null && fila.Act == 1)
+            {
+                e.CellStyle.BackColor = _fondoActivo;
+                e.CellStyle.Font = _fuenteActivo;
+            }
+        }
+
+        private void btnAplicar_Click(object sender, EventArgs e)
+        {
+            Aplicar();
+        }
+
+        private void btnLimpiar_Click(object sender, EventArgs e)
+        {
+            Limpiar();
+        }
+
+        private void btnSalir_Click(object sender, EventArgs e)
+        {
+            Close();
+        }
+
         private void btnActivar_Click(object sender, EventArgs e)
         {
-            if (dgv.SelectedRows.Count == 0)
+            if (dgvCambios.SelectedRows.Count == 0)
             {
-                MessageBox.Show("Seleccioná el registro que querés activar.", "Activar", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                MessageBox.Show(IdiomaManager_GV42.T("bitVuelos.seleccione"), IdiomaManager_GV42.T("bitVuelos.activar"),
+                                MessageBoxButtons.OK, MessageBoxIcon.Information);
                 return;
             }
 
-            VueloCambio_GV42 sel = ((FilaCambio)dgv.SelectedRows[0].DataBoundItem).Cambio;
+            VueloCambio_GV42 sel = ((FilaCambio)dgvCambios.SelectedRows[0].DataBoundItem).Cambio;
             if (sel.Act)
             {
-                MessageBox.Show("Ese registro ya es el activo del vuelo " + sel.CodigoVuelo + ".", "Activar", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                MessageBox.Show(IdiomaManager_GV42.T("bitVuelos.yaActivo", sel.CodigoVuelo), IdiomaManager_GV42.T("bitVuelos.activar"),
+                                MessageBoxButtons.OK, MessageBoxIcon.Information);
                 return;
             }
 
-            string mensaje = "¿Activar el registro del " + sel.Fecha.ToString("dd/MM/yyyy") + " " + sel.Hora.ToString(@"hh\:mm") +
-                             " del vuelo " + sel.CodigoVuelo + "?\n\n" + sel.Descripcion +
-                             "\n\nLa tabla de vuelos va a quedar con esos datos y el registro activo actual dejará de serlo.";
-            if (MessageBox.Show(mensaje, "Confirmar activación", MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes)
+            string mensaje = IdiomaManager_GV42.T("bitVuelos.confirmarActivar",
+                sel.Fecha.ToString("dd/MM/yyyy"), sel.Hora.ToString(@"hh\:mm"), sel.CodigoVuelo, sel.Descripcion);
+            if (MessageBox.Show(mensaje, IdiomaManager_GV42.T("bitVuelos.confirmarActivarTitulo"),
+                                MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes)
                 return;
 
             try
             {
                 _bll.ActivarVersion(sel);
-                MessageBox.Show("Registro activado.", "Listo", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                MessageBox.Show(IdiomaManager_GV42.T("bitVuelos.activado"), IdiomaManager_GV42.T("bitVuelos.listo"),
+                                MessageBoxButtons.OK, MessageBoxIcon.Information);
                 CargarCombos();
                 Aplicar();
             }
             catch (NegocioException_GV42 ex)
             {
-                MessageBox.Show(ex.Message, "No se pudo activar", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                MessageBox.Show(ex.Message, IdiomaManager_GV42.T("bitVuelos.errorActivar"), MessageBoxButtons.OK, MessageBoxIcon.Warning);
             }
             catch (Exception ex)
             {
-                MessageBox.Show(ex.Message, "No se pudo activar", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show(ex.Message, IdiomaManager_GV42.T("bitVuelos.errorActivar"), MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
+
+        #endregion
+
+        #region Tipos anidados
+
+        private class FilaCambio
+        {
+            public string CodigoVuelo { get; set; }
+            public DateTime Fecha { get; set; }
+            public string Hora { get; set; }
+            public string Nombre { get; set; }
+            public string Descripcion { get; set; }
+            public int Act { get; set; }
+            public VueloCambio_GV42 Cambio { get; set; }
+        }
+
+        #endregion
     }
 }

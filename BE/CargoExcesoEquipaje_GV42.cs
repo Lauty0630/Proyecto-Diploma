@@ -4,6 +4,8 @@ namespace BE
 {
     public class CargoExcesoEquipaje_GV42
     {
+        #region Propiedades
+
         public decimal KilosExceso { get; set; }
         public decimal CostoPorKilo { get; set; }
         public decimal ImporteCargo { get; set; }
@@ -14,5 +16,7 @@ namespace BE
         public DateTime? FechaHoraCobro { get; set; }
 
         public bool TieneExceso { get { return KilosExceso > 0; } }
+
+        #endregion
     }
 }

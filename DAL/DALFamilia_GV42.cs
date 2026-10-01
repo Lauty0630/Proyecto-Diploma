@@ -10,14 +10,24 @@ namespace DAL
 
     public class DALFamilia_GV42
     {
+        #region Campos
+
         private readonly Acceso _acceso;
         private readonly DALPatente_GV42 _dalPatente;
+
+        #endregion
+
+        #region Constructor
 
         public DALFamilia_GV42()
         {
             _acceso = Acceso.Instancia;
             _dalPatente = new DALPatente_GV42();
         }
+
+        #endregion
+
+        #region Métodos públicos
 
         public List<Familia_GV42> ListarTodasPlanas()
         {
@@ -41,49 +51,6 @@ namespace DAL
             return ObtenerArbolRec(idFamilia, new HashSet<int>());
         }
 
-        private Familia_GV42 ObtenerArbolRec(int idFamilia, HashSet<int> visitadas)
-        {
-            if (!visitadas.Add(idFamilia)) return null;
-
-            string qFam = "SELECT Id, Nombre FROM Familia WHERE Id = @Id";
-            SqlParameter[] pFam = { new SqlParameter("@Id", idFamilia) };
-            DataTable dtFam = _acceso.leer(qFam, pFam);
-            if (dtFam.Rows.Count == 0) return null;
-
-            var familia = new Familia_GV42
-            {
-                Id = Convert.ToInt32(dtFam.Rows[0]["Id"]),
-                Nombre = dtFam.Rows[0]["Nombre"].ToString()
-            };
-
-            string qPat =
-                "SELECT P.Id, P.Nombre, P.DataKey " +
-                "FROM FamiliaPatente FP " +
-                "INNER JOIN Patente P ON P.Id = FP.IdPatente " +
-                "WHERE FP.IdFamilia = @Id";
-            DataTable dtPat = _acceso.leer(qPat, new[] { new SqlParameter("@Id", idFamilia) });
-            foreach (DataRow row in dtPat.Rows)
-            {
-                familia.Hijos.Add(new Patente_GV42
-                {
-                    Id = Convert.ToInt32(row["Id"]),
-                    Nombre = row["Nombre"].ToString(),
-                    DataKey = row["DataKey"].ToString()
-                });
-            }
-
-            string qSub = "SELECT IdFamiliaHija FROM FamiliaIntegrada WHERE IdFamiliaPadre = @Id";
-            DataTable dtSub = _acceso.leer(qSub, new[] { new SqlParameter("@Id", idFamilia) });
-            foreach (DataRow row in dtSub.Rows)
-            {
-                int idHija = Convert.ToInt32(row["IdFamiliaHija"]);
-                Familia_GV42 hija = ObtenerArbolRec(idHija, visitadas);
-                if (hija != null) familia.Hijos.Add(hija);
-            }
-
-            return familia;
-        }
-
         public int Crear(string nombre, List<int> idsPatentes, List<int> idsSubfamilias)
         {
             return _acceso.EjecutarEnTransaccion(tx =>
@@ -98,17 +65,6 @@ namespace DAL
                 InsertarHijos(tx, idFamilia, idsPatentes, idsSubfamilias);
                 return idFamilia;
             });
-        }
-
-        private void InsertarHijos(SqlTransaction tx, int idFamilia, List<int> idsPatentes, List<int> idsSubfamilias)
-        {
-            foreach (int idPat in idsPatentes ?? new List<int>())
-                _acceso.escribir(tx, "INSERT INTO FamiliaPatente (IdFamilia, IdPatente) VALUES (@F, @P)",
-                    new[] { new SqlParameter("@F", idFamilia), new SqlParameter("@P", idPat) });
-
-            foreach (int idSub in idsSubfamilias ?? new List<int>())
-                _acceso.escribir(tx, "INSERT INTO FamiliaIntegrada (IdFamiliaPadre, IdFamiliaHija) VALUES (@P, @H)",
-                    new[] { new SqlParameter("@P", idFamilia), new SqlParameter("@H", idSub) });
         }
 
         public void Eliminar(int idFamilia)
@@ -180,5 +136,65 @@ namespace DAL
             DataTable dt = _acceso.leer(q, new[] { new SqlParameter("@Id", idFamilia) });
             return dt.Rows.Cast<DataRow>().Select(r => Convert.ToInt32(r["IdFamiliaHija"])).ToList();
         }
+
+        #endregion
+
+        #region Métodos privados
+
+        private Familia_GV42 ObtenerArbolRec(int idFamilia, HashSet<int> visitadas)
+        {
+            if (!visitadas.Add(idFamilia)) return null;
+
+            string qFam = "SELECT Id, Nombre FROM Familia WHERE Id = @Id";
+            SqlParameter[] pFam = { new SqlParameter("@Id", idFamilia) };
+            DataTable dtFam = _acceso.leer(qFam, pFam);
+            if (dtFam.Rows.Count == 0) return null;
+
+            var familia = new Familia_GV42
+            {
+                Id = Convert.ToInt32(dtFam.Rows[0]["Id"]),
+                Nombre = dtFam.Rows[0]["Nombre"].ToString()
+            };
+
+            string qPat =
+                "SELECT P.Id, P.Nombre, P.DataKey " +
+                "FROM FamiliaPatente FP " +
+                "INNER JOIN Patente P ON P.Id = FP.IdPatente " +
+                "WHERE FP.IdFamilia = @Id";
+            DataTable dtPat = _acceso.leer(qPat, new[] { new SqlParameter("@Id", idFamilia) });
+            foreach (DataRow row in dtPat.Rows)
+            {
+                familia.Hijos.Add(new Patente_GV42
+                {
+                    Id = Convert.ToInt32(row["Id"]),
+                    Nombre = row["Nombre"].ToString(),
+                    DataKey = row["DataKey"].ToString()
+                });
+            }
+
+            string qSub = "SELECT IdFamiliaHija FROM FamiliaIntegrada WHERE IdFamiliaPadre = @Id";
+            DataTable dtSub = _acceso.leer(qSub, new[] { new SqlParameter("@Id", idFamilia) });
+            foreach (DataRow row in dtSub.Rows)
+            {
+                int idHija = Convert.ToInt32(row["IdFamiliaHija"]);
+                Familia_GV42 hija = ObtenerArbolRec(idHija, visitadas);
+                if (hija != null) familia.Hijos.Add(hija);
+            }
+
+            return familia;
+        }
+
+        private void InsertarHijos(SqlTransaction tx, int idFamilia, List<int> idsPatentes, List<int> idsSubfamilias)
+        {
+            foreach (int idPat in idsPatentes ?? new List<int>())
+                _acceso.escribir(tx, "INSERT INTO FamiliaPatente (IdFamilia, IdPatente) VALUES (@F, @P)",
+                    new[] { new SqlParameter("@F", idFamilia), new SqlParameter("@P", idPat) });
+
+            foreach (int idSub in idsSubfamilias ?? new List<int>())
+                _acceso.escribir(tx, "INSERT INTO FamiliaIntegrada (IdFamiliaPadre, IdFamiliaHija) VALUES (@P, @H)",
+                    new[] { new SqlParameter("@P", idFamilia), new SqlParameter("@H", idSub) });
+        }
+
+        #endregion
     }
 }

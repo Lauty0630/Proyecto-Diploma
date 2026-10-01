@@ -9,6 +9,8 @@ namespace DAL
 {
     public class DALIntegridad_GV42
     {
+        #region Campos
+
         private readonly Acceso _acceso;
 
         public static readonly string[] TABLAS_PROTEGIDAS = {
@@ -20,32 +22,150 @@ namespace DAL
             "Reserva", "Pago"
         };
 
-        public static bool IntegridadConocidamenteRota { get; set; }
+        #endregion
+
+        #region Constructor
 
         public DALIntegridad_GV42()
         {
             _acceso = Acceso.Instancia;
         }
 
+        #endregion
+
+        #region Propiedades
+
+        public static bool IntegridadConocidamenteRota { get; set; }
+
+        #endregion
+
+        #region Métodos públicos
+
         public Dictionary<string, string> CalcularDVHsTabla(string nombreTabla)
         {
             switch (nombreTabla)
             {
-                case "Usuario":          return DVHsUsuario();
-                case "Roles":            return DVHsRoles();
-                case "Familia":          return DVHsFamilia();
-                case "Patente":          return DVHsPatente();
-                case "FamiliaPatente":   return DVHsFamiliaPatente();
+                case "Usuario": return DVHsUsuario();
+                case "Roles": return DVHsRoles();
+                case "Familia": return DVHsFamilia();
+                case "Patente": return DVHsPatente();
+                case "FamiliaPatente": return DVHsFamiliaPatente();
                 case "FamiliaIntegrada": return DVHsFamiliaIntegrada();
-                case "RolPatente":       return DVHsRolPatente();
-                case "RolFamilia":       return DVHsRolFamilia();
-                case "Modulo":           return DVHsModulo();
-                case "TipoEvento":       return DVHsTipoEvento();
-                case "Reserva":          return DVHsReserva();
-                case "Pago":             return DVHsPago();
+                case "RolPatente": return DVHsRolPatente();
+                case "RolFamilia": return DVHsRolFamilia();
+                case "Modulo": return DVHsModulo();
+                case "TipoEvento": return DVHsTipoEvento();
+                case "Reserva": return DVHsReserva();
+                case "Pago": return DVHsPago();
                 default: throw new Exception("Tabla protegida desconocida: " + nombreTabla);
             }
         }
+
+        public Dictionary<string, string> ObtenerDVHsAlmacenados(string nombreTabla)
+        {
+            string q = "SELECT IdRegistro, DVH FROM IntegridadDVH WHERE NombreTabla = @T";
+            DataTable dt = _acceso.leer(q, new[] { new SqlParameter("@T", nombreTabla) });
+            var dict = new Dictionary<string, string>();
+            foreach (DataRow r in dt.Rows)
+                dict[r["IdRegistro"].ToString()] = r["DVH"].ToString();
+            return dict;
+        }
+
+        public string ObtenerDVVAlmacenado(string nombreTabla)
+        {
+            string q = "SELECT DVV FROM IntegridadDVV WHERE NombreTabla = @T";
+            object res = _acceso.leerEscalar(q, new[] { new SqlParameter("@T", nombreTabla) });
+            return (res == null || res == DBNull.Value) ? null : res.ToString();
+        }
+
+        public void RecalcularTabla(string nombreTabla)
+        {
+            Dictionary<string, string> dvhs = CalcularDVHsTabla(nombreTabla);
+            GuardarDVHs(nombreTabla, dvhs);
+            string dvv = CalculadorIntegridad_GV42.CalcularDVV(dvhs.Values);
+            GuardarDVV(nombreTabla, dvv);
+        }
+
+        public void GuardarDVHs(string nombreTabla, Dictionary<string, string> dvhs)
+        {
+            _acceso.escribir(
+                "DELETE FROM IntegridadDVH WHERE NombreTabla = @T",
+                new[] { new SqlParameter("@T", nombreTabla) });
+            foreach (var kv in dvhs)
+            {
+                _acceso.escribir(
+                    "INSERT INTO IntegridadDVH (NombreTabla, IdRegistro, DVH) VALUES (@T, @I, @D)",
+                    new[] {
+                        new SqlParameter("@T", nombreTabla),
+                        new SqlParameter("@I", kv.Key),
+                        new SqlParameter("@D", kv.Value)
+                    });
+            }
+        }
+
+        public void GuardarDVV(string nombreTabla, string dvv)
+        {
+            string existeQ = "SELECT COUNT(1) FROM IntegridadDVV WHERE NombreTabla = @T";
+            object res = _acceso.leerEscalar(existeQ, new[] { new SqlParameter("@T", nombreTabla) });
+            int existe = Convert.ToInt32(res);
+            if (existe > 0)
+            {
+                _acceso.escribir(
+                    "UPDATE IntegridadDVV SET DVV = @D, FechaCalculo = GETDATE() WHERE NombreTabla = @T",
+                    new[] { new SqlParameter("@D", dvv), new SqlParameter("@T", nombreTabla) });
+            }
+            else
+            {
+                _acceso.escribir(
+                    "INSERT INTO IntegridadDVV (NombreTabla, DVV) VALUES (@T, @D)",
+                    new[] { new SqlParameter("@T", nombreTabla), new SqlParameter("@D", dvv) });
+            }
+        }
+
+        public bool ExisteAlgunDVV()
+        {
+            object res = _acceso.leerEscalar("SELECT COUNT(1) FROM IntegridadDVV", null);
+            return Convert.ToInt32(res) > 0;
+        }
+
+        public void HacerBackupSQL(string connStringMaster, string nombreBd, string rutaArchivoBak)
+        {
+            using (var conn = new SqlConnection(connStringMaster))
+            {
+                conn.Open();
+                using (var cmd = conn.CreateCommand())
+                {
+                    cmd.CommandText =
+                        $"BACKUP DATABASE [{nombreBd}] TO DISK = @ruta WITH INIT, FORMAT, NAME = N'Backup automatico';";
+                    cmd.Parameters.AddWithValue("@ruta", rutaArchivoBak);
+                    cmd.CommandTimeout = 120;
+                    cmd.ExecuteNonQuery();
+                }
+            }
+        }
+
+        public void RestaurarBackupSQL(string connStringMaster, string nombreBd, string rutaArchivoBak)
+        {
+            SqlConnection.ClearAllPools();
+            using (var conn = new SqlConnection(connStringMaster))
+            {
+                conn.Open();
+                string sql =
+                    $"ALTER DATABASE [{nombreBd}] SET SINGLE_USER WITH ROLLBACK IMMEDIATE; " +
+                    $"RESTORE DATABASE [{nombreBd}] FROM DISK = @ruta WITH REPLACE; " +
+                    $"ALTER DATABASE [{nombreBd}] SET MULTI_USER;";
+                using (var cmd = new SqlCommand(sql, conn))
+                {
+                    cmd.Parameters.AddWithValue("@ruta", rutaArchivoBak);
+                    cmd.CommandTimeout = 120;
+                    cmd.ExecuteNonQuery();
+                }
+            }
+        }
+
+        #endregion
+
+        #region Métodos privados
 
         private Dictionary<string, string> DVHsModulo()
         {
@@ -212,106 +332,6 @@ namespace DAL
             return dict;
         }
 
-        public Dictionary<string, string> ObtenerDVHsAlmacenados(string nombreTabla)
-        {
-            string q = "SELECT IdRegistro, DVH FROM IntegridadDVH WHERE NombreTabla = @T";
-            DataTable dt = _acceso.leer(q, new[] { new SqlParameter("@T", nombreTabla) });
-            var dict = new Dictionary<string, string>();
-            foreach (DataRow r in dt.Rows)
-                dict[r["IdRegistro"].ToString()] = r["DVH"].ToString();
-            return dict;
-        }
-
-        public string ObtenerDVVAlmacenado(string nombreTabla)
-        {
-            string q = "SELECT DVV FROM IntegridadDVV WHERE NombreTabla = @T";
-            object res = _acceso.leerEscalar(q, new[] { new SqlParameter("@T", nombreTabla) });
-            return (res == null || res == DBNull.Value) ? null : res.ToString();
-        }
-
-        public void RecalcularTabla(string nombreTabla)
-        {
-            Dictionary<string, string> dvhs = CalcularDVHsTabla(nombreTabla);
-            GuardarDVHs(nombreTabla, dvhs);
-            string dvv = CalculadorIntegridad_GV42.CalcularDVV(dvhs.Values);
-            GuardarDVV(nombreTabla, dvv);
-        }
-
-        public void GuardarDVHs(string nombreTabla, Dictionary<string, string> dvhs)
-        {
-            _acceso.escribir(
-                "DELETE FROM IntegridadDVH WHERE NombreTabla = @T",
-                new[] { new SqlParameter("@T", nombreTabla) });
-            foreach (var kv in dvhs)
-            {
-                _acceso.escribir(
-                    "INSERT INTO IntegridadDVH (NombreTabla, IdRegistro, DVH) VALUES (@T, @I, @D)",
-                    new[] {
-                        new SqlParameter("@T", nombreTabla),
-                        new SqlParameter("@I", kv.Key),
-                        new SqlParameter("@D", kv.Value)
-                    });
-            }
-        }
-
-        public void GuardarDVV(string nombreTabla, string dvv)
-        {
-            string existeQ = "SELECT COUNT(1) FROM IntegridadDVV WHERE NombreTabla = @T";
-            object res = _acceso.leerEscalar(existeQ, new[] { new SqlParameter("@T", nombreTabla) });
-            int existe = Convert.ToInt32(res);
-            if (existe > 0)
-            {
-                _acceso.escribir(
-                    "UPDATE IntegridadDVV SET DVV = @D, FechaCalculo = GETDATE() WHERE NombreTabla = @T",
-                    new[] { new SqlParameter("@D", dvv), new SqlParameter("@T", nombreTabla) });
-            }
-            else
-            {
-                _acceso.escribir(
-                    "INSERT INTO IntegridadDVV (NombreTabla, DVV) VALUES (@T, @D)",
-                    new[] { new SqlParameter("@T", nombreTabla), new SqlParameter("@D", dvv) });
-            }
-        }
-
-        public bool ExisteAlgunDVV()
-        {
-            object res = _acceso.leerEscalar("SELECT COUNT(1) FROM IntegridadDVV", null);
-            return Convert.ToInt32(res) > 0;
-        }
-
-        public void HacerBackupSQL(string connStringMaster, string nombreBd, string rutaArchivoBak)
-        {
-            using (var conn = new SqlConnection(connStringMaster))
-            {
-                conn.Open();
-                using (var cmd = conn.CreateCommand())
-                {
-                    cmd.CommandText =
-                        $"BACKUP DATABASE [{nombreBd}] TO DISK = @ruta WITH INIT, FORMAT, NAME = N'Backup automatico';";
-                    cmd.Parameters.AddWithValue("@ruta", rutaArchivoBak);
-                    cmd.CommandTimeout = 120;
-                    cmd.ExecuteNonQuery();
-                }
-            }
-        }
-
-        public void RestaurarBackupSQL(string connStringMaster, string nombreBd, string rutaArchivoBak)
-        {
-            SqlConnection.ClearAllPools();
-            using (var conn = new SqlConnection(connStringMaster))
-            {
-                conn.Open();
-                string sql =
-                    $"ALTER DATABASE [{nombreBd}] SET SINGLE_USER WITH ROLLBACK IMMEDIATE; " +
-                    $"RESTORE DATABASE [{nombreBd}] FROM DISK = @ruta WITH REPLACE; " +
-                    $"ALTER DATABASE [{nombreBd}] SET MULTI_USER;";
-                using (var cmd = new SqlCommand(sql, conn))
-                {
-                    cmd.Parameters.AddWithValue("@ruta", rutaArchivoBak);
-                    cmd.CommandTimeout = 120;
-                    cmd.ExecuteNonQuery();
-                }
-            }
-        }
+        #endregion
     }
 }

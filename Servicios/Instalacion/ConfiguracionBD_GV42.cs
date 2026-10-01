@@ -5,8 +5,14 @@ namespace Servicios.Instalacion
 {
     public static class ConfiguracionBD_GV42
     {
+        #region Campos
+
         private const string NOMBRE_ARCHIVO = "conexion.cfg";
-        private const string CARPETA_APP    = "GestionUsuarios";
+        private const string CARPETA_APP = "GestionUsuarios";
+
+        #endregion
+
+        #region Propiedades
 
         private static string CarpetaConfig
         {
@@ -31,6 +37,10 @@ namespace Servicios.Instalacion
                 return Path.Combine(dir, NOMBRE_ARCHIVO);
             }
         }
+
+        #endregion
+
+        #region Métodos públicos
 
         public static string LeerInstanciaGuardada()
         {
@@ -78,5 +88,7 @@ namespace Servicios.Instalacion
         {
             return $"Data Source={instancia};Initial Catalog=master;Integrated Security=True";
         }
+
+        #endregion
     }
 }
