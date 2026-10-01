@@ -55,6 +55,7 @@ namespace PROYECTO_ING_DE_SOFTWARE
             registrarPagoToolStripMenuItem.Text = IdiomaManager_GV42.T("menu.registrarPago");
             consultarReservasToolStripMenuItem.Text = IdiomaManager_GV42.T("menu.consultarReservas");
             misReservasToolStripMenuItem.Text = IdiomaManager_GV42.T("menu.misReservas");
+            checkInToolStripMenuItem.Text = IdiomaManager_GV42.T("menu.checkIn");
 
             vuelosToolStripMenuItem.Text = IdiomaManager_GV42.T("menu.vuelos");
             gestionVuelosToolStripMenuItem.Text = IdiomaManager_GV42.T("menu.gestionVuelos");
@@ -174,11 +175,15 @@ namespace PROYECTO_ING_DE_SOFTWARE
             bool puedeConsultarTodas = dataKeys.Contains("Reservas.Consultar");
             bool puedeConsultarPropias = dataKeys.Contains("Reservas.ConsultarPropia");
 
+            // Check-in (RFN 2): Encargado de Check-in en el mostrador o cliente autogestionado (online).
+            bool puedeHacerCheckIn = dataKeys.Contains(BLLCheckIn_GV42.PATENTE_MOSTRADOR) || dataKeys.Contains(BLLCheckIn_GV42.PATENTE_ONLINE);
+
             nuevaReservaToolStripMenuItem.Visible = puedeGenerarReserva;
             registrarPagoToolStripMenuItem.Visible = puedeRegistrarPago;
             consultarReservasToolStripMenuItem.Visible = puedeConsultarTodas;
             misReservasToolStripMenuItem.Visible = puedeConsultarPropias && !puedeConsultarTodas;
-            reservasToolStripMenuItem.Visible = puedeGenerarReserva || puedeRegistrarPago || puedeConsultarTodas || puedeConsultarPropias;
+            checkInToolStripMenuItem.Visible = puedeHacerCheckIn;
+            reservasToolStripMenuItem.Visible = puedeGenerarReserva || puedeRegistrarPago || puedeConsultarTodas || puedeConsultarPropias || puedeHacerCheckIn;
 
             bool puedeGestionarVuelos = dataKeys.Contains("Vuelos.Gestionar");
             bool puedeVerBitacoraVuelos = dataKeys.Contains("Vuelos.Bitacora");
@@ -301,6 +306,12 @@ namespace PROYECTO_ING_DE_SOFTWARE
         private void misReservasToolStripMenuItem_Click(object sender, EventArgs e)
         {
             AbrirFormularioHijo(new FRMConsultarReservas_GV42());
+        }
+
+        // Check-in (RFN 2): un solo formulario para el mostrador y el check-in online (ver FRMCheckIn_GV42).
+        private void checkInToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            AbrirFormularioHijo(new FRMCheckIn_GV42());
         }
 
         // Vuelos: gestión (modificar / baja lógica) y bitácora de cambios (tabla Vuelo_C).

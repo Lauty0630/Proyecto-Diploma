@@ -25,7 +25,7 @@ namespace DAL
 
         public List<TipoAdicional_GV42> ListarActivos()
         {
-            string query = "SELECT Id, Nombre, PrecioUnitario, MaxPorPasajero FROM TipoAdicional WHERE Activo = 1 ORDER BY Nombre";
+            string query = "SELECT Id, Nombre, PrecioUnitario, MaxPorPasajero, Codigo, SeleccionManual FROM TipoAdicional WHERE Activo = 1 ORDER BY Nombre";
             DataTable dt = _acceso.leer(query, null);
 
             var lista = new List<TipoAdicional_GV42>();
@@ -36,7 +36,9 @@ namespace DAL
                     Id = DALUtil_GV42.Int(r, "Id"),
                     Nombre = DALUtil_GV42.Str(r, "Nombre"),
                     PrecioUnitario = DALUtil_GV42.Dec(r, "PrecioUnitario"),
-                    MaxPorPasajero = System.Math.Max(1, DALUtil_GV42.Int(r, "MaxPorPasajero"))
+                    MaxPorPasajero = System.Math.Max(1, DALUtil_GV42.Int(r, "MaxPorPasajero")),
+                    Codigo = r["Codigo"] == System.DBNull.Value ? null : DALUtil_GV42.Str(r, "Codigo"),
+                    SeleccionManual = System.Convert.ToBoolean(r["SeleccionManual"])
                 });
             }
             return lista;

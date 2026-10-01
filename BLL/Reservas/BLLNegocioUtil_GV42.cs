@@ -74,6 +74,46 @@ namespace BLL
 
         #endregion
 
+        #region Tarjetas
+
+        private static readonly Random _generadorAutorizacion = new Random();
+
+        // Valida la tarjeta y devuelve el "número de transacción" que queda en el pago:
+        // "VISA **** 3704 AUT 123456" (marca, últimos 4 dígitos y código de autorización).
+        public static string AutorizarTarjeta(DatosTarjeta_GV42 tarjeta, MedioPago_GV42 medioPago)
+        {
+            if (tarjeta == null)
+                throw new NegocioException_GV42(IdiomaManager_GV42.T("neg.tarjeta.faltanDatos"));
+
+            string numero = Validaciones_GV42.SoloDigitos(tarjeta.Numero);
+            if (!Validaciones_GV42.EsNumeroTarjetaValido(tarjeta.Numero))
+                throw new NegocioException_GV42(Validaciones_GV42.MENSAJE_TARJETA);
+
+            string marca = Validaciones_GV42.MarcaTarjeta(numero);
+            if (medioPago == MedioPago_GV42.TarjetaDebito && marca == "American Express")
+                throw new NegocioException_GV42(IdiomaManager_GV42.T("neg.tarjeta.amexDebito"));
+
+            if (!Validaciones_GV42.EsTitularTarjetaValido(tarjeta.Titular))
+                throw new NegocioException_GV42(IdiomaManager_GV42.T("neg.tarjeta.titular"));
+
+            if (!Validaciones_GV42.EsVencimientoValido(tarjeta.MesVencimiento, tarjeta.AnioVencimiento, DateTime.Today))
+                throw new NegocioException_GV42(IdiomaManager_GV42.T("neg.tarjeta.vencida"));
+
+            if (!Validaciones_GV42.EsCodigoSeguridadValido(tarjeta.CodigoSeguridad, numero))
+                throw new NegocioException_GV42(marca == "American Express"
+                    ? IdiomaManager_GV42.T("neg.tarjeta.codigoAmex")
+                    : IdiomaManager_GV42.T("neg.tarjeta.codigo"));
+
+            int codigo;
+            lock (_generadorAutorizacion) codigo = _generadorAutorizacion.Next(100000, 1000000);
+            string resultado = marca.ToUpperInvariant() + " " + Validaciones_GV42.EnmascararTarjeta(numero) + " AUT " + codigo;
+            return resultado.Length <= Validaciones_GV42.MAX_NUMERO_TRANSACCION
+                ? resultado
+                : resultado.Substring(resultado.Length - Validaciones_GV42.MAX_NUMERO_TRANSACCION);
+        }
+
+        #endregion
+
         #region Formatos
 
         public static string Dinero(decimal importe)

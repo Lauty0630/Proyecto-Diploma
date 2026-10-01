@@ -21,7 +21,7 @@ namespace DAL
         private const string NOMBRE_SCRIPT_ACTUALIZACION = "ActualizacionBD.sql";
 
         // Subir este número cuando se agregue un bloque nuevo al final de ActualizacionBD.sql.
-        public const int VERSION_ACTUAL = 3;
+        public const int VERSION_ACTUAL = 4;
 
         // Tablas y columnas que necesita esta versión del sistema. Si falta alguna, la base es de
         // una versión muy anterior y no se puede actualizar conservando los datos.

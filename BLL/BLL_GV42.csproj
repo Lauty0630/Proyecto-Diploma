@@ -53,6 +53,10 @@
     <Compile Include="Pdf\GeneradorPdf_GV42.cs" />
     <Compile Include="Integridad\BLLIntegridad_GV42.cs" />
     <Compile Include="CheckIn\BLLCheckIn_GV42.cs" />
+    <Compile Include="CheckIn\BLLDocumentosCheckIn_GV42.cs" />
+    <Compile Include="CheckIn\DibujoDocumento_GV42.cs" />
+    <Compile Include="CheckIn\DisenioEtiquetaEquipaje_GV42.cs" />
+    <Compile Include="CheckIn\DisenioTarjetaEmbarque_GV42.cs" />
     <Compile Include="Reservas\BLLNegocioUtil_GV42.cs" />
     <Compile Include="Reservas\BLLReserva_GV42.cs" />
     <Compile Include="Reportes\BLLReporteReserva_GV42.cs" />

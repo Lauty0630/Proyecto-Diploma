@@ -134,6 +134,24 @@
       <DependentUpon>FRMPagoReserva_GV42.cs</DependentUpon>
     </Compile>
     <Compile Include="Controles\Tema_GV42.cs" />
+    <Compile Include="CheckIn\FRMTarjetaEmbarque_GV42.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="CheckIn\FRMTarjetaEmbarque_GV42.Designer.cs">
+      <DependentUpon>FRMTarjetaEmbarque_GV42.cs</DependentUpon>
+    </Compile>
+    <Compile Include="CheckIn\CtrlTarjetaEmbarque_GV42.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="CheckIn\CtrlEtiquetaEquipaje_GV42.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="CheckIn\FRMCheckIn_GV42.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="CheckIn\FRMCheckIn_GV42.Designer.cs">
+      <DependentUpon>FRMCheckIn_GV42.cs</DependentUpon>
+    </Compile>
     <Compile Include="Controles\BotonModerno_GV42.cs">
       <SubType>Component</SubType>
     </Compile>

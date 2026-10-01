@@ -33,6 +33,14 @@ namespace PROYECTO_ING_DE_SOFTWARE
         private readonly Label _lblSeleccion;
         private readonly Label _lblAsignado;
         private readonly Label _lblOcupado;
+        private readonly Label _lblPreferencial;
+
+        // Butacas preferenciales: fondo ámbar claro con borde ámbar.
+        private static readonly Color FondoPreferencial = Color.FromArgb(255, 243, 205);
+        private static readonly Color BordePreferencial = Color.FromArgb(230, 162, 0);
+
+        private bool _permitirPreferenciales = true;
+        private decimal _recargoPreferencial;
 
         #endregion
 
@@ -60,12 +68,34 @@ namespace PROYECTO_ING_DE_SOFTWARE
             _pnlReferencias.Controls.Add(CrearReferencia(Tema_GV42.Primario, Tema_GV42.Primario, out _lblSeleccion));
             _pnlReferencias.Controls.Add(CrearReferencia(Tema_GV42.AsignadoOtroPasajero, Tema_GV42.AsignadoOtroPasajero, out _lblAsignado));
             _pnlReferencias.Controls.Add(CrearReferencia(Tema_GV42.Ocupado, Tema_GV42.Ocupado, out _lblOcupado));
+            _pnlReferencias.Controls.Add(CrearReferencia(FondoPreferencial, BordePreferencial, out _lblPreferencial));
 
             _pnlGrilla = new Panel { Dock = DockStyle.Fill, AutoScroll = true, BackColor = Color.White };
 
             Controls.Add(_pnlGrilla);
             Controls.Add(_pnlReferencias);
             ActualizarIdioma();
+        }
+
+        #endregion
+
+        #region Propiedades
+
+        // false: las butacas preferenciales se ven pero no se pueden elegir (check-in de un pasajero que
+        // no pagó el recargo al reservar). Se aplica en el próximo CargarMapa.
+        [System.ComponentModel.DefaultValue(true)]
+        public bool PermitirPreferenciales
+        {
+            get { return _permitirPreferenciales; }
+            set { _permitirPreferenciales = value; }
+        }
+
+        // Recargo por butaca preferencial que se muestra en la leyenda (0 = no se muestra el importe).
+        [System.ComponentModel.DefaultValue(typeof(decimal), "0")]
+        public decimal RecargoPreferencial
+        {
+            get { return _recargoPreferencial; }
+            set { _recargoPreferencial = value; ActualizarIdioma(); }
         }
 
         #endregion
@@ -79,6 +109,10 @@ namespace PROYECTO_ING_DE_SOFTWARE
             _lblSeleccion.Text = IdiomaManager_GV42.TConDefecto("butacas.seleccion", "Tu selección");
             _lblAsignado.Text = IdiomaManager_GV42.TConDefecto("butacas.asignado", "Asignado (otro pasajero)");
             _lblOcupado.Text = IdiomaManager_GV42.TConDefecto("butacas.ocupado", "Ocupado");
+            string pref = IdiomaManager_GV42.TConDefecto("butacas.preferencial", "Preferencial");
+            if (_recargoPreferencial > 0)
+                pref += " (+$ " + _recargoPreferencial.ToString("N0", new System.Globalization.CultureInfo("es-AR")) + ")";
+            _lblPreferencial.Text = pref;
         }
 
         #endregion
@@ -201,11 +235,20 @@ namespace PROYECTO_ING_DE_SOFTWARE
                 b.FlatAppearance.BorderColor = Tema_GV42.AsignadoOtroPasajero;
                 b.Enabled = false;
             }
+            else if (ad.Asiento.EsPreferencial && !_permitirPreferenciales)
+            {
+                b.BackColor = Color.FromArgb(245, 240, 228);
+                b.ForeColor = Color.FromArgb(170, 150, 110);
+                b.FlatAppearance.BorderColor = Color.FromArgb(225, 210, 175);
+                b.Enabled = false;
+            }
             else
             {
-                b.BackColor = Color.White;
-                b.ForeColor = Tema_GV42.Primario;
-                b.FlatAppearance.BorderColor = Tema_GV42.Primario;
+                bool pref = ad.Asiento.EsPreferencial;
+                b.BackColor = pref ? FondoPreferencial : Color.White;
+                b.ForeColor = pref ? Color.FromArgb(140, 95, 0) : Tema_GV42.Primario;
+                b.FlatAppearance.BorderColor = pref ? BordePreferencial : Tema_GV42.Primario;
+                if (pref) b.FlatAppearance.BorderSize = 2;
                 b.Click += (s, e) => AsientoClickeado?.Invoke(this, (Asiento_GV42)((Button)s).Tag);
             }
 

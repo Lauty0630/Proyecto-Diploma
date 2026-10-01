@@ -19,6 +19,18 @@ namespace BE
         public DateTime? FechaHoraCheckIn { get; set; }
         public string LoginEncargado { get; set; }
 
+        // Presencial (mostrador) u Autogestion (check-in online del cliente). Null mientras está pendiente.
+        public CanalVenta_GV42? Canal { get; set; }
+
+        // DNI del titular de la reserva (para que el cliente solo opere sobre sus reservas).
+        public string DniTitular { get; set; }
+
+        // Tipo de viaje de la reserva (el equipaje extra comprado se reparte entre los tramos).
+        public TipoViaje_GV42 TipoViaje { get; set; }
+
+        public bool EsOnline { get { return Canal == CanalVenta_GV42.Autogestion; } }
+        public string CanalTexto { get { return Canal.HasValue ? Canal.Value.Texto() : string.Empty; } }
+
         public List<AdicionalReserva_GV42> ServiciosAdicionales { get; set; } = new List<AdicionalReserva_GV42>();
 
         public Asiento_GV42 Asiento { get; set; }

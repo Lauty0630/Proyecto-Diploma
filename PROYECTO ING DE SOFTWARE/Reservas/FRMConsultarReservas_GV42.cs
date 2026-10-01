@@ -13,6 +13,8 @@ namespace PROYECTO_ING_DE_SOFTWARE
     //    Solo ve el botón Cancelar si además tiene Reservas.Cancelar.
     //  - Pasajero (Reservas.ConsultarPropia): "Mis reservas", sin buscador; ve y cancela solo las suyas
     //    (Reservas.CancelarPropia).
+    // "Hacer check-in" (RFN 2) se ve solo con alguna patente de check-in (CheckIn.Realizar o
+    // CheckIn.RealizarPropio) y abre FRMCheckIn_GV42 con la reserva seleccionada.
     // El diseño está en FRMConsultarReservas_GV42.Designer.cs (Form Designer).
     public partial class FRMConsultarReservas_GV42 : Form, IObservadorIdioma_GV42
     {
@@ -21,6 +23,7 @@ namespace PROYECTO_ING_DE_SOFTWARE
         private readonly BLLReserva_GV42 _bll = new BLLReserva_GV42();
         private readonly bool _esVendedor;
         private readonly bool _puedeCancelar;
+        private readonly bool _puedeHacerCheckIn;
         private List<Reserva_GV42> _reservas = new List<Reserva_GV42>();
 
         #endregion
@@ -33,6 +36,8 @@ namespace PROYECTO_ING_DE_SOFTWARE
 
             _esVendedor = _bll.PuedeConsultarTodas();
             _puedeCancelar = _bll.PuedeCancelar();
+            var bllCheckIn = new BLLCheckIn_GV42();
+            _puedeHacerCheckIn = bllCheckIn.PuedeAtenderMostrador() || bllCheckIn.PuedeHacerCheckInOnline();
 
             dgvReservas.AutoGenerateColumns = false;
             ConfigurarSegunPermisos();
@@ -59,6 +64,9 @@ namespace PROYECTO_ING_DE_SOFTWARE
             lblAyudaAcciones.Text = IdiomaManager_GV42.T("consulta.ayudaAcciones");
             btnVerBoletos.Text = IdiomaManager_GV42.T("consulta.verBoletos");
             btnCancelar.Text = IdiomaManager_GV42.T(_esVendedor ? "consulta.cancelarSeleccionada" : "consulta.cancelarMia");
+            btnCheckIn.Text = IdiomaManager_GV42.T("consulta.hacerCheckIn");
+            toolTip.SetToolTip(btnCheckIn, IdiomaManager_GV42.T("consulta.ayudaCheckIn",
+                BLLCheckIn_GV42.HORAS_APERTURA_CHECKIN, BLLCheckIn_GV42.MINUTOS_CIERRE_CHECKIN));
 
             colReserva.HeaderText = IdiomaManager_GV42.T("consulta.colReserva");
             colDni.HeaderText = IdiomaManager_GV42.T("consulta.colDni");
@@ -86,6 +94,7 @@ namespace PROYECTO_ING_DE_SOFTWARE
             colDni.Visible = _esVendedor;
             colCliente.Visible = _esVendedor;
             btnCancelar.Visible = _puedeCancelar;
+            btnCheckIn.Visible = _puedeHacerCheckIn;
         }
 
         private void CargarReservas()
@@ -156,9 +165,29 @@ namespace PROYECTO_ING_DE_SOFTWARE
         {
             Reserva_GV42 sel = ObtenerSeleccionada();
             btnVerBoletos.Enabled = sel != null && sel.Estado == EstadoReserva_GV42.Confirmada;
+            btnCheckIn.Enabled = _puedeHacerCheckIn && sel != null && PuedeHacerCheckIn(sel);
             if (!_puedeCancelar) { btnCancelar.Visible = false; return; }
             btnCancelar.Enabled = sel != null && sel.Estado != EstadoReserva_GV42.Cancelada &&
                                   sel.VueloClase.FechaHoraSalida > DateTime.Now;
+        }
+
+        // Check-in: reserva confirmada y vuelo dentro de la ventana (desde 48 hs hasta 60 minutos antes
+        // de la salida). Se usan las mismas constantes que la BLL, que igual lo vuelve a validar.
+        private static bool PuedeHacerCheckIn(Reserva_GV42 r)
+        {
+            if (r.Estado != EstadoReserva_GV42.Confirmada) return false;
+            DateTime salida = r.VueloClase.FechaHoraSalida;
+            DateTime ahora = DateTime.Now;
+            return ahora >= salida.AddHours(-BLLCheckIn_GV42.HORAS_APERTURA_CHECKIN) &&
+                   ahora <= salida.AddMinutes(-BLLCheckIn_GV42.MINUTOS_CIERRE_CHECKIN);
+        }
+
+        // Si este formulario está embebido en el menú principal, el check-in se abre en el mismo panel.
+        private FRMMenuPrincipalAdmin MenuContenedor()
+        {
+            Control c = Parent;
+            while (c != null && !(c is FRMMenuPrincipalAdmin)) c = c.Parent;
+            return c as FRMMenuPrincipalAdmin;
         }
 
         #endregion
@@ -205,6 +234,20 @@ namespace PROYECTO_ING_DE_SOFTWARE
         {
             Reserva_GV42 sel = ObtenerSeleccionada();
             if (sel != null) FRMBoletos_GV42.Mostrar(this, sel.NumeroReserva);
+        }
+
+        private void btnCheckIn_Click(object sender, EventArgs e)
+        {
+            Reserva_GV42 sel = ObtenerSeleccionada();
+            if (sel == null || !PuedeHacerCheckIn(sel)) return;
+
+            var frmCheckIn = new FRMCheckIn_GV42(sel.NumeroReserva);
+            FRMMenuPrincipalAdmin menu = MenuContenedor();
+            if (menu != null)
+                // Se abre después de terminar este evento: el menú cierra este formulario al abrir el nuevo.
+                menu.BeginInvoke((Action)(() => menu.AbrirFormularioHijo(frmCheckIn)));
+            else
+                using (frmCheckIn) frmCheckIn.ShowDialog(this);
         }
 
         private void btnCancelar_Click(object sender, EventArgs e)

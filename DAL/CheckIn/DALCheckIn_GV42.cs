@@ -32,8 +32,8 @@ namespace DAL
         {
             string query =
                 "SELECT ISNULL(CI.Id, 0) AS IdCheckIn, ISNULL(CI.IdEstadoCheckIn, @Pendiente) AS IdEstadoCheckIn, " +
-                "       CI.FechaHoraCheckIn, CI.LoginEncargado, CI.IdAsiento, " +
-                "       R.Id AS IdReserva, R.NumeroReserva, R.IdEstadoReserva, " +
+                "       CI.FechaHoraCheckIn, CI.LoginEncargado, CI.IdAsiento, CI.IdCanal, " +
+                "       R.Id AS IdReserva, R.NumeroReserva, R.IdEstadoReserva, R.DniCliente, R.IdTipoViaje, " +
                 "       P.DNI AS PasDNI, P.Nombre AS PasNombre, P.Apellido AS PasApellido, " +
                 "       P.Email AS PasEmail, P.Telefono AS PasTelefono, " +
                 DALUtil_GV42.COLUMNAS_VUELO_CLASE + " " +
@@ -67,7 +67,10 @@ namespace DAL
                 EstadoReserva = (EstadoReserva_GV42)DALUtil_GV42.Int(r, "IdEstadoReserva"),
                 Estado = (EstadoCheckIn_GV42)DALUtil_GV42.Int(r, "IdEstadoCheckIn"),
                 FechaHoraCheckIn = DALUtil_GV42.FechaNull(r, "FechaHoraCheckIn"),
-                LoginEncargado = DALUtil_GV42.Str(r, "LoginEncargado")
+                LoginEncargado = DALUtil_GV42.Str(r, "LoginEncargado"),
+                Canal = r["IdCanal"] == DBNull.Value ? (CanalVenta_GV42?)null : (CanalVenta_GV42)DALUtil_GV42.Int(r, "IdCanal"),
+                DniTitular = DALUtil_GV42.Str(r, "DniCliente"),
+                TipoViaje = (TipoViaje_GV42)DALUtil_GV42.Int(r, "IdTipoViaje")
             };
 
             ci.ServiciosAdicionales = new DALReserva_GV42().ListarAdicionales(ci.IdReserva);
@@ -84,6 +87,18 @@ namespace DAL
             return ci;
         }
 
+        // DNI de todos los pasajeros de una reserva (para elegir a quién hacerle el check-in).
+        public System.Collections.Generic.List<string> ListarDnisPasajeros(string numeroReserva)
+        {
+            DataTable dt = _acceso.leer(
+                "SELECT RP.DniPasajero FROM ReservaPasajero RP INNER JOIN Reserva R ON R.Id = RP.IdReserva " +
+                "WHERE R.NumeroReserva = @Numero ORDER BY RP.DniPasajero",
+                new[] { new SqlParameter("@Numero", numeroReserva) });
+            var lista = new System.Collections.Generic.List<string>();
+            foreach (DataRow r in dt.Rows) lista.Add(DALUtil_GV42.Str(r, "DniPasajero"));
+            return lista;
+        }
+
         public CheckIn_GV42 BuscarPorId(int idCheckIn)
         {
             DataTable dt = _acceso.leer(
@@ -98,12 +113,13 @@ namespace DAL
         }
 
         // Cierra el check-in: estado Realizado, con fecha/hora y encargado.
-        public void MarcarRealizado(int idCheckIn, string loginEncargado)
+        public void MarcarRealizado(int idCheckIn, string loginEncargado, CanalVenta_GV42 canal)
         {
             int filas = _acceso.escribir(
-                "UPDATE CheckIn SET IdEstadoCheckIn = @Realizado, FechaHoraCheckIn = GETDATE(), LoginEncargado = @Login " +
+                "UPDATE CheckIn SET IdEstadoCheckIn = @Realizado, FechaHoraCheckIn = GETDATE(), LoginEncargado = @Login, IdCanal = @Canal " +
                 "WHERE Id = @Id AND IdEstadoCheckIn = @Pendiente",
                 new[] {
+                    new SqlParameter("@Canal",     (int)canal),
                     new SqlParameter("@Realizado", (int)EstadoCheckIn_GV42.Realizado),
                     new SqlParameter("@Pendiente", (int)EstadoCheckIn_GV42.Pendiente),
                     new SqlParameter("@Login",     loginEncargado),
@@ -111,7 +127,7 @@ namespace DAL
                 });
 
             if (filas == 0)
-                throw new NegocioException_GV42("El check-in no existe o ya fue realizado.");
+                throw new NegocioException_GV42(Servicios.IdiomaManager_GV42.T("neg.checkin.noExisteORealizado"));
         }
 
         #endregion

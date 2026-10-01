@@ -62,6 +62,7 @@
     <Compile Include="Pagos\DatosTarjeta_GV42.cs" />
     <Compile Include="Comunes\Enumeraciones_GV42.cs" />
     <Compile Include="CheckIn\Equipaje_GV42.cs" />
+    <Compile Include="CheckIn\FranquiciaEquipaje_GV42.cs" />
     <Compile Include="Comunes\NegocioException_GV42.cs" />
     <Compile Include="Pagos\Pago_GV42.cs" />
     <Compile Include="Personas\Pasajero_GV42.cs" />

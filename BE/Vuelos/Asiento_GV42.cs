@@ -16,6 +16,10 @@ namespace BE
         // Ventana / Central / Pasillo
         public string Ubicacion { get; set; }
 
+        // Butaca preferencial (primera fila de Económica y salidas de emergencia): elegirla al
+        // reservar suma automáticamente el adicional "Asiento preferencial" con su recargo.
+        public bool EsPreferencial { get; set; }
+
         public string ClaseTexto { get { return Clase.Texto(); } }
 
         #endregion

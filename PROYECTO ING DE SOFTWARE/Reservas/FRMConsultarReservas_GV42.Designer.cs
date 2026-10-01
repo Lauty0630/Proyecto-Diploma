@@ -28,6 +28,7 @@
         /// </summary>
         private void InitializeComponent()
         {
+            this.components = new System.ComponentModel.Container();
             System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle1 = new System.Windows.Forms.DataGridViewCellStyle();
             System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle2 = new System.Windows.Forms.DataGridViewCellStyle();
             this.pnlEncabezado = new PROYECTO_ING_DE_SOFTWARE.PanelEncabezado_GV42();
@@ -56,6 +57,8 @@
             this.lblAyudaAcciones = new System.Windows.Forms.Label();
             this.btnVerBoletos = new PROYECTO_ING_DE_SOFTWARE.BotonModerno_GV42();
             this.btnCancelar = new PROYECTO_ING_DE_SOFTWARE.BotonModerno_GV42();
+            this.btnCheckIn = new PROYECTO_ING_DE_SOFTWARE.BotonModerno_GV42();
+            this.toolTip = new System.Windows.Forms.ToolTip(this.components);
             this.pnlEncabezado.SuspendLayout();
             this.pnlContenido.SuspendLayout();
             this.pnlGrilla.SuspendLayout();
@@ -132,6 +135,7 @@
             // 
             // pnlAcciones
             // 
+            this.pnlAcciones.Controls.Add(this.btnCheckIn);
             this.pnlAcciones.Controls.Add(this.lblAyudaAcciones);
             this.pnlAcciones.Controls.Add(this.btnVerBoletos);
             this.pnlAcciones.Controls.Add(this.btnCancelar);
@@ -324,14 +328,14 @@
             // 
             // lblAyudaAcciones
             // 
-            this.lblAyudaAcciones.AutoSize = true;
             this.lblAyudaAcciones.Font = new System.Drawing.Font("Segoe UI", 8.75F, System.Drawing.FontStyle.Italic);
             this.lblAyudaAcciones.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(96)))), ((int)(((byte)(125)))), ((int)(((byte)(139)))));
-            this.lblAyudaAcciones.Location = new System.Drawing.Point(24, 28);
+            this.lblAyudaAcciones.Location = new System.Drawing.Point(24, 15);
             this.lblAyudaAcciones.Name = "lblAyudaAcciones";
-            this.lblAyudaAcciones.Size = new System.Drawing.Size(342, 15);
+            this.lblAyudaAcciones.Size = new System.Drawing.Size(330, 40);
             this.lblAyudaAcciones.TabIndex = 0;
             this.lblAyudaAcciones.Text = "Seleccioná una reserva para ver sus boletos o cancelarla.";
+            this.lblAyudaAcciones.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
             // 
             // btnVerBoletos
             // 
@@ -361,6 +365,22 @@
             this.btnCancelar.Text = "Cancelar reserva seleccionada";
             this.btnCancelar.UseVisualStyleBackColor = false;
             this.btnCancelar.Click += new System.EventHandler(this.btnCancelar_Click);
+            // 
+            // btnCheckIn
+            // 
+            this.btnCheckIn.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.btnCheckIn.Estilo = PROYECTO_ING_DE_SOFTWARE.EstiloBoton_GV42.Exito;
+            this.btnCheckIn.FlatAppearance.BorderSize = 0;
+            this.btnCheckIn.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.btnCheckIn.Font = new System.Drawing.Font("Segoe UI Semibold", 10F, System.Drawing.FontStyle.Bold);
+            this.btnCheckIn.Location = new System.Drawing.Point(368, 15);
+            this.btnCheckIn.Name = "btnCheckIn";
+            this.btnCheckIn.Size = new System.Drawing.Size(150, 40);
+            this.btnCheckIn.TabIndex = 3;
+            this.btnCheckIn.Text = "Hacer check-in";
+            this.toolTip.SetToolTip(this.btnCheckIn, "El check-in se habilita de 48 hs a 60 minutos antes de la salida (reservas confirmadas).");
+            this.btnCheckIn.UseVisualStyleBackColor = false;
+            this.btnCheckIn.Click += new System.EventHandler(this.btnCheckIn_Click);
             // 
             // FRMConsultarReservas_GV42
             // 
@@ -416,5 +436,7 @@
         private System.Windows.Forms.Label lblAyudaAcciones;
         private PROYECTO_ING_DE_SOFTWARE.BotonModerno_GV42 btnVerBoletos;
         private PROYECTO_ING_DE_SOFTWARE.BotonModerno_GV42 btnCancelar;
+        private PROYECTO_ING_DE_SOFTWARE.BotonModerno_GV42 btnCheckIn;
+        private System.Windows.Forms.ToolTip toolTip;
     }
 }

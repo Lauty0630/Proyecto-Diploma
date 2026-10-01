@@ -39,6 +39,7 @@
             this.registrarPagoToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.consultarReservasToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.misReservasToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.checkInToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.vuelosToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.gestionVuelosToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.bitacoraVuelosToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
@@ -146,7 +147,8 @@
             this.nuevaReservaToolStripMenuItem,
             this.registrarPagoToolStripMenuItem,
             this.consultarReservasToolStripMenuItem,
-            this.misReservasToolStripMenuItem});
+            this.misReservasToolStripMenuItem,
+            this.checkInToolStripMenuItem});
             this.reservasToolStripMenuItem.Name = "reservasToolStripMenuItem";
             this.reservasToolStripMenuItem.Padding = new System.Windows.Forms.Padding(8, 0, 8, 0);
             this.reservasToolStripMenuItem.Size = new System.Drawing.Size(84, 23);
@@ -183,6 +185,14 @@
             this.misReservasToolStripMenuItem.Size = new System.Drawing.Size(220, 26);
             this.misReservasToolStripMenuItem.Text = "Mis reservas";
             this.misReservasToolStripMenuItem.Click += new System.EventHandler(this.misReservasToolStripMenuItem_Click);
+            //
+            // checkInToolStripMenuItem
+            //
+            this.checkInToolStripMenuItem.Font = new System.Drawing.Font("Segoe UI", 10F);
+            this.checkInToolStripMenuItem.Name = "checkInToolStripMenuItem";
+            this.checkInToolStripMenuItem.Size = new System.Drawing.Size(220, 26);
+            this.checkInToolStripMenuItem.Text = "Check-in";
+            this.checkInToolStripMenuItem.Click += new System.EventHandler(this.checkInToolStripMenuItem_Click);
             //
             // vuelosToolStripMenuItem
             //
@@ -533,6 +543,7 @@
         private System.Windows.Forms.ToolStripMenuItem registrarPagoToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem consultarReservasToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem misReservasToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem checkInToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem vuelosToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem gestionVuelosToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem bitacoraVuelosToolStripMenuItem;

@@ -647,3 +647,83 @@ BEGIN
     VALUES (3, N'Servicios adicionales con tope por pasajero; pago con tarjeta validado con Luhn');
 END
 GO
+
+/* =====================================================================================
+   VERSIÓN 4 - Check-in (RFN 2): butacas preferenciales, equipaje extra y check-in online
+   ===================================================================================== */
+
+/* ---------- 11) Butacas preferenciales ----------
+   Primera fila de clase Económica (más espacio) y filas de salida de emergencia (12 y 13).
+   Columna calculada: vale para los vuelos existentes y para los que se generen después. */
+IF COL_LENGTH('dbo.Asiento', 'EsPreferencial') IS NULL
+    ALTER TABLE dbo.Asiento ADD EsPreferencial AS
+        CAST(CASE WHEN IdClase = 1 AND Fila IN (7, 12, 13) THEN 1 ELSE 0 END AS BIT) PERSISTED;
+GO
+
+/* ---------- 12) Servicios adicionales con código y selección manual ----------
+   "Asiento preferencial" ya no se elige a mano en la reserva: el sistema lo agrega solo
+   (una unidad por butaca preferencial elegida) con el precio del catálogo.
+   "Equipaje extra" suma kilos a la franquicia del pasajero en el check-in. */
+IF COL_LENGTH('dbo.TipoAdicional', 'Codigo') IS NULL
+    ALTER TABLE dbo.TipoAdicional ADD Codigo NVARCHAR(30) NULL;
+IF COL_LENGTH('dbo.TipoAdicional', 'SeleccionManual') IS NULL
+    ALTER TABLE dbo.TipoAdicional ADD SeleccionManual BIT NOT NULL
+        CONSTRAINT DF_TipoAdicional_SeleccionManual DEFAULT (1);
+GO
+
+UPDATE dbo.TipoAdicional SET Codigo = N'EQUIPAJE_EXTRA'
+WHERE Nombre = N'Equipaje extra' AND Codigo IS NULL;
+UPDATE dbo.TipoAdicional SET Codigo = N'ASIENTO_PREFERENCIAL', SeleccionManual = 0
+WHERE Nombre = N'Asiento preferencial' AND (Codigo IS NULL OR SeleccionManual = 1);
+GO
+
+/* ---------- 13) Equipaje: unidades de equipaje extra usadas ----------
+   El equipaje extra se compra por reserva; cada pasajero, al despachar, usa las unidades que
+   necesita (hasta su tope) y las que sobran quedan para los demás pasajeros de la reserva. */
+IF COL_LENGTH('dbo.Equipaje', 'UnidadesExtra') IS NULL
+    ALTER TABLE dbo.Equipaje ADD UnidadesExtra INT NOT NULL
+        CONSTRAINT DF_Equipaje_UnidadesExtra DEFAULT (0)
+        CONSTRAINT CK_Equipaje_UnidadesExtra CHECK (UnidadesExtra >= 0);
+GO
+
+/* ---------- 14) Check-in: canal (1 = presencial en el mostrador, 2 = online del cliente) ---------- */
+IF COL_LENGTH('dbo.CheckIn', 'IdCanal') IS NULL
+    ALTER TABLE dbo.CheckIn ADD IdCanal INT NULL
+        CONSTRAINT CK_CheckIn_Canal CHECK (IdCanal IN (1, 2));
+GO
+
+/* ---------- 15) Patente "Check-in - Realizar (propio)" para el cliente autogestionado ---------- */
+IF NOT EXISTS (SELECT 1 FROM dbo.Patente WHERE DataKey = N'CheckIn.RealizarPropio')
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM dbo.Patente WHERE Id = 33)
+    BEGIN
+        SET IDENTITY_INSERT dbo.Patente ON;
+        INSERT INTO dbo.Patente (Id, Nombre, DataKey) VALUES (33, N'Check-in - Realizar (propio)', N'CheckIn.RealizarPropio');
+        SET IDENTITY_INSERT dbo.Patente OFF;
+    END
+    ELSE
+        INSERT INTO dbo.Patente (Nombre, DataKey) VALUES (N'Check-in - Realizar (propio)', N'CheckIn.RealizarPropio');
+END
+GO
+
+-- Se le da a todo rol que pueda generar sus propias reservas (cliente autogestionado).
+DECLARE @IdPropio INT = (SELECT Id FROM dbo.Patente WHERE DataKey = N'CheckIn.RealizarPropio');
+INSERT INTO dbo.RolPatente (IdRol, IdPatente)
+SELECT DISTINCT RP.IdRol, @IdPropio
+FROM dbo.RolPatente RP
+INNER JOIN dbo.Patente P ON P.Id = RP.IdPatente
+WHERE P.DataKey = N'Reservas.GenerarPropia'
+  AND NOT EXISTS (SELECT 1 FROM dbo.RolPatente X WHERE X.IdRol = RP.IdRol AND X.IdPatente = @IdPropio);
+GO
+
+IF NOT EXISTS (SELECT 1 FROM dbo.VersionBD_GV42 WHERE Version = 4)
+BEGIN
+    -- Las filas nuevas de Patente y RolPatente necesitan su dígito verificador: lo calcula el sistema.
+    INSERT INTO dbo.TareaPendiente_GV42 (Nombre)
+    SELECT X.T FROM (VALUES (N'RecalcularDV:Patente'), (N'RecalcularDV:RolPatente')) AS X(T)
+    WHERE NOT EXISTS (SELECT 1 FROM dbo.TareaPendiente_GV42 P WHERE P.Nombre = X.T);
+
+    INSERT INTO dbo.VersionBD_GV42 (Version, Descripcion)
+    VALUES (4, N'Check-in: butacas preferenciales, equipaje extra en la franquicia y check-in online');
+END
+GO

@@ -24,6 +24,9 @@ namespace PROYECTO_ING_DE_SOFTWARE
     {
         #region Campos
 
+        // Servicio "Asiento preferencial" del catálogo (precio del recargo por butaca preferencial).
+        private TipoAdicional_GV42 _servicioPreferencial;
+
         private readonly BLLReserva_GV42 _bll = new BLLReserva_GV42();
         private readonly bool _esVendedor;
 
@@ -526,6 +529,11 @@ namespace PROYECTO_ING_DE_SOFTWARE
             _mapaAsientos = _bll.ObtenerMapaAsientos(_vueloElegido.Vuelo.Id, _vueloElegido.Clase);
             _indicePasajeroActivo = 0;
 
+            // Butacas preferenciales: se pueden elegir y suman el recargo del catálogo.
+            _servicioPreferencial = _bll.ObtenerServicioAsientoPreferencial();
+            ctrlButacas.PermitirPreferenciales = _servicioPreferencial != null && _servicioPreferencial.PrecioUnitario > 0;
+            ctrlButacas.RecargoPreferencial = _servicioPreferencial != null ? _servicioPreferencial.PrecioUnitario : 0m;
+
             // Si mientras tanto otra reserva tomó un asiento que ya se había elegido acá, se libera
             // y se avisa (antes se seguía pintando como "tu selección" aunque estuviera ocupado).
             var ocupados = new HashSet<int>(_mapaAsientos.Where(m => m.Ocupado).Select(m => m.Asiento.Id));
@@ -556,6 +564,9 @@ namespace PROYECTO_ING_DE_SOFTWARE
         private void ActualizarEtiquetaPasajeroActivo()
         {
             lblPasajeroActual.Text = IdiomaManager_GV42.T("reservar.asientoPara", _indicePasajeroActivo + 1, Math.Max(1, _pasajeros.Count));
+            if (_asientoPorPasajero.TryGetValue(_indicePasajeroActivo, out Asiento_GV42 elegido) && elegido.EsPreferencial && _servicioPreferencial != null)
+                lblPasajeroActual.Text += "   ·   " + IdiomaManager_GV42.T("reservar.elegidoPreferencial",
+                    elegido.NumeroAsiento, _servicioPreferencial.PrecioUnitario.ToString("C2"));
         }
 
         private void CambiarPasajeroActivo(int delta)
@@ -667,6 +678,15 @@ namespace PROYECTO_ING_DE_SOFTWARE
                 adicionales.AppendLine(IdiomaManager_GV42.T("reservar.resumen.sinAdicionales"));
             foreach (var f in seleccionados)
                 adicionales.AppendLine(IdiomaManager_GV42.T("reservar.resumen.lineaAdicional", f.NombreTraducido, f.Cantidad));
+
+            // Recargo automático por butacas preferenciales (lo vuelve a calcular la BLL al confirmar).
+            int preferenciales = _asientoPorPasajero.Values.Count(x => x != null && x.EsPreferencial);
+            if (preferenciales > 0 && _servicioPreferencial != null)
+            {
+                if (seleccionados.Count == 0) adicionales.Clear();
+                adicionales.AppendLine(IdiomaManager_GV42.T("reservar.resumen.lineaPreferencial", preferenciales,
+                    (_servicioPreferencial.PrecioUnitario * preferenciales).ToString("C2")));
+            }
             lblResumenAdicionales.Text = adicionales.ToString();
 
             _resumenArmado = true;

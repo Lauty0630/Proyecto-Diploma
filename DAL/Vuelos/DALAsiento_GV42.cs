@@ -13,7 +13,7 @@ namespace DAL
         private readonly Acceso _acceso;
 
         private const string SELECT_BASE =
-            "SELECT A.Id, A.IdVuelo, A.NumeroAsiento, A.IdClase, A.Ubicacion FROM Asiento A";
+            "SELECT A.Id, A.IdVuelo, A.NumeroAsiento, A.IdClase, A.Ubicacion, A.EsPreferencial FROM Asiento A";
 
         #endregion
 
@@ -68,7 +68,7 @@ namespace DAL
         public List<AsientoDisponibilidad_GV42> ListarMapa(int idVuelo, ClaseVuelo_GV42 clase)
         {
             string query =
-                "SELECT A.Id, A.IdVuelo, A.Fila, A.Letra, A.NumeroAsiento, A.IdClase, A.Ubicacion, " +
+                "SELECT A.Id, A.IdVuelo, A.Fila, A.Letra, A.NumeroAsiento, A.IdClase, A.Ubicacion, A.EsPreferencial, " +
                 // Ocupado si lo eligió un pasajero al reservar o si quedó asignado en un check-in.
                 "       CASE WHEN EXISTS (SELECT 1 FROM ReservaPasajero RP WHERE RP.IdAsiento = A.Id) " +
                 "              OR EXISTS (SELECT 1 FROM CheckIn CI WHERE CI.IdAsiento = A.Id) THEN 1 ELSE 0 END AS Ocupado " +
@@ -104,10 +104,16 @@ namespace DAL
             return r != null && Convert.ToInt32(r) > 0;
         }
 
-        public bool EstaOcupado(int idAsiento)
+        // Ocupado por OTRO pasajero (en su reserva o en su check-in). Antes solo se miraba la tabla
+        // CheckIn y en el check-in se podía elegir un asiento que otro pasajero ya tenía reservado.
+        public bool EstaOcupadoPorOtro(int idAsiento, int idCheckIn)
         {
-            object r = _acceso.leerEscalar("SELECT COUNT(1) FROM CheckIn WHERE IdAsiento = @Id",
-                new[] { new SqlParameter("@Id", idAsiento) });
+            object r = _acceso.leerEscalar(
+                "SELECT (SELECT COUNT(1) FROM ReservaPasajero RP " +
+                "        WHERE RP.IdAsiento = @Id AND NOT EXISTS (SELECT 1 FROM CheckIn CI " +
+                "              WHERE CI.Id = @IdCheckIn AND CI.IdReserva = RP.IdReserva AND CI.DniPasajero = RP.DniPasajero)) " +
+                "     + (SELECT COUNT(1) FROM CheckIn WHERE IdAsiento = @Id AND Id <> @IdCheckIn)",
+                new[] { new SqlParameter("@Id", idAsiento), new SqlParameter("@IdCheckIn", idCheckIn) });
             return r != null && Convert.ToInt32(r) > 0;
         }
 
@@ -135,12 +141,12 @@ namespace DAL
             {
                 // El índice único filtrado UX_CheckIn_Asiento impide asignar el mismo asiento dos veces.
                 if (ex.Message.Contains("UX_CheckIn_Asiento") || ex.Message.Contains("UX_ReservaPasajero_Asiento"))
-                    throw new NegocioException_GV42("El asiento ya fue asignado a otro pasajero.", ex);
+                    throw new NegocioException_GV42(Servicios.IdiomaManager_GV42.T("neg.checkin.asientoTomado"), ex);
                 throw;
             }
 
             if (filas == 0)
-                throw new NegocioException_GV42("No se pudo asignar el asiento: el check-in no existe o ya fue realizado.");
+                throw new NegocioException_GV42(Servicios.IdiomaManager_GV42.T("neg.checkin.noSePudoAsignar"));
         }
 
         #endregion
@@ -155,7 +161,10 @@ namespace DAL
                 IdVuelo = DALUtil_GV42.Int(r, "IdVuelo"),
                 NumeroAsiento = DALUtil_GV42.Str(r, "NumeroAsiento"),
                 Clase = (ClaseVuelo_GV42)DALUtil_GV42.Int(r, "IdClase"),
-                Ubicacion = DALUtil_GV42.Str(r, "Ubicacion")
+                Ubicacion = DALUtil_GV42.Str(r, "Ubicacion"),
+                // Las consultas de otras clases que traen el asiento pueden no incluir la columna.
+                EsPreferencial = r.Table.Columns.Contains("EsPreferencial") && r["EsPreferencial"] != DBNull.Value
+                                 && Convert.ToBoolean(r["EsPreferencial"])
             };
         }
 

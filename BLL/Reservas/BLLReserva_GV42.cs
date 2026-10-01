@@ -47,7 +47,6 @@ namespace BLL
         private readonly DALAsiento_GV42 _dalAsiento;
         private readonly BLLIntegridad_GV42 _bllIntegridad;
 
-        private static readonly Random _generadorAutorizacion = new Random();
 
         #endregion
 
@@ -77,9 +76,17 @@ namespace BLL
             return _dalAeropuerto.ListarTodos();
         }
 
+        // Servicios que se eligen a mano en el paso "Adicionales". El recargo por butaca preferencial
+        // no aparece: lo agrega el sistema según las butacas elegidas.
         public List<TipoAdicional_GV42> ListarTiposAdicional()
         {
-            return _dalTipoAdicional.ListarActivos();
+            return _dalTipoAdicional.ListarActivos().Where(t => t.SeleccionManual).ToList();
+        }
+
+        // Servicio "Asiento preferencial" del catálogo (precio del recargo). Null si no está configurado.
+        public TipoAdicional_GV42 ObtenerServicioAsientoPreferencial()
+        {
+            return _dalTipoAdicional.ListarActivos().FirstOrDefault(t => t.EsAsientoPreferencial);
         }
 
         #endregion
@@ -376,6 +383,13 @@ namespace BLL
             }
 
             ValidarPasajerosParaReserva(borrador.Pasajeros);
+            // Los servicios automáticos (recargo por butaca preferencial) los calcula el sistema: se
+            // descarta lo que haya mandado la pantalla para ese tipo.
+            if (borrador.Adicionales != null)
+            {
+                var automaticos = new HashSet<int>(_dalTipoAdicional.ListarActivos().Where(t => !t.SeleccionManual).Select(t => t.Id));
+                borrador.Adicionales.RemoveAll(a => a == null || (a.TipoAdicional != null && automaticos.Contains(a.TipoAdicional.Id)));
+            }
             ValidarAdicionales(borrador.Adicionales, canal, borrador.CantidadPasajeros, borrador.TipoViaje);
 
             // El precio y la disponibilidad se toman siempre de la base, no de lo que traiga la pantalla.
@@ -388,6 +402,7 @@ namespace BLL
                 throw new NegocioException_GV42(IdiomaManager_GV42.T("neg.reserva.quedanAsientos", vc.AsientosDisponibles));
 
             ValidarAsientos(borrador, vc);
+            AgregarRecargoPreferencial(borrador);
 
             if (borrador.TipoViaje == TipoViaje_GV42.IdaYVuelta)
             {
@@ -461,6 +476,27 @@ namespace BLL
             var dniRepetido = asientos.GroupBy(a => a.DniPasajero).FirstOrDefault(g => g.Count() > 1);
             if (dniRepetido != null)
                 throw new NegocioException_GV42(IdiomaManager_GV42.T("neg.reserva.pasajeroVariosAsientos", dniRepetido.Key));
+        }
+
+        // Una unidad del servicio "Asiento preferencial" por cada butaca preferencial elegida, con el
+        // precio del catálogo (igual para vendedor y cliente). Si no hay butacas preferenciales, nada.
+        private void AgregarRecargoPreferencial(Reserva_GV42 borrador)
+        {
+            int cantidad = (borrador.AsientosPorPasajero ?? new List<AsientoPasajero_GV42>())
+                .Count(a => a.Asiento != null && a.Asiento.EsPreferencial);
+            if (cantidad == 0) return;
+
+            TipoAdicional_GV42 servicio = ObtenerServicioAsientoPreferencial();
+            if (servicio == null || servicio.PrecioUnitario <= 0)
+                throw new NegocioException_GV42(IdiomaManager_GV42.T("neg.reserva.preferencialSinPrecio"));
+
+            if (borrador.Adicionales == null) borrador.Adicionales = new List<AdicionalReserva_GV42>();
+            borrador.Adicionales.Add(new AdicionalReserva_GV42
+            {
+                TipoAdicional = servicio,
+                Cantidad = cantidad,
+                CostoUnitario = Math.Round(servicio.PrecioUnitario, 2)
+            });
         }
 
         // Pública para que la pantalla valide al pasar del paso "Pasajeros" (antes solo se controlaba
@@ -659,7 +695,7 @@ namespace BLL
             }
             else
             {
-                numeroTransaccion = AutorizarTarjeta(tarjeta, medioPago);
+                numeroTransaccion = BLLNegocioUtil_GV42.AutorizarTarjeta(tarjeta, medioPago);
             }
 
             var pago = new Pago_GV42
@@ -680,40 +716,6 @@ namespace BLL
                 reserva.NumeroReserva + " - " + medioPago.ToString() + " - " + BLLNegocioUtil_GV42.Dinero(registrado.ImporteTotalAbonado), "Media");
 
             return registrado;
-        }
-
-        // Valida la tarjeta y devuelve el "número de transacción" que queda en el pago:
-        // "VISA **** 3704 AUT 123456" (marca, últimos 4 dígitos y código de autorización).
-        private string AutorizarTarjeta(DatosTarjeta_GV42 tarjeta, MedioPago_GV42 medioPago)
-        {
-            if (tarjeta == null)
-                throw new NegocioException_GV42(IdiomaManager_GV42.T("neg.tarjeta.faltanDatos"));
-
-            string numero = Validaciones_GV42.SoloDigitos(tarjeta.Numero);
-            if (!Validaciones_GV42.EsNumeroTarjetaValido(tarjeta.Numero))
-                throw new NegocioException_GV42(Validaciones_GV42.MENSAJE_TARJETA);
-
-            string marca = Validaciones_GV42.MarcaTarjeta(numero);
-            if (medioPago == MedioPago_GV42.TarjetaDebito && marca == "American Express")
-                throw new NegocioException_GV42(IdiomaManager_GV42.T("neg.tarjeta.amexDebito"));
-
-            if (!Validaciones_GV42.EsTitularTarjetaValido(tarjeta.Titular))
-                throw new NegocioException_GV42(IdiomaManager_GV42.T("neg.tarjeta.titular"));
-
-            if (!Validaciones_GV42.EsVencimientoValido(tarjeta.MesVencimiento, tarjeta.AnioVencimiento, DateTime.Today))
-                throw new NegocioException_GV42(IdiomaManager_GV42.T("neg.tarjeta.vencida"));
-
-            if (!Validaciones_GV42.EsCodigoSeguridadValido(tarjeta.CodigoSeguridad, numero))
-                throw new NegocioException_GV42(marca == "American Express"
-                    ? IdiomaManager_GV42.T("neg.tarjeta.codigoAmex")
-                    : IdiomaManager_GV42.T("neg.tarjeta.codigo"));
-
-            int codigo;
-            lock (_generadorAutorizacion) codigo = _generadorAutorizacion.Next(100000, 1000000);
-            string resultado = marca.ToUpperInvariant() + " " + Validaciones_GV42.EnmascararTarjeta(numero) + " AUT " + codigo;
-            return resultado.Length <= Validaciones_GV42.MAX_NUMERO_TRANSACCION
-                ? resultado
-                : resultado.Substring(resultado.Length - Validaciones_GV42.MAX_NUMERO_TRANSACCION);
         }
 
         #endregion

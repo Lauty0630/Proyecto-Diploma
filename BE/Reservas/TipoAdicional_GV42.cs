@@ -19,6 +19,19 @@ namespace BE
         // MaxPorPasajero x pasajeros x tramos.
         public int MaxPorPasajero { get; set; } = 1;
 
+        // Código fijo para los servicios que el sistema usa en sus reglas (null en el resto).
+        public string Codigo { get; set; }
+
+        // false: el servicio no se elige a mano en la reserva (lo agrega el sistema, como el recargo
+        // por butaca preferencial).
+        public bool SeleccionManual { get; set; } = true;
+
+        public const string CODIGO_EQUIPAJE_EXTRA = "EQUIPAJE_EXTRA";
+        public const string CODIGO_ASIENTO_PREFERENCIAL = "ASIENTO_PREFERENCIAL";
+
+        public bool EsEquipajeExtra { get { return Codigo == CODIGO_EQUIPAJE_EXTRA; } }
+        public bool EsAsientoPreferencial { get { return Codigo == CODIGO_ASIENTO_PREFERENCIAL; } }
+
         #endregion
 
         #region Métodos públicos

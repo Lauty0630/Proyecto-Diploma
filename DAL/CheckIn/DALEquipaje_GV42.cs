@@ -26,19 +26,32 @@ namespace DAL
 
         // Guarda el equipaje, sus etiquetas y (si corresponde) el cargo por exceso con su cobro,
         // todo en una sola transacción.
-        public Equipaje_GV42 Registrar(Equipaje_GV42 e)
+        // 'idReserva' y 'unidadesExtraCompradas' controlan, dentro de la misma transacción, que entre todos
+        // los pasajeros de la reserva no se usen más unidades de equipaje extra que las compradas.
+        public Equipaje_GV42 Registrar(Equipaje_GV42 e, int idReserva, int unidadesExtraCompradas)
         {
             return _acceso.EjecutarEnTransaccion(tx =>
             {
+                if (e.UnidadesExtra > 0)
+                {
+                    object usadasObj = _acceso.leerEscalar(tx,
+                        "SELECT ISNULL(SUM(E.UnidadesExtra), 0) FROM Equipaje E WITH (UPDLOCK, HOLDLOCK) " +
+                        "INNER JOIN CheckIn CI ON CI.Id = E.IdCheckIn WHERE CI.IdReserva = @IdReserva",
+                        new[] { new SqlParameter("@IdReserva", idReserva) });
+                    if (Convert.ToInt32(usadasObj) + e.UnidadesExtra > unidadesExtraCompradas)
+                        throw new NegocioException_GV42(Servicios.IdiomaManager_GV42.T("neg.checkin.extraYaUsado"));
+                }
+
                 object idObj = _acceso.leerEscalar(tx,
-                    "INSERT INTO Equipaje (IdCheckIn, CantidadBultos, PesoTotalKg, FranquiciaKg) " +
-                    "VALUES (@IdCheckIn, @Bultos, @Peso, @Franquicia); " +
+                    "INSERT INTO Equipaje (IdCheckIn, CantidadBultos, PesoTotalKg, FranquiciaKg, UnidadesExtra) " +
+                    "VALUES (@IdCheckIn, @Bultos, @Peso, @Franquicia, @Extra); " +
                     "SELECT CAST(SCOPE_IDENTITY() AS INT);",
                     new[] {
                         new SqlParameter("@IdCheckIn",  e.IdCheckIn),
                         new SqlParameter("@Bultos",     e.CantidadBultos),
                         new SqlParameter("@Peso",       e.PesoTotalKg),
-                        new SqlParameter("@Franquicia", e.FranquiciaKg)
+                        new SqlParameter("@Franquicia", e.FranquiciaKg),
+                        new SqlParameter("@Extra",      e.UnidadesExtra)
                     });
                 e.Id = Convert.ToInt32(idObj);
 
@@ -77,11 +90,21 @@ namespace DAL
             });
         }
 
+        // Unidades de equipaje extra que ya usaron los otros pasajeros de la reserva.
+        public int UnidadesExtraUsadas(int idReserva, int idCheckInExcluido)
+        {
+            object r = _acceso.leerEscalar(
+                "SELECT ISNULL(SUM(E.UnidadesExtra), 0) FROM Equipaje E " +
+                "INNER JOIN CheckIn CI ON CI.Id = E.IdCheckIn WHERE CI.IdReserva = @IdReserva AND CI.Id <> @IdCheckIn",
+                new[] { new SqlParameter("@IdReserva", idReserva), new SqlParameter("@IdCheckIn", idCheckInExcluido) });
+            return r == null || r == DBNull.Value ? 0 : Convert.ToInt32(r);
+        }
+
         // Devuelve null si el pasajero no despachó equipaje.
         public Equipaje_GV42 BuscarPorCheckIn(int idCheckIn)
         {
             DataTable dt = _acceso.leer(
-                "SELECT Id, IdCheckIn, CantidadBultos, PesoTotalKg, FranquiciaKg FROM Equipaje WHERE IdCheckIn = @Id",
+                "SELECT Id, IdCheckIn, CantidadBultos, PesoTotalKg, FranquiciaKg, UnidadesExtra FROM Equipaje WHERE IdCheckIn = @Id",
                 new[] { new SqlParameter("@Id", idCheckIn) });
             if (dt.Rows.Count == 0) return null;
 
@@ -92,7 +115,8 @@ namespace DAL
                 IdCheckIn = DALUtil_GV42.Int(r, "IdCheckIn"),
                 CantidadBultos = DALUtil_GV42.Int(r, "CantidadBultos"),
                 PesoTotalKg = DALUtil_GV42.Dec(r, "PesoTotalKg"),
-                FranquiciaKg = DALUtil_GV42.Dec(r, "FranquiciaKg")
+                FranquiciaKg = DALUtil_GV42.Dec(r, "FranquiciaKg"),
+                UnidadesExtra = DALUtil_GV42.Int(r, "UnidadesExtra")
             };
 
             DataTable etiquetas = _acceso.leer(
