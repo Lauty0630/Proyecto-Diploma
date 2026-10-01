@@ -42,28 +42,28 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Acceso.cs" />
-    <Compile Include="DALBitacora_GV42.cs" />
-    <Compile Include="DALFamilia_GV42.cs" />
-    <Compile Include="DALPatente_GV42.cs" />
-    <Compile Include="DALRol_GV42.cs" />
-    <Compile Include="DALUsuario_GV42.cs" />
-    <Compile Include="DALIntegridad_GV42.cs" />
-    <Compile Include="InstaladorBD_GV42.cs" />
-    <Compile Include="DALAeropuerto_GV42.cs" />
-    <Compile Include="DALAsiento_GV42.cs" />
-    <Compile Include="DALBoleto_GV42.cs" />
-    <Compile Include="DALCheckIn_GV42.cs" />
-    <Compile Include="DALPasajero_GV42.cs" />
-    <Compile Include="DALEquipaje_GV42.cs" />
-    <Compile Include="DALPago_GV42.cs" />
-    <Compile Include="DALReserva_GV42.cs" />
-    <Compile Include="DALReporteReserva_GV42.cs" />
-    <Compile Include="DALTarjetaEmbarque_GV42.cs" />
-    <Compile Include="DALTipoAdicional_GV42.cs" />
-    <Compile Include="DALUtil_GV42.cs" />
-    <Compile Include="DALVuelo_GV42.cs" />
-    <Compile Include="DALVueloHistorial_GV42.cs" />
+    <Compile Include="Conexion\Acceso.cs" />
+    <Compile Include="Bitacora\DALBitacora_GV42.cs" />
+    <Compile Include="Seguridad\DALFamilia_GV42.cs" />
+    <Compile Include="Seguridad\DALPatente_GV42.cs" />
+    <Compile Include="Seguridad\DALRol_GV42.cs" />
+    <Compile Include="Seguridad\DALUsuario_GV42.cs" />
+    <Compile Include="Integridad\DALIntegridad_GV42.cs" />
+    <Compile Include="Instalacion\InstaladorBD_GV42.cs" />
+    <Compile Include="Vuelos\DALAeropuerto_GV42.cs" />
+    <Compile Include="Vuelos\DALAsiento_GV42.cs" />
+    <Compile Include="Boletos\DALBoleto_GV42.cs" />
+    <Compile Include="CheckIn\DALCheckIn_GV42.cs" />
+    <Compile Include="Reservas\DALPasajero_GV42.cs" />
+    <Compile Include="CheckIn\DALEquipaje_GV42.cs" />
+    <Compile Include="Pagos\DALPago_GV42.cs" />
+    <Compile Include="Reservas\DALReserva_GV42.cs" />
+    <Compile Include="Reportes\DALReporteReserva_GV42.cs" />
+    <Compile Include="CheckIn\DALTarjetaEmbarque_GV42.cs" />
+    <Compile Include="Reservas\DALTipoAdicional_GV42.cs" />
+    <Compile Include="Conexion\DALUtil_GV42.cs" />
+    <Compile Include="Vuelos\DALVuelo_GV42.cs" />
+    <Compile Include="Vuelos\DALVueloHistorial_GV42.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>

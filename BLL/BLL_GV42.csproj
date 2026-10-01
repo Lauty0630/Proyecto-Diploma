@@ -41,23 +41,23 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="BLLBitacora_GV42.cs" />
-    <Compile Include="BLLBoleto_GV42.cs" />
-    <Compile Include="Code128_GV42.cs" />
-    <Compile Include="DisenioBoleto_GV42.cs" />
-    <Compile Include="ILienzo_GV42.cs" />
-    <Compile Include="LienzoPdf_GV42.cs" />
-    <Compile Include="BLLInstalador_GV42.cs" />
-    <Compile Include="BLLPermisos_GV42.cs" />
-    <Compile Include="BLLUsuario_GV42.cs" />
-    <Compile Include="GeneradorPdf_GV42.cs" />
-    <Compile Include="BLLIntegridad_GV42.cs" />
-    <Compile Include="BLLCheckIn_GV42.cs" />
-    <Compile Include="BLLNegocioUtil_GV42.cs" />
-    <Compile Include="BLLReserva_GV42.cs" />
-    <Compile Include="BLLReporteReserva_GV42.cs" />
-    <Compile Include="BLLVuelo_GV42.cs" />
-    <Compile Include="BLLVueloHistorial_GV42.cs" />
+    <Compile Include="Bitacora\BLLBitacora_GV42.cs" />
+    <Compile Include="Boletos\BLLBoleto_GV42.cs" />
+    <Compile Include="Boletos\Code128_GV42.cs" />
+    <Compile Include="Boletos\DisenioBoleto_GV42.cs" />
+    <Compile Include="Pdf\ILienzo_GV42.cs" />
+    <Compile Include="Pdf\LienzoPdf_GV42.cs" />
+    <Compile Include="Instalacion\BLLInstalador_GV42.cs" />
+    <Compile Include="Seguridad\BLLPermisos_GV42.cs" />
+    <Compile Include="Seguridad\BLLUsuario_GV42.cs" />
+    <Compile Include="Pdf\GeneradorPdf_GV42.cs" />
+    <Compile Include="Integridad\BLLIntegridad_GV42.cs" />
+    <Compile Include="CheckIn\BLLCheckIn_GV42.cs" />
+    <Compile Include="Reservas\BLLNegocioUtil_GV42.cs" />
+    <Compile Include="Reservas\BLLReserva_GV42.cs" />
+    <Compile Include="Reportes\BLLReporteReserva_GV42.cs" />
+    <Compile Include="Vuelos\BLLVuelo_GV42.cs" />
+    <Compile Include="Vuelos\BLLVueloHistorial_GV42.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
