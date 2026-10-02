@@ -29,6 +29,8 @@ namespace BE
         public const string CODIGO_EQUIPAJE_EXTRA = "EQUIPAJE_EXTRA";
         public const string CODIGO_ASIENTO_PREFERENCIAL = "ASIENTO_PREFERENCIAL";
 
+        public const string CODIGO_SELECCION_ASIENTO = "SELECCION_ASIENTO";
+        public bool EsSeleccionAsiento { get { return Codigo == CODIGO_SELECCION_ASIENTO; } }
         public bool EsEquipajeExtra { get { return Codigo == CODIGO_EQUIPAJE_EXTRA; } }
         public bool EsAsientoPreferencial { get { return Codigo == CODIGO_ASIENTO_PREFERENCIAL; } }
 

@@ -35,6 +35,17 @@ namespace BE
         // Valijas de equipaje extra compradas para ESTE pasajero al reservar.
         public int EquipajeExtraComprado { get; set; }
 
+        // Valijas despachadas que incluye la tarifa de la reserva (Light 0, Plus 1, Top 2).
+        public int ValijasIncluidas { get; set; }
+        public string TarifaNombre { get; set; }
+        // La tarifa incluye elegir butaca preferencial sin recargo.
+        public bool TarifaIncluyePreferencial { get; set; }
+
+        public TipoPasajero_GV42 TipoPasajero { get; set; } = TipoPasajero_GV42.Adulto;
+        public AsistenciaEspecial_GV42 Asistencia { get; set; } = AsistenciaEspecial_GV42.Ninguna;
+        // Infantes de la reserva que viajan en brazos (se informan en el check-in de los adultos).
+        public List<string> Infantes { get; set; } = new List<string>();
+
         public bool EsOnline { get { return Canal == CanalVenta_GV42.Autogestion; } }
         public string CanalTexto { get { return Canal.HasValue ? Canal.Value.Texto() : string.Empty; } }
 

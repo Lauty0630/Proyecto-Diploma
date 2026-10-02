@@ -236,6 +236,30 @@
     </Compile>
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="CheckIn\CtrlNavegadorPasajero_GV42.Designer.cs">
+      <DependentUpon>CtrlNavegadorPasajero_GV42.cs</DependentUpon>
+    </Compile>
+    <Compile Include="CheckIn\CtrlNavegadorPasajero_GV42.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Reservas\FRMCambiarVuelo_GV42.Designer.cs">
+      <DependentUpon>FRMCambiarVuelo_GV42.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Reservas\FRMCambiarVuelo_GV42.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Reservas\CtrlFechasFlexibles_GV42.Designer.cs">
+      <DependentUpon>CtrlFechasFlexibles_GV42.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Reservas\CtrlFechasFlexibles_GV42.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Reservas\CtrlTarifa_GV42.Designer.cs">
+      <DependentUpon>CtrlTarifa_GV42.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Reservas\CtrlTarifa_GV42.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
     <EmbeddedResource Include="Administracion\FRMBitacoraDeEventos.resx">
       <DependentUpon>FRMBitacoraDeEventos.cs</DependentUpon>
     </EmbeddedResource>

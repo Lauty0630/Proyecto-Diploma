@@ -41,6 +41,12 @@
             this.txtApellido = new PROYECTO_ING_DE_SOFTWARE.TextBoxModerno_GV42();
             this.txtEmail = new PROYECTO_ING_DE_SOFTWARE.TextBoxModerno_GV42();
             this.txtTelefono = new PROYECTO_ING_DE_SOFTWARE.TextBoxModerno_GV42();
+            this.lblNacimiento = new System.Windows.Forms.Label();
+            this.lblTipo = new System.Windows.Forms.Label();
+            this.lblAsistencia = new System.Windows.Forms.Label();
+            this.dtNacimiento = new System.Windows.Forms.DateTimePicker();
+            this.lblTipoValor = new System.Windows.Forms.Label();
+            this.cmbAsistencia = new System.Windows.Forms.ComboBox();
             this.pnlTarjeta.SuspendLayout();
             this.tlpCampos.SuspendLayout();
             this.SuspendLayout();
@@ -53,7 +59,7 @@
             this.pnlTarjeta.Name = "pnlTarjeta";
             this.pnlTarjeta.Padding = new System.Windows.Forms.Padding(16, 8, 16, 10);
             this.pnlTarjeta.Radio = 10;
-            this.pnlTarjeta.Size = new System.Drawing.Size(900, 96);
+            this.pnlTarjeta.Size = new System.Drawing.Size(900, 150);
             this.pnlTarjeta.TabIndex = 0;
             // 
             // tlpCampos
@@ -69,6 +75,12 @@
             this.tlpCampos.Controls.Add(this.txtApellido, 2, 2);
             this.tlpCampos.Controls.Add(this.txtEmail, 3, 2);
             this.tlpCampos.Controls.Add(this.txtTelefono, 4, 2);
+            this.tlpCampos.Controls.Add(this.lblNacimiento, 0, 3);
+            this.tlpCampos.Controls.Add(this.lblTipo, 2, 3);
+            this.tlpCampos.Controls.Add(this.lblAsistencia, 3, 3);
+            this.tlpCampos.Controls.Add(this.dtNacimiento, 0, 4);
+            this.tlpCampos.Controls.Add(this.lblTipoValor, 2, 4);
+            this.tlpCampos.Controls.Add(this.cmbAsistencia, 3, 4);
             this.tlpCampos.ColumnCount = 5;
             this.tlpCampos.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 15F));
             this.tlpCampos.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 20F));
@@ -78,12 +90,18 @@
             this.tlpCampos.Dock = System.Windows.Forms.DockStyle.Fill;
             this.tlpCampos.Location = new System.Drawing.Point(16, 8);
             this.tlpCampos.Name = "tlpCampos";
-            this.tlpCampos.RowCount = 3;
+            this.tlpCampos.RowCount = 5;
             this.tlpCampos.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 26F));
             this.tlpCampos.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 20F));
             this.tlpCampos.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 32F));
+            this.tlpCampos.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 22F));
+            this.tlpCampos.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 32F));
             this.tlpCampos.SetColumnSpan(this.lblTitulo, 5);
-            this.tlpCampos.Size = new System.Drawing.Size(868, 78);
+            this.tlpCampos.SetColumnSpan(this.lblNacimiento, 2);
+            this.tlpCampos.SetColumnSpan(this.dtNacimiento, 2);
+            this.tlpCampos.SetColumnSpan(this.lblAsistencia, 2);
+            this.tlpCampos.SetColumnSpan(this.cmbAsistencia, 2);
+            this.tlpCampos.Size = new System.Drawing.Size(868, 132);
             this.tlpCampos.TabIndex = 0;
             // 
             // lblTitulo
@@ -225,6 +243,85 @@
             this.txtTelefono.Size = new System.Drawing.Size(146, 26);
             this.txtTelefono.TabIndex = 10;
             // 
+            // lblNacimiento
+            // 
+            this.lblNacimiento.Anchor = ((System.Windows.Forms.AnchorStyles)(System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left));
+            this.lblNacimiento.AutoSize = true;
+            this.lblNacimiento.Font = new System.Drawing.Font("Segoe UI Semibold", 9F, System.Drawing.FontStyle.Bold);
+            this.lblNacimiento.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(13)))), ((int)(((byte)(71)))), ((int)(((byte)(161)))));
+            this.lblNacimiento.Location = new System.Drawing.Point(0, 84);
+            this.lblNacimiento.Margin = new System.Windows.Forms.Padding(0, 0, 3, 1);
+            this.lblNacimiento.Name = "lblNacimiento";
+            this.lblNacimiento.Size = new System.Drawing.Size(120, 15);
+            this.lblNacimiento.TabIndex = 11;
+            this.lblNacimiento.Text = "Fecha de nacimiento";
+            // 
+            // lblTipo
+            // 
+            this.lblTipo.Anchor = ((System.Windows.Forms.AnchorStyles)(System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left));
+            this.lblTipo.AutoSize = true;
+            this.lblTipo.Font = new System.Drawing.Font("Segoe UI Semibold", 9F, System.Drawing.FontStyle.Bold);
+            this.lblTipo.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(13)))), ((int)(((byte)(71)))), ((int)(((byte)(161)))));
+            this.lblTipo.Location = new System.Drawing.Point(303, 84);
+            this.lblTipo.Margin = new System.Windows.Forms.Padding(0, 0, 3, 1);
+            this.lblTipo.Name = "lblTipo";
+            this.lblTipo.Size = new System.Drawing.Size(100, 15);
+            this.lblTipo.TabIndex = 12;
+            this.lblTipo.Text = "Tipo de pasajero";
+            // 
+            // lblAsistencia
+            // 
+            this.lblAsistencia.Anchor = ((System.Windows.Forms.AnchorStyles)(System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left));
+            this.lblAsistencia.AutoSize = true;
+            this.lblAsistencia.Font = new System.Drawing.Font("Segoe UI Semibold", 9F, System.Drawing.FontStyle.Bold);
+            this.lblAsistencia.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(13)))), ((int)(((byte)(71)))), ((int)(((byte)(161)))));
+            this.lblAsistencia.Location = new System.Drawing.Point(476, 84);
+            this.lblAsistencia.Margin = new System.Windows.Forms.Padding(0, 0, 3, 1);
+            this.lblAsistencia.Name = "lblAsistencia";
+            this.lblAsistencia.Size = new System.Drawing.Size(120, 15);
+            this.lblAsistencia.TabIndex = 13;
+            this.lblAsistencia.Text = "Asistencia especial";
+            // 
+            // dtNacimiento
+            // 
+            this.dtNacimiento.Anchor = System.Windows.Forms.AnchorStyles.Left;
+            this.dtNacimiento.Checked = false;
+            this.dtNacimiento.Font = new System.Drawing.Font("Segoe UI", 10F);
+            this.dtNacimiento.Format = System.Windows.Forms.DateTimePickerFormat.Short;
+            this.dtNacimiento.Location = new System.Drawing.Point(0, 103);
+            this.dtNacimiento.Margin = new System.Windows.Forms.Padding(0, 3, 12, 0);
+            this.dtNacimiento.Name = "dtNacimiento";
+            this.dtNacimiento.ShowCheckBox = true;
+            this.dtNacimiento.Size = new System.Drawing.Size(170, 25);
+            this.dtNacimiento.TabIndex = 14;
+            this.dtNacimiento.ValueChanged += new System.EventHandler(this.dtNacimiento_ValueChanged);
+            // 
+            // lblTipoValor
+            // 
+            this.lblTipoValor.Anchor = ((System.Windows.Forms.AnchorStyles)(System.Windows.Forms.AnchorStyles.Left | System.Windows.Forms.AnchorStyles.Right));
+            this.lblTipoValor.Font = new System.Drawing.Font("Segoe UI", 10F);
+            this.lblTipoValor.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(33)))), ((int)(((byte)(33)))), ((int)(((byte)(33)))));
+            this.lblTipoValor.Location = new System.Drawing.Point(303, 105);
+            this.lblTipoValor.Margin = new System.Windows.Forms.Padding(0, 3, 12, 0);
+            this.lblTipoValor.Name = "lblTipoValor";
+            this.lblTipoValor.Size = new System.Drawing.Size(161, 22);
+            this.lblTipoValor.TabIndex = 15;
+            this.lblTipoValor.Text = "-";
+            this.lblTipoValor.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
+            // 
+            // cmbAsistencia
+            // 
+            this.cmbAsistencia.Anchor = ((System.Windows.Forms.AnchorStyles)(System.Windows.Forms.AnchorStyles.Left | System.Windows.Forms.AnchorStyles.Right));
+            this.cmbAsistencia.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this.cmbAsistencia.Font = new System.Drawing.Font("Segoe UI", 10F);
+            this.cmbAsistencia.FormattingEnabled = true;
+            this.cmbAsistencia.Location = new System.Drawing.Point(476, 103);
+            this.cmbAsistencia.Margin = new System.Windows.Forms.Padding(0, 3, 12, 0);
+            this.cmbAsistencia.Name = "cmbAsistencia";
+            this.cmbAsistencia.Size = new System.Drawing.Size(380, 25);
+            this.cmbAsistencia.TabIndex = 16;
+            this.cmbAsistencia.Format += new System.Windows.Forms.ListControlConvertEventHandler(this.cmbAsistencia_Format);
+            // 
             // CtrlPasajero_GV42
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 15F);
@@ -234,7 +331,7 @@
             this.Font = new System.Drawing.Font("Segoe UI", 9F);
             this.Name = "CtrlPasajero_GV42";
             this.Padding = new System.Windows.Forms.Padding(0, 0, 0, 8);
-            this.Size = new System.Drawing.Size(900, 104);
+            this.Size = new System.Drawing.Size(900, 158);
             this.tlpCampos.ResumeLayout(false);
             this.tlpCampos.PerformLayout();
             this.pnlTarjeta.ResumeLayout(false);
@@ -258,5 +355,11 @@
         private PROYECTO_ING_DE_SOFTWARE.TextBoxModerno_GV42 txtApellido;
         private PROYECTO_ING_DE_SOFTWARE.TextBoxModerno_GV42 txtEmail;
         private PROYECTO_ING_DE_SOFTWARE.TextBoxModerno_GV42 txtTelefono;
+        private System.Windows.Forms.Label lblNacimiento;
+        private System.Windows.Forms.Label lblTipo;
+        private System.Windows.Forms.Label lblAsistencia;
+        private System.Windows.Forms.DateTimePicker dtNacimiento;
+        private System.Windows.Forms.Label lblTipoValor;
+        private System.Windows.Forms.ComboBox cmbAsistencia;
     }
 }

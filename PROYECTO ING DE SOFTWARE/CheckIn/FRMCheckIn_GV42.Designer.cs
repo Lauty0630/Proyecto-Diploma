@@ -47,6 +47,11 @@
             this.pnlResultadoCentro = new System.Windows.Forms.Panel();
             this.btnVerTarjetaResultado = new PROYECTO_ING_DE_SOFTWARE.BotonModerno_GV42();
             this.btnOtroPasajero = new PROYECTO_ING_DE_SOFTWARE.BotonModerno_GV42();
+            this.dgvResultado = new PROYECTO_ING_DE_SOFTWARE.GrillaModerna_GV42();
+            this.colResPasajero = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.colResTarjeta = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.colResAsiento = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.colResEstado = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.tlpResultado = new System.Windows.Forms.TableLayoutPanel();
             this.lblResTarjeta = new System.Windows.Forms.Label();
             this.lblResTarjetaValor = new System.Windows.Forms.Label();
@@ -85,7 +90,9 @@
             this.lblAsientoPreferencialValor = new System.Windows.Forms.Label();
             this.btnCambiarAsiento = new PROYECTO_ING_DE_SOFTWARE.BotonModerno_GV42();
             this.lblAyudaAsiento = new System.Windows.Forms.Label();
+            this.pnlTituloAsiento = new System.Windows.Forms.Panel();
             this.lblTituloAsiento = new System.Windows.Forms.Label();
+            this.ctrlNavAsiento = new PROYECTO_ING_DE_SOFTWARE.CtrlNavegadorPasajero_GV42();
             this.pnlPasoEquipaje = new PROYECTO_ING_DE_SOFTWARE.PanelTarjeta_GV42();
             this.tlpEquipaje = new System.Windows.Forms.TableLayoutPanel();
             this.pnlDatosEquipaje = new System.Windows.Forms.Panel();
@@ -146,9 +153,21 @@
             this.pnlAvisoMostrador = new System.Windows.Forms.Panel();
             this.lblAvisoMostrador = new System.Windows.Forms.Label();
             this.lblAyudaEquipaje = new System.Windows.Forms.Label();
+            this.pnlTituloEquipaje = new System.Windows.Forms.Panel();
             this.lblTituloEquipaje = new System.Windows.Forms.Label();
+            this.ctrlNavEquipaje = new PROYECTO_ING_DE_SOFTWARE.CtrlNavegadorPasajero_GV42();
             this.pnlPasoVerificar = new PROYECTO_ING_DE_SOFTWARE.PanelTarjeta_GV42();
             this.tlpVerificar = new System.Windows.Forms.TableLayoutPanel();
+            this.pnlIzqVerificar = new System.Windows.Forms.Panel();
+            this.pnlGrupoVerificar = new System.Windows.Forms.Panel();
+            this.dgvGrupo = new PROYECTO_ING_DE_SOFTWARE.GrillaModerna_GV42();
+            this.colGrupoPasajero = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.colGrupoDni = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.colGrupoTipo = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.colGrupoAsiento = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.colGrupoAsistencia = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.lblReservaGrupo = new System.Windows.Forms.Label();
+            this.lblSecGrupo = new System.Windows.Forms.Label();
             this.tlpDatosPasajero = new System.Windows.Forms.TableLayoutPanel();
             this.lblSecPasajero = new System.Windows.Forms.Label();
             this.lblNombre = new System.Windows.Forms.Label();
@@ -157,6 +176,10 @@
             this.lblDniVerValor = new System.Windows.Forms.Label();
             this.lblEmail = new System.Windows.Forms.Label();
             this.lblEmailValor = new System.Windows.Forms.Label();
+            this.lblTipoPasajero = new System.Windows.Forms.Label();
+            this.lblTipoPasajeroValor = new System.Windows.Forms.Label();
+            this.lblAsistencia = new System.Windows.Forms.Label();
+            this.lblAsistenciaValor = new System.Windows.Forms.Label();
             this.lblSecReserva = new System.Windows.Forms.Label();
             this.lblReserva = new System.Windows.Forms.Label();
             this.lblReservaValor = new System.Windows.Forms.Label();
@@ -184,9 +207,11 @@
             this.lblServiciosValor = new System.Windows.Forms.Label();
             this.pnlVentana = new System.Windows.Forms.Panel();
             this.lblVentana = new System.Windows.Forms.Label();
+            this.lblInfantes = new System.Windows.Forms.Label();
             this.lblTituloVerificar = new System.Windows.Forms.Label();
             this.pnlPasoBuscar = new PROYECTO_ING_DE_SOFTWARE.PanelTarjeta_GV42();
             this.dgvPasajeros = new PROYECTO_ING_DE_SOFTWARE.GrillaModerna_GV42();
+            this.colMarcar = new System.Windows.Forms.DataGridViewCheckBoxColumn();
             this.colDni = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.colPasajero = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.colTramo = new System.Windows.Forms.DataGridViewTextBoxColumn();
@@ -205,6 +230,7 @@
             this.txtNumeroReserva = new PROYECTO_ING_DE_SOFTWARE.TextBoxModerno_GV42();
             this.txtDni = new PROYECTO_ING_DE_SOFTWARE.TextBoxModerno_GV42();
             this.btnBuscar = new PROYECTO_ING_DE_SOFTWARE.BotonModerno_GV42();
+            this.btnMarcarTodos = new PROYECTO_ING_DE_SOFTWARE.BotonModerno_GV42();
             this.lblAyudaBuscar = new System.Windows.Forms.Label();
             this.lblTituloBuscar = new System.Windows.Forms.Label();
             this.pnlEncabezado.SuspendLayout();
@@ -237,6 +263,8 @@
             this.pnlAvisoMostrador.SuspendLayout();
             this.pnlPasoVerificar.SuspendLayout();
             this.tlpVerificar.SuspendLayout();
+            this.pnlIzqVerificar.SuspendLayout();
+            this.pnlGrupoVerificar.SuspendLayout();
             this.tlpDatosPasajero.SuspendLayout();
             this.tlpDatosVuelo.SuspendLayout();
             this.pnlVentana.SuspendLayout();
@@ -245,6 +273,10 @@
             this.tlpBusqueda.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.numBultos)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.dgvPasajeros)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.dgvGrupo)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.dgvResultado)).BeginInit();
+            this.pnlTituloEquipaje.SuspendLayout();
+            this.pnlTituloAsiento.SuspendLayout();
             this.SuspendLayout();
             // 
             // pnlEncabezado
@@ -460,6 +492,7 @@
             // 
             this.pnlResultadoCentro.Controls.Add(this.btnVerTarjetaResultado);
             this.pnlResultadoCentro.Controls.Add(this.btnOtroPasajero);
+            this.pnlResultadoCentro.Controls.Add(this.dgvResultado);
             this.pnlResultadoCentro.Controls.Add(this.tlpResultado);
             this.pnlResultadoCentro.Controls.Add(this.lblResultadoDetalle);
             this.pnlResultadoCentro.Controls.Add(this.lblResultadoTitulo);
@@ -497,6 +530,66 @@
             this.btnOtroPasajero.Text = "Otro pasajero";
             this.btnOtroPasajero.UseVisualStyleBackColor = false;
             this.btnOtroPasajero.Click += new System.EventHandler(this.btnOtroPasajero_Click);
+            // 
+            // dgvResultado
+            // 
+            this.dgvResultado.AllowUserToAddRows = false;
+            this.dgvResultado.AllowUserToDeleteRows = false;
+            this.dgvResultado.AllowUserToResizeRows = false;
+            this.dgvResultado.AutoSizeColumnsMode = System.Windows.Forms.DataGridViewAutoSizeColumnsMode.Fill;
+            this.dgvResultado.BackgroundColor = System.Drawing.Color.White;
+            this.dgvResultado.BorderStyle = System.Windows.Forms.BorderStyle.None;
+            this.dgvResultado.ColumnHeadersHeight = 34;
+            this.dgvResultado.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.DisableResizing;
+            this.dgvResultado.Columns.AddRange(new System.Windows.Forms.DataGridViewColumn[] {
+            this.colResPasajero,
+            this.colResTarjeta,
+            this.colResAsiento,
+            this.colResEstado});
+            this.dgvResultado.Location = new System.Drawing.Point(0, 112);
+            this.dgvResultado.MultiSelect = false;
+            this.dgvResultado.Name = "dgvResultado";
+            this.dgvResultado.ReadOnly = true;
+            this.dgvResultado.RowHeadersVisible = false;
+            this.dgvResultado.ScrollBars = System.Windows.Forms.ScrollBars.Vertical;
+            this.dgvResultado.SelectionMode = System.Windows.Forms.DataGridViewSelectionMode.FullRowSelect;
+            this.dgvResultado.Size = new System.Drawing.Size(560, 138);
+            this.dgvResultado.TabIndex = 6;
+            this.dgvResultado.Visible = false;
+            this.dgvResultado.CellDoubleClick += new System.Windows.Forms.DataGridViewCellEventHandler(this.dgvResultado_CellDoubleClick);
+            this.dgvResultado.CellFormatting += new System.Windows.Forms.DataGridViewCellFormattingEventHandler(this.dgvResultado_CellFormatting);
+            // 
+            // colResPasajero
+            // 
+            this.colResPasajero.DataPropertyName = "Pasajero";
+            this.colResPasajero.FillWeight = 130F;
+            this.colResPasajero.HeaderText = "Pasajero";
+            this.colResPasajero.Name = "colResPasajero";
+            this.colResPasajero.ReadOnly = true;
+            // 
+            // colResTarjeta
+            // 
+            this.colResTarjeta.DataPropertyName = "Tarjeta";
+            this.colResTarjeta.FillWeight = 95F;
+            this.colResTarjeta.HeaderText = "Tarjeta";
+            this.colResTarjeta.Name = "colResTarjeta";
+            this.colResTarjeta.ReadOnly = true;
+            // 
+            // colResAsiento
+            // 
+            this.colResAsiento.DataPropertyName = "Asiento";
+            this.colResAsiento.FillWeight = 65F;
+            this.colResAsiento.HeaderText = "Asiento";
+            this.colResAsiento.Name = "colResAsiento";
+            this.colResAsiento.ReadOnly = true;
+            // 
+            // colResEstado
+            // 
+            this.colResEstado.DataPropertyName = "Estado";
+            this.colResEstado.FillWeight = 200F;
+            this.colResEstado.HeaderText = "Resultado";
+            this.colResEstado.Name = "colResEstado";
+            this.colResEstado.ReadOnly = true;
             // 
             // tlpResultado
             // 
@@ -798,7 +891,7 @@
             this.pnlPasoAsiento.Controls.Add(this.lblAvisoPreferencial);
             this.pnlPasoAsiento.Controls.Add(this.pnlAsientoActual);
             this.pnlPasoAsiento.Controls.Add(this.lblAyudaAsiento);
-            this.pnlPasoAsiento.Controls.Add(this.lblTituloAsiento);
+            this.pnlPasoAsiento.Controls.Add(this.pnlTituloAsiento);
             this.pnlPasoAsiento.Dock = System.Windows.Forms.DockStyle.Fill;
             this.pnlPasoAsiento.Location = new System.Drawing.Point(24, 16);
             this.pnlPasoAsiento.Name = "pnlPasoAsiento";
@@ -1016,24 +1109,48 @@
             this.lblAyudaAsiento.Text = "Es el asiento que se eligió al reservar. Si el pasajero está conforme, presioná Siguiente; si quiere otro, cambialo en el mapa.";
             this.lblAyudaAsiento.TextAlign = System.Drawing.ContentAlignment.TopLeft;
             // 
+            // pnlTituloAsiento
+            // 
+            this.pnlTituloAsiento.Controls.Add(this.lblTituloAsiento);
+            this.pnlTituloAsiento.Controls.Add(this.ctrlNavAsiento);
+            this.pnlTituloAsiento.Dock = System.Windows.Forms.DockStyle.Top;
+            this.pnlTituloAsiento.Location = new System.Drawing.Point(24, 18);
+            this.pnlTituloAsiento.Name = "pnlTituloAsiento";
+            this.pnlTituloAsiento.Size = new System.Drawing.Size(944, 30);
+            this.pnlTituloAsiento.TabIndex = 0;
+            // 
             // lblTituloAsiento
             // 
-            this.lblTituloAsiento.Dock = System.Windows.Forms.DockStyle.Top;
+            this.lblTituloAsiento.Dock = System.Windows.Forms.DockStyle.Fill;
             this.lblTituloAsiento.Font = new System.Drawing.Font("Segoe UI Semibold", 11.25F, System.Drawing.FontStyle.Bold);
             this.lblTituloAsiento.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(13)))), ((int)(((byte)(71)))), ((int)(((byte)(161)))));
-            this.lblTituloAsiento.Location = new System.Drawing.Point(24, 18);
+            this.lblTituloAsiento.Location = new System.Drawing.Point(0, 0);
             this.lblTituloAsiento.Name = "lblTituloAsiento";
-            this.lblTituloAsiento.Size = new System.Drawing.Size(944, 30);
+            this.lblTituloAsiento.Size = new System.Drawing.Size(424, 30);
             this.lblTituloAsiento.TabIndex = 0;
             this.lblTituloAsiento.Text = "Validá el asiento del pasajero";
             this.lblTituloAsiento.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
+            // 
+            // ctrlNavAsiento
+            // 
+            this.ctrlNavAsiento.BackColor = System.Drawing.Color.White;
+            this.ctrlNavAsiento.Dock = System.Windows.Forms.DockStyle.Right;
+            this.ctrlNavAsiento.Font = new System.Drawing.Font("Segoe UI", 9F);
+            this.ctrlNavAsiento.Location = new System.Drawing.Point(424, 0);
+            this.ctrlNavAsiento.Margin = new System.Windows.Forms.Padding(0);
+            this.ctrlNavAsiento.Name = "ctrlNavAsiento";
+            this.ctrlNavAsiento.Size = new System.Drawing.Size(520, 30);
+            this.ctrlNavAsiento.TabIndex = 1;
+            this.ctrlNavAsiento.Visible = false;
+            this.ctrlNavAsiento.Anterior += new System.EventHandler(this.ctrlNav_Anterior);
+            this.ctrlNavAsiento.Siguiente += new System.EventHandler(this.ctrlNav_Siguiente);
             // 
             // pnlPasoEquipaje
             // 
             this.pnlPasoEquipaje.Controls.Add(this.tlpEquipaje);
             this.pnlPasoEquipaje.Controls.Add(this.pnlAvisoMostrador);
             this.pnlPasoEquipaje.Controls.Add(this.lblAyudaEquipaje);
-            this.pnlPasoEquipaje.Controls.Add(this.lblTituloEquipaje);
+            this.pnlPasoEquipaje.Controls.Add(this.pnlTituloEquipaje);
             this.pnlPasoEquipaje.Dock = System.Windows.Forms.DockStyle.Fill;
             this.pnlPasoEquipaje.Location = new System.Drawing.Point(24, 16);
             this.pnlPasoEquipaje.Name = "pnlPasoEquipaje";
@@ -1808,17 +1925,41 @@
             this.lblAyudaEquipaje.Text = "Ingresá los bultos y el peso total. Si supera la franquicia, se calcula y se cobra el exceso.";
             this.lblAyudaEquipaje.TextAlign = System.Drawing.ContentAlignment.TopLeft;
             // 
+            // pnlTituloEquipaje
+            // 
+            this.pnlTituloEquipaje.Controls.Add(this.lblTituloEquipaje);
+            this.pnlTituloEquipaje.Controls.Add(this.ctrlNavEquipaje);
+            this.pnlTituloEquipaje.Dock = System.Windows.Forms.DockStyle.Top;
+            this.pnlTituloEquipaje.Location = new System.Drawing.Point(24, 18);
+            this.pnlTituloEquipaje.Name = "pnlTituloEquipaje";
+            this.pnlTituloEquipaje.Size = new System.Drawing.Size(944, 30);
+            this.pnlTituloEquipaje.TabIndex = 0;
+            // 
             // lblTituloEquipaje
             // 
-            this.lblTituloEquipaje.Dock = System.Windows.Forms.DockStyle.Top;
+            this.lblTituloEquipaje.Dock = System.Windows.Forms.DockStyle.Fill;
             this.lblTituloEquipaje.Font = new System.Drawing.Font("Segoe UI Semibold", 11.25F, System.Drawing.FontStyle.Bold);
             this.lblTituloEquipaje.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(13)))), ((int)(((byte)(71)))), ((int)(((byte)(161)))));
-            this.lblTituloEquipaje.Location = new System.Drawing.Point(24, 18);
+            this.lblTituloEquipaje.Location = new System.Drawing.Point(0, 0);
             this.lblTituloEquipaje.Name = "lblTituloEquipaje";
-            this.lblTituloEquipaje.Size = new System.Drawing.Size(944, 30);
+            this.lblTituloEquipaje.Size = new System.Drawing.Size(424, 30);
             this.lblTituloEquipaje.TabIndex = 0;
             this.lblTituloEquipaje.Text = "Despacho de equipaje";
             this.lblTituloEquipaje.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
+            // 
+            // ctrlNavEquipaje
+            // 
+            this.ctrlNavEquipaje.BackColor = System.Drawing.Color.White;
+            this.ctrlNavEquipaje.Dock = System.Windows.Forms.DockStyle.Right;
+            this.ctrlNavEquipaje.Font = new System.Drawing.Font("Segoe UI", 9F);
+            this.ctrlNavEquipaje.Location = new System.Drawing.Point(424, 0);
+            this.ctrlNavEquipaje.Margin = new System.Windows.Forms.Padding(0);
+            this.ctrlNavEquipaje.Name = "ctrlNavEquipaje";
+            this.ctrlNavEquipaje.Size = new System.Drawing.Size(520, 30);
+            this.ctrlNavEquipaje.TabIndex = 1;
+            this.ctrlNavEquipaje.Visible = false;
+            this.ctrlNavEquipaje.Anterior += new System.EventHandler(this.ctrlNav_Anterior);
+            this.ctrlNavEquipaje.Siguiente += new System.EventHandler(this.ctrlNav_Siguiente);
             // 
             // pnlPasoVerificar
             // 
@@ -1838,7 +1979,7 @@
             this.tlpVerificar.ColumnCount = 2;
             this.tlpVerificar.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 50F));
             this.tlpVerificar.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 50F));
-            this.tlpVerificar.Controls.Add(this.tlpDatosPasajero, 0, 0);
+            this.tlpVerificar.Controls.Add(this.pnlIzqVerificar, 0, 0);
             this.tlpVerificar.Controls.Add(this.tlpDatosVuelo, 1, 0);
             this.tlpVerificar.Dock = System.Windows.Forms.DockStyle.Fill;
             this.tlpVerificar.Location = new System.Drawing.Point(24, 48);
@@ -1847,6 +1988,122 @@
             this.tlpVerificar.TabIndex = 2;
             this.tlpVerificar.RowCount = 1;
             this.tlpVerificar.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 100F));
+            // 
+            // pnlIzqVerificar
+            // 
+            this.pnlIzqVerificar.Controls.Add(this.tlpDatosPasajero);
+            this.pnlIzqVerificar.Controls.Add(this.pnlGrupoVerificar);
+            this.pnlIzqVerificar.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.pnlIzqVerificar.Location = new System.Drawing.Point(0, 0);
+            this.pnlIzqVerificar.Margin = new System.Windows.Forms.Padding(0, 0, 16, 0);
+            this.pnlIzqVerificar.Name = "pnlIzqVerificar";
+            this.pnlIzqVerificar.Size = new System.Drawing.Size(456, 286);
+            this.pnlIzqVerificar.TabIndex = 0;
+            // 
+            // pnlGrupoVerificar
+            // 
+            this.pnlGrupoVerificar.Controls.Add(this.dgvGrupo);
+            this.pnlGrupoVerificar.Controls.Add(this.lblReservaGrupo);
+            this.pnlGrupoVerificar.Controls.Add(this.lblSecGrupo);
+            this.pnlGrupoVerificar.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.pnlGrupoVerificar.Location = new System.Drawing.Point(0, 0);
+            this.pnlGrupoVerificar.Name = "pnlGrupoVerificar";
+            this.pnlGrupoVerificar.Size = new System.Drawing.Size(456, 286);
+            this.pnlGrupoVerificar.TabIndex = 1;
+            this.pnlGrupoVerificar.Visible = false;
+            // 
+            // dgvGrupo
+            // 
+            this.dgvGrupo.AllowUserToAddRows = false;
+            this.dgvGrupo.AllowUserToDeleteRows = false;
+            this.dgvGrupo.AllowUserToResizeRows = false;
+            this.dgvGrupo.AutoSizeColumnsMode = System.Windows.Forms.DataGridViewAutoSizeColumnsMode.Fill;
+            this.dgvGrupo.BackgroundColor = System.Drawing.Color.White;
+            this.dgvGrupo.BorderStyle = System.Windows.Forms.BorderStyle.None;
+            this.dgvGrupo.ColumnHeadersHeight = 34;
+            this.dgvGrupo.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.DisableResizing;
+            this.dgvGrupo.Columns.AddRange(new System.Windows.Forms.DataGridViewColumn[] {
+            this.colGrupoPasajero,
+            this.colGrupoDni,
+            this.colGrupoTipo,
+            this.colGrupoAsiento,
+            this.colGrupoAsistencia});
+            this.dgvGrupo.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.dgvGrupo.Location = new System.Drawing.Point(0, 30);
+            this.dgvGrupo.MultiSelect = false;
+            this.dgvGrupo.Name = "dgvGrupo";
+            this.dgvGrupo.ReadOnly = true;
+            this.dgvGrupo.RowHeadersVisible = false;
+            this.dgvGrupo.ScrollBars = System.Windows.Forms.ScrollBars.Vertical;
+            this.dgvGrupo.SelectionMode = System.Windows.Forms.DataGridViewSelectionMode.FullRowSelect;
+            this.dgvGrupo.Size = new System.Drawing.Size(456, 212);
+            this.dgvGrupo.TabIndex = 1;
+            this.dgvGrupo.CellFormatting += new System.Windows.Forms.DataGridViewCellFormattingEventHandler(this.dgvGrupo_CellFormatting);
+            // 
+            // colGrupoPasajero
+            // 
+            this.colGrupoPasajero.DataPropertyName = "Pasajero";
+            this.colGrupoPasajero.FillWeight = 130F;
+            this.colGrupoPasajero.HeaderText = "Pasajero";
+            this.colGrupoPasajero.Name = "colGrupoPasajero";
+            this.colGrupoPasajero.ReadOnly = true;
+            // 
+            // colGrupoDni
+            // 
+            this.colGrupoDni.DataPropertyName = "Dni";
+            this.colGrupoDni.FillWeight = 95F;
+            this.colGrupoDni.HeaderText = "DNI";
+            this.colGrupoDni.Name = "colGrupoDni";
+            this.colGrupoDni.ReadOnly = true;
+            // 
+            // colGrupoTipo
+            // 
+            this.colGrupoTipo.DataPropertyName = "Tipo";
+            this.colGrupoTipo.FillWeight = 70F;
+            this.colGrupoTipo.HeaderText = "Tipo";
+            this.colGrupoTipo.Name = "colGrupoTipo";
+            this.colGrupoTipo.ReadOnly = true;
+            // 
+            // colGrupoAsiento
+            // 
+            this.colGrupoAsiento.DataPropertyName = "Asiento";
+            this.colGrupoAsiento.FillWeight = 72F;
+            this.colGrupoAsiento.HeaderText = "Asiento";
+            this.colGrupoAsiento.Name = "colGrupoAsiento";
+            this.colGrupoAsiento.ReadOnly = true;
+            // 
+            // colGrupoAsistencia
+            // 
+            this.colGrupoAsistencia.DataPropertyName = "Asistencia";
+            this.colGrupoAsistencia.FillWeight = 130F;
+            this.colGrupoAsistencia.HeaderText = "Asistencia especial";
+            this.colGrupoAsistencia.Name = "colGrupoAsistencia";
+            this.colGrupoAsistencia.ReadOnly = true;
+            // 
+            // lblReservaGrupo
+            // 
+            this.lblReservaGrupo.AutoEllipsis = true;
+            this.lblReservaGrupo.Dock = System.Windows.Forms.DockStyle.Bottom;
+            this.lblReservaGrupo.Font = new System.Drawing.Font("Segoe UI", 9F);
+            this.lblReservaGrupo.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(96)))), ((int)(((byte)(125)))), ((int)(((byte)(139)))));
+            this.lblReservaGrupo.Location = new System.Drawing.Point(0, 242);
+            this.lblReservaGrupo.Name = "lblReservaGrupo";
+            this.lblReservaGrupo.Size = new System.Drawing.Size(456, 44);
+            this.lblReservaGrupo.TabIndex = 2;
+            this.lblReservaGrupo.Text = "—";
+            this.lblReservaGrupo.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
+            // 
+            // lblSecGrupo
+            // 
+            this.lblSecGrupo.Dock = System.Windows.Forms.DockStyle.Top;
+            this.lblSecGrupo.Font = new System.Drawing.Font("Segoe UI Semibold", 11.25F, System.Drawing.FontStyle.Bold);
+            this.lblSecGrupo.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(13)))), ((int)(((byte)(71)))), ((int)(((byte)(161)))));
+            this.lblSecGrupo.Location = new System.Drawing.Point(0, 0);
+            this.lblSecGrupo.Name = "lblSecGrupo";
+            this.lblSecGrupo.Size = new System.Drawing.Size(456, 30);
+            this.lblSecGrupo.TabIndex = 0;
+            this.lblSecGrupo.Text = "Pasajeros del grupo";
+            this.lblSecGrupo.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
             // 
             // tlpDatosPasajero
             // 
@@ -1860,31 +2117,36 @@
             this.tlpDatosPasajero.Controls.Add(this.lblDniVerValor, 1, 2);
             this.tlpDatosPasajero.Controls.Add(this.lblEmail, 0, 3);
             this.tlpDatosPasajero.Controls.Add(this.lblEmailValor, 1, 3);
-            this.tlpDatosPasajero.Controls.Add(this.lblSecReserva, 0, 4);
-            this.tlpDatosPasajero.Controls.Add(this.lblReserva, 0, 5);
-            this.tlpDatosPasajero.Controls.Add(this.lblReservaValor, 1, 5);
-            this.tlpDatosPasajero.Controls.Add(this.lblEstadoReserva, 0, 6);
-            this.tlpDatosPasajero.Controls.Add(this.lblEstadoReservaValor, 1, 6);
-            this.tlpDatosPasajero.Controls.Add(this.lblEstadoCheckIn, 0, 7);
-            this.tlpDatosPasajero.Controls.Add(this.lblEstadoCheckInValor, 1, 7);
-            this.tlpDatosPasajero.Controls.Add(this.lblTipoViaje, 0, 8);
-            this.tlpDatosPasajero.Controls.Add(this.lblTipoViajeValor, 1, 8);
+            this.tlpDatosPasajero.Controls.Add(this.lblTipoPasajero, 0, 4);
+            this.tlpDatosPasajero.Controls.Add(this.lblTipoPasajeroValor, 1, 4);
+            this.tlpDatosPasajero.Controls.Add(this.lblAsistencia, 0, 5);
+            this.tlpDatosPasajero.Controls.Add(this.lblAsistenciaValor, 1, 5);
+            this.tlpDatosPasajero.Controls.Add(this.lblSecReserva, 0, 6);
+            this.tlpDatosPasajero.Controls.Add(this.lblReserva, 0, 7);
+            this.tlpDatosPasajero.Controls.Add(this.lblReservaValor, 1, 7);
+            this.tlpDatosPasajero.Controls.Add(this.lblEstadoReserva, 0, 8);
+            this.tlpDatosPasajero.Controls.Add(this.lblEstadoReservaValor, 1, 8);
+            this.tlpDatosPasajero.Controls.Add(this.lblEstadoCheckIn, 0, 9);
+            this.tlpDatosPasajero.Controls.Add(this.lblEstadoCheckInValor, 1, 9);
+            this.tlpDatosPasajero.Controls.Add(this.lblTipoViaje, 0, 10);
+            this.tlpDatosPasajero.Controls.Add(this.lblTipoViajeValor, 1, 10);
             this.tlpDatosPasajero.Dock = System.Windows.Forms.DockStyle.Fill;
             this.tlpDatosPasajero.Location = new System.Drawing.Point(0, 0);
-            this.tlpDatosPasajero.Margin = new System.Windows.Forms.Padding(0, 0, 16, 0);
             this.tlpDatosPasajero.Name = "tlpDatosPasajero";
-            this.tlpDatosPasajero.Size = new System.Drawing.Size(456, 300);
+            this.tlpDatosPasajero.Size = new System.Drawing.Size(456, 286);
             this.tlpDatosPasajero.TabIndex = 0;
-            this.tlpDatosPasajero.RowCount = 10;
+            this.tlpDatosPasajero.RowCount = 12;
             this.tlpDatosPasajero.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 30F));
-            this.tlpDatosPasajero.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 28F));
-            this.tlpDatosPasajero.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 28F));
-            this.tlpDatosPasajero.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 28F));
-            this.tlpDatosPasajero.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 34F));
-            this.tlpDatosPasajero.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 28F));
-            this.tlpDatosPasajero.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 28F));
-            this.tlpDatosPasajero.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 28F));
-            this.tlpDatosPasajero.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 28F));
+            this.tlpDatosPasajero.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 25F));
+            this.tlpDatosPasajero.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 25F));
+            this.tlpDatosPasajero.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 25F));
+            this.tlpDatosPasajero.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 25F));
+            this.tlpDatosPasajero.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 25F));
+            this.tlpDatosPasajero.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 32F));
+            this.tlpDatosPasajero.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 25F));
+            this.tlpDatosPasajero.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 25F));
+            this.tlpDatosPasajero.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 25F));
+            this.tlpDatosPasajero.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 25F));
             this.tlpDatosPasajero.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 100F));
             this.tlpDatosPasajero.SetColumnSpan(this.lblSecPasajero, 2);
             this.tlpDatosPasajero.SetColumnSpan(this.lblSecReserva, 2);
@@ -1907,10 +2169,10 @@
             this.lblNombre.Dock = System.Windows.Forms.DockStyle.Fill;
             this.lblNombre.Font = new System.Drawing.Font("Segoe UI", 9F);
             this.lblNombre.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(96)))), ((int)(((byte)(125)))), ((int)(((byte)(139)))));
-            this.lblNombre.Location = new System.Drawing.Point(0, 28);
+            this.lblNombre.Location = new System.Drawing.Point(0, 30);
             this.lblNombre.Margin = new System.Windows.Forms.Padding(0, 0, 0, 0);
             this.lblNombre.Name = "lblNombre";
-            this.lblNombre.Size = new System.Drawing.Size(160, 28);
+            this.lblNombre.Size = new System.Drawing.Size(160, 25);
             this.lblNombre.TabIndex = 1;
             this.lblNombre.Text = "Nombre y apellido";
             this.lblNombre.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
@@ -1921,10 +2183,10 @@
             this.lblNombreValor.Dock = System.Windows.Forms.DockStyle.Fill;
             this.lblNombreValor.Font = new System.Drawing.Font("Segoe UI Semibold", 9.75F, System.Drawing.FontStyle.Bold);
             this.lblNombreValor.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(33)))), ((int)(((byte)(33)))), ((int)(((byte)(33)))));
-            this.lblNombreValor.Location = new System.Drawing.Point(160, 28);
+            this.lblNombreValor.Location = new System.Drawing.Point(160, 30);
             this.lblNombreValor.Margin = new System.Windows.Forms.Padding(0, 0, 0, 0);
             this.lblNombreValor.Name = "lblNombreValor";
-            this.lblNombreValor.Size = new System.Drawing.Size(260, 28);
+            this.lblNombreValor.Size = new System.Drawing.Size(260, 25);
             this.lblNombreValor.TabIndex = 2;
             this.lblNombreValor.Text = "—";
             this.lblNombreValor.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
@@ -1934,10 +2196,10 @@
             this.lblDniVer.Dock = System.Windows.Forms.DockStyle.Fill;
             this.lblDniVer.Font = new System.Drawing.Font("Segoe UI", 9F);
             this.lblDniVer.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(96)))), ((int)(((byte)(125)))), ((int)(((byte)(139)))));
-            this.lblDniVer.Location = new System.Drawing.Point(0, 56);
+            this.lblDniVer.Location = new System.Drawing.Point(0, 55);
             this.lblDniVer.Margin = new System.Windows.Forms.Padding(0, 0, 0, 0);
             this.lblDniVer.Name = "lblDniVer";
-            this.lblDniVer.Size = new System.Drawing.Size(160, 28);
+            this.lblDniVer.Size = new System.Drawing.Size(160, 25);
             this.lblDniVer.TabIndex = 3;
             this.lblDniVer.Text = "DNI";
             this.lblDniVer.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
@@ -1948,10 +2210,10 @@
             this.lblDniVerValor.Dock = System.Windows.Forms.DockStyle.Fill;
             this.lblDniVerValor.Font = new System.Drawing.Font("Segoe UI Semibold", 9.75F, System.Drawing.FontStyle.Bold);
             this.lblDniVerValor.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(33)))), ((int)(((byte)(33)))), ((int)(((byte)(33)))));
-            this.lblDniVerValor.Location = new System.Drawing.Point(160, 56);
+            this.lblDniVerValor.Location = new System.Drawing.Point(160, 55);
             this.lblDniVerValor.Margin = new System.Windows.Forms.Padding(0, 0, 0, 0);
             this.lblDniVerValor.Name = "lblDniVerValor";
-            this.lblDniVerValor.Size = new System.Drawing.Size(260, 28);
+            this.lblDniVerValor.Size = new System.Drawing.Size(260, 25);
             this.lblDniVerValor.TabIndex = 4;
             this.lblDniVerValor.Text = "—";
             this.lblDniVerValor.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
@@ -1961,10 +2223,10 @@
             this.lblEmail.Dock = System.Windows.Forms.DockStyle.Fill;
             this.lblEmail.Font = new System.Drawing.Font("Segoe UI", 9F);
             this.lblEmail.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(96)))), ((int)(((byte)(125)))), ((int)(((byte)(139)))));
-            this.lblEmail.Location = new System.Drawing.Point(0, 84);
+            this.lblEmail.Location = new System.Drawing.Point(0, 80);
             this.lblEmail.Margin = new System.Windows.Forms.Padding(0, 0, 0, 0);
             this.lblEmail.Name = "lblEmail";
-            this.lblEmail.Size = new System.Drawing.Size(160, 28);
+            this.lblEmail.Size = new System.Drawing.Size(160, 25);
             this.lblEmail.TabIndex = 5;
             this.lblEmail.Text = "Email";
             this.lblEmail.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
@@ -1975,23 +2237,77 @@
             this.lblEmailValor.Dock = System.Windows.Forms.DockStyle.Fill;
             this.lblEmailValor.Font = new System.Drawing.Font("Segoe UI Semibold", 9.75F, System.Drawing.FontStyle.Bold);
             this.lblEmailValor.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(33)))), ((int)(((byte)(33)))), ((int)(((byte)(33)))));
-            this.lblEmailValor.Location = new System.Drawing.Point(160, 84);
+            this.lblEmailValor.Location = new System.Drawing.Point(160, 80);
             this.lblEmailValor.Margin = new System.Windows.Forms.Padding(0, 0, 0, 0);
             this.lblEmailValor.Name = "lblEmailValor";
-            this.lblEmailValor.Size = new System.Drawing.Size(260, 28);
+            this.lblEmailValor.Size = new System.Drawing.Size(260, 25);
             this.lblEmailValor.TabIndex = 6;
             this.lblEmailValor.Text = "—";
             this.lblEmailValor.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
+            // 
+            // lblTipoPasajero
+            // 
+            this.lblTipoPasajero.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.lblTipoPasajero.Font = new System.Drawing.Font("Segoe UI", 9F);
+            this.lblTipoPasajero.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(96)))), ((int)(((byte)(125)))), ((int)(((byte)(139)))));
+            this.lblTipoPasajero.Location = new System.Drawing.Point(0, 105);
+            this.lblTipoPasajero.Margin = new System.Windows.Forms.Padding(0, 0, 0, 0);
+            this.lblTipoPasajero.Name = "lblTipoPasajero";
+            this.lblTipoPasajero.Size = new System.Drawing.Size(160, 25);
+            this.lblTipoPasajero.TabIndex = 16;
+            this.lblTipoPasajero.Text = "Tipo de pasajero";
+            this.lblTipoPasajero.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
+            // 
+            // lblTipoPasajeroValor
+            // 
+            this.lblTipoPasajeroValor.AutoEllipsis = true;
+            this.lblTipoPasajeroValor.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.lblTipoPasajeroValor.Font = new System.Drawing.Font("Segoe UI Semibold", 9.75F, System.Drawing.FontStyle.Bold);
+            this.lblTipoPasajeroValor.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(33)))), ((int)(((byte)(33)))), ((int)(((byte)(33)))));
+            this.lblTipoPasajeroValor.Location = new System.Drawing.Point(160, 105);
+            this.lblTipoPasajeroValor.Margin = new System.Windows.Forms.Padding(0, 0, 0, 0);
+            this.lblTipoPasajeroValor.Name = "lblTipoPasajeroValor";
+            this.lblTipoPasajeroValor.Size = new System.Drawing.Size(260, 25);
+            this.lblTipoPasajeroValor.TabIndex = 17;
+            this.lblTipoPasajeroValor.Text = "—";
+            this.lblTipoPasajeroValor.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
+            // 
+            // lblAsistencia
+            // 
+            this.lblAsistencia.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.lblAsistencia.Font = new System.Drawing.Font("Segoe UI", 9F);
+            this.lblAsistencia.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(96)))), ((int)(((byte)(125)))), ((int)(((byte)(139)))));
+            this.lblAsistencia.Location = new System.Drawing.Point(0, 130);
+            this.lblAsistencia.Margin = new System.Windows.Forms.Padding(0, 0, 0, 0);
+            this.lblAsistencia.Name = "lblAsistencia";
+            this.lblAsistencia.Size = new System.Drawing.Size(160, 25);
+            this.lblAsistencia.TabIndex = 18;
+            this.lblAsistencia.Text = "Asistencia especial";
+            this.lblAsistencia.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
+            // 
+            // lblAsistenciaValor
+            // 
+            this.lblAsistenciaValor.AutoEllipsis = true;
+            this.lblAsistenciaValor.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.lblAsistenciaValor.Font = new System.Drawing.Font("Segoe UI Semibold", 9.75F, System.Drawing.FontStyle.Bold);
+            this.lblAsistenciaValor.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(33)))), ((int)(((byte)(33)))), ((int)(((byte)(33)))));
+            this.lblAsistenciaValor.Location = new System.Drawing.Point(160, 130);
+            this.lblAsistenciaValor.Margin = new System.Windows.Forms.Padding(0, 0, 0, 0);
+            this.lblAsistenciaValor.Name = "lblAsistenciaValor";
+            this.lblAsistenciaValor.Size = new System.Drawing.Size(260, 25);
+            this.lblAsistenciaValor.TabIndex = 19;
+            this.lblAsistenciaValor.Text = "—";
+            this.lblAsistenciaValor.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
             // 
             // lblSecReserva
             // 
             this.lblSecReserva.Dock = System.Windows.Forms.DockStyle.Fill;
             this.lblSecReserva.Font = new System.Drawing.Font("Segoe UI Semibold", 11.25F, System.Drawing.FontStyle.Bold);
             this.lblSecReserva.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(13)))), ((int)(((byte)(71)))), ((int)(((byte)(161)))));
-            this.lblSecReserva.Location = new System.Drawing.Point(0, 112);
+            this.lblSecReserva.Location = new System.Drawing.Point(0, 155);
             this.lblSecReserva.Margin = new System.Windows.Forms.Padding(0, 0, 0, 0);
             this.lblSecReserva.Name = "lblSecReserva";
-            this.lblSecReserva.Size = new System.Drawing.Size(420, 30);
+            this.lblSecReserva.Size = new System.Drawing.Size(420, 32);
             this.lblSecReserva.TabIndex = 7;
             this.lblSecReserva.Text = "Reserva";
             this.lblSecReserva.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
@@ -2001,10 +2317,10 @@
             this.lblReserva.Dock = System.Windows.Forms.DockStyle.Fill;
             this.lblReserva.Font = new System.Drawing.Font("Segoe UI", 9F);
             this.lblReserva.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(96)))), ((int)(((byte)(125)))), ((int)(((byte)(139)))));
-            this.lblReserva.Location = new System.Drawing.Point(0, 140);
+            this.lblReserva.Location = new System.Drawing.Point(0, 187);
             this.lblReserva.Margin = new System.Windows.Forms.Padding(0, 0, 0, 0);
             this.lblReserva.Name = "lblReserva";
-            this.lblReserva.Size = new System.Drawing.Size(160, 28);
+            this.lblReserva.Size = new System.Drawing.Size(160, 25);
             this.lblReserva.TabIndex = 8;
             this.lblReserva.Text = "Número de reserva";
             this.lblReserva.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
@@ -2015,10 +2331,10 @@
             this.lblReservaValor.Dock = System.Windows.Forms.DockStyle.Fill;
             this.lblReservaValor.Font = new System.Drawing.Font("Segoe UI Semibold", 9.75F, System.Drawing.FontStyle.Bold);
             this.lblReservaValor.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(33)))), ((int)(((byte)(33)))), ((int)(((byte)(33)))));
-            this.lblReservaValor.Location = new System.Drawing.Point(160, 140);
+            this.lblReservaValor.Location = new System.Drawing.Point(160, 187);
             this.lblReservaValor.Margin = new System.Windows.Forms.Padding(0, 0, 0, 0);
             this.lblReservaValor.Name = "lblReservaValor";
-            this.lblReservaValor.Size = new System.Drawing.Size(260, 28);
+            this.lblReservaValor.Size = new System.Drawing.Size(260, 25);
             this.lblReservaValor.TabIndex = 9;
             this.lblReservaValor.Text = "—";
             this.lblReservaValor.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
@@ -2028,10 +2344,10 @@
             this.lblEstadoReserva.Dock = System.Windows.Forms.DockStyle.Fill;
             this.lblEstadoReserva.Font = new System.Drawing.Font("Segoe UI", 9F);
             this.lblEstadoReserva.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(96)))), ((int)(((byte)(125)))), ((int)(((byte)(139)))));
-            this.lblEstadoReserva.Location = new System.Drawing.Point(0, 168);
+            this.lblEstadoReserva.Location = new System.Drawing.Point(0, 212);
             this.lblEstadoReserva.Margin = new System.Windows.Forms.Padding(0, 0, 0, 0);
             this.lblEstadoReserva.Name = "lblEstadoReserva";
-            this.lblEstadoReserva.Size = new System.Drawing.Size(160, 28);
+            this.lblEstadoReserva.Size = new System.Drawing.Size(160, 25);
             this.lblEstadoReserva.TabIndex = 10;
             this.lblEstadoReserva.Text = "Estado de la reserva";
             this.lblEstadoReserva.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
@@ -2042,10 +2358,10 @@
             this.lblEstadoReservaValor.Dock = System.Windows.Forms.DockStyle.Fill;
             this.lblEstadoReservaValor.Font = new System.Drawing.Font("Segoe UI Semibold", 9.75F, System.Drawing.FontStyle.Bold);
             this.lblEstadoReservaValor.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(33)))), ((int)(((byte)(33)))), ((int)(((byte)(33)))));
-            this.lblEstadoReservaValor.Location = new System.Drawing.Point(160, 168);
+            this.lblEstadoReservaValor.Location = new System.Drawing.Point(160, 212);
             this.lblEstadoReservaValor.Margin = new System.Windows.Forms.Padding(0, 0, 0, 0);
             this.lblEstadoReservaValor.Name = "lblEstadoReservaValor";
-            this.lblEstadoReservaValor.Size = new System.Drawing.Size(260, 28);
+            this.lblEstadoReservaValor.Size = new System.Drawing.Size(260, 25);
             this.lblEstadoReservaValor.TabIndex = 11;
             this.lblEstadoReservaValor.Text = "—";
             this.lblEstadoReservaValor.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
@@ -2055,10 +2371,10 @@
             this.lblEstadoCheckIn.Dock = System.Windows.Forms.DockStyle.Fill;
             this.lblEstadoCheckIn.Font = new System.Drawing.Font("Segoe UI", 9F);
             this.lblEstadoCheckIn.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(96)))), ((int)(((byte)(125)))), ((int)(((byte)(139)))));
-            this.lblEstadoCheckIn.Location = new System.Drawing.Point(0, 196);
+            this.lblEstadoCheckIn.Location = new System.Drawing.Point(0, 237);
             this.lblEstadoCheckIn.Margin = new System.Windows.Forms.Padding(0, 0, 0, 0);
             this.lblEstadoCheckIn.Name = "lblEstadoCheckIn";
-            this.lblEstadoCheckIn.Size = new System.Drawing.Size(160, 28);
+            this.lblEstadoCheckIn.Size = new System.Drawing.Size(160, 25);
             this.lblEstadoCheckIn.TabIndex = 12;
             this.lblEstadoCheckIn.Text = "Estado del check-in";
             this.lblEstadoCheckIn.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
@@ -2069,10 +2385,10 @@
             this.lblEstadoCheckInValor.Dock = System.Windows.Forms.DockStyle.Fill;
             this.lblEstadoCheckInValor.Font = new System.Drawing.Font("Segoe UI Semibold", 9.75F, System.Drawing.FontStyle.Bold);
             this.lblEstadoCheckInValor.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(33)))), ((int)(((byte)(33)))), ((int)(((byte)(33)))));
-            this.lblEstadoCheckInValor.Location = new System.Drawing.Point(160, 196);
+            this.lblEstadoCheckInValor.Location = new System.Drawing.Point(160, 237);
             this.lblEstadoCheckInValor.Margin = new System.Windows.Forms.Padding(0, 0, 0, 0);
             this.lblEstadoCheckInValor.Name = "lblEstadoCheckInValor";
-            this.lblEstadoCheckInValor.Size = new System.Drawing.Size(260, 28);
+            this.lblEstadoCheckInValor.Size = new System.Drawing.Size(260, 25);
             this.lblEstadoCheckInValor.TabIndex = 13;
             this.lblEstadoCheckInValor.Text = "—";
             this.lblEstadoCheckInValor.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
@@ -2082,10 +2398,10 @@
             this.lblTipoViaje.Dock = System.Windows.Forms.DockStyle.Fill;
             this.lblTipoViaje.Font = new System.Drawing.Font("Segoe UI", 9F);
             this.lblTipoViaje.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(96)))), ((int)(((byte)(125)))), ((int)(((byte)(139)))));
-            this.lblTipoViaje.Location = new System.Drawing.Point(0, 224);
+            this.lblTipoViaje.Location = new System.Drawing.Point(0, 262);
             this.lblTipoViaje.Margin = new System.Windows.Forms.Padding(0, 0, 0, 0);
             this.lblTipoViaje.Name = "lblTipoViaje";
-            this.lblTipoViaje.Size = new System.Drawing.Size(160, 28);
+            this.lblTipoViaje.Size = new System.Drawing.Size(160, 25);
             this.lblTipoViaje.TabIndex = 14;
             this.lblTipoViaje.Text = "Tipo de viaje";
             this.lblTipoViaje.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
@@ -2096,10 +2412,10 @@
             this.lblTipoViajeValor.Dock = System.Windows.Forms.DockStyle.Fill;
             this.lblTipoViajeValor.Font = new System.Drawing.Font("Segoe UI Semibold", 9.75F, System.Drawing.FontStyle.Bold);
             this.lblTipoViajeValor.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(33)))), ((int)(((byte)(33)))), ((int)(((byte)(33)))));
-            this.lblTipoViajeValor.Location = new System.Drawing.Point(160, 224);
+            this.lblTipoViajeValor.Location = new System.Drawing.Point(160, 262);
             this.lblTipoViajeValor.Margin = new System.Windows.Forms.Padding(0, 0, 0, 0);
             this.lblTipoViajeValor.Name = "lblTipoViajeValor";
-            this.lblTipoViajeValor.Size = new System.Drawing.Size(260, 28);
+            this.lblTipoViajeValor.Size = new System.Drawing.Size(260, 25);
             this.lblTipoViajeValor.TabIndex = 15;
             this.lblTipoViajeValor.Text = "—";
             this.lblTipoViajeValor.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
@@ -2131,13 +2447,13 @@
             this.tlpDatosVuelo.TabIndex = 1;
             this.tlpDatosVuelo.RowCount = 9;
             this.tlpDatosVuelo.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 30F));
-            this.tlpDatosVuelo.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 28F));
-            this.tlpDatosVuelo.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 28F));
-            this.tlpDatosVuelo.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 28F));
-            this.tlpDatosVuelo.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 28F));
-            this.tlpDatosVuelo.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 28F));
-            this.tlpDatosVuelo.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 28F));
-            this.tlpDatosVuelo.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 34F));
+            this.tlpDatosVuelo.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 25F));
+            this.tlpDatosVuelo.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 25F));
+            this.tlpDatosVuelo.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 25F));
+            this.tlpDatosVuelo.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 25F));
+            this.tlpDatosVuelo.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 25F));
+            this.tlpDatosVuelo.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 25F));
+            this.tlpDatosVuelo.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 32F));
             this.tlpDatosVuelo.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 100F));
             this.tlpDatosVuelo.SetColumnSpan(this.lblSecVuelo, 2);
             this.tlpDatosVuelo.SetColumnSpan(this.lblSecServicios, 2);
@@ -2161,10 +2477,10 @@
             this.lblVuelo.Dock = System.Windows.Forms.DockStyle.Fill;
             this.lblVuelo.Font = new System.Drawing.Font("Segoe UI", 9F);
             this.lblVuelo.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(96)))), ((int)(((byte)(125)))), ((int)(((byte)(139)))));
-            this.lblVuelo.Location = new System.Drawing.Point(0, 28);
+            this.lblVuelo.Location = new System.Drawing.Point(0, 30);
             this.lblVuelo.Margin = new System.Windows.Forms.Padding(0, 0, 0, 0);
             this.lblVuelo.Name = "lblVuelo";
-            this.lblVuelo.Size = new System.Drawing.Size(150, 28);
+            this.lblVuelo.Size = new System.Drawing.Size(150, 25);
             this.lblVuelo.TabIndex = 1;
             this.lblVuelo.Text = "Vuelo";
             this.lblVuelo.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
@@ -2175,10 +2491,10 @@
             this.lblVueloValor.Dock = System.Windows.Forms.DockStyle.Fill;
             this.lblVueloValor.Font = new System.Drawing.Font("Segoe UI Semibold", 9.75F, System.Drawing.FontStyle.Bold);
             this.lblVueloValor.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(33)))), ((int)(((byte)(33)))), ((int)(((byte)(33)))));
-            this.lblVueloValor.Location = new System.Drawing.Point(150, 28);
+            this.lblVueloValor.Location = new System.Drawing.Point(150, 30);
             this.lblVueloValor.Margin = new System.Windows.Forms.Padding(0, 0, 0, 0);
             this.lblVueloValor.Name = "lblVueloValor";
-            this.lblVueloValor.Size = new System.Drawing.Size(270, 28);
+            this.lblVueloValor.Size = new System.Drawing.Size(270, 25);
             this.lblVueloValor.TabIndex = 2;
             this.lblVueloValor.Text = "—";
             this.lblVueloValor.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
@@ -2188,10 +2504,10 @@
             this.lblRuta.Dock = System.Windows.Forms.DockStyle.Fill;
             this.lblRuta.Font = new System.Drawing.Font("Segoe UI", 9F);
             this.lblRuta.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(96)))), ((int)(((byte)(125)))), ((int)(((byte)(139)))));
-            this.lblRuta.Location = new System.Drawing.Point(0, 56);
+            this.lblRuta.Location = new System.Drawing.Point(0, 55);
             this.lblRuta.Margin = new System.Windows.Forms.Padding(0, 0, 0, 0);
             this.lblRuta.Name = "lblRuta";
-            this.lblRuta.Size = new System.Drawing.Size(150, 28);
+            this.lblRuta.Size = new System.Drawing.Size(150, 25);
             this.lblRuta.TabIndex = 3;
             this.lblRuta.Text = "Ruta";
             this.lblRuta.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
@@ -2202,10 +2518,10 @@
             this.lblRutaValor.Dock = System.Windows.Forms.DockStyle.Fill;
             this.lblRutaValor.Font = new System.Drawing.Font("Segoe UI Semibold", 9.75F, System.Drawing.FontStyle.Bold);
             this.lblRutaValor.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(33)))), ((int)(((byte)(33)))), ((int)(((byte)(33)))));
-            this.lblRutaValor.Location = new System.Drawing.Point(150, 56);
+            this.lblRutaValor.Location = new System.Drawing.Point(150, 55);
             this.lblRutaValor.Margin = new System.Windows.Forms.Padding(0, 0, 0, 0);
             this.lblRutaValor.Name = "lblRutaValor";
-            this.lblRutaValor.Size = new System.Drawing.Size(270, 28);
+            this.lblRutaValor.Size = new System.Drawing.Size(270, 25);
             this.lblRutaValor.TabIndex = 4;
             this.lblRutaValor.Text = "—";
             this.lblRutaValor.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
@@ -2215,10 +2531,10 @@
             this.lblSalida.Dock = System.Windows.Forms.DockStyle.Fill;
             this.lblSalida.Font = new System.Drawing.Font("Segoe UI", 9F);
             this.lblSalida.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(96)))), ((int)(((byte)(125)))), ((int)(((byte)(139)))));
-            this.lblSalida.Location = new System.Drawing.Point(0, 84);
+            this.lblSalida.Location = new System.Drawing.Point(0, 80);
             this.lblSalida.Margin = new System.Windows.Forms.Padding(0, 0, 0, 0);
             this.lblSalida.Name = "lblSalida";
-            this.lblSalida.Size = new System.Drawing.Size(150, 28);
+            this.lblSalida.Size = new System.Drawing.Size(150, 25);
             this.lblSalida.TabIndex = 5;
             this.lblSalida.Text = "Salida";
             this.lblSalida.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
@@ -2229,10 +2545,10 @@
             this.lblSalidaValor.Dock = System.Windows.Forms.DockStyle.Fill;
             this.lblSalidaValor.Font = new System.Drawing.Font("Segoe UI Semibold", 9.75F, System.Drawing.FontStyle.Bold);
             this.lblSalidaValor.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(33)))), ((int)(((byte)(33)))), ((int)(((byte)(33)))));
-            this.lblSalidaValor.Location = new System.Drawing.Point(150, 84);
+            this.lblSalidaValor.Location = new System.Drawing.Point(150, 80);
             this.lblSalidaValor.Margin = new System.Windows.Forms.Padding(0, 0, 0, 0);
             this.lblSalidaValor.Name = "lblSalidaValor";
-            this.lblSalidaValor.Size = new System.Drawing.Size(270, 28);
+            this.lblSalidaValor.Size = new System.Drawing.Size(270, 25);
             this.lblSalidaValor.TabIndex = 6;
             this.lblSalidaValor.Text = "—";
             this.lblSalidaValor.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
@@ -2242,10 +2558,10 @@
             this.lblLlegada.Dock = System.Windows.Forms.DockStyle.Fill;
             this.lblLlegada.Font = new System.Drawing.Font("Segoe UI", 9F);
             this.lblLlegada.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(96)))), ((int)(((byte)(125)))), ((int)(((byte)(139)))));
-            this.lblLlegada.Location = new System.Drawing.Point(0, 112);
+            this.lblLlegada.Location = new System.Drawing.Point(0, 105);
             this.lblLlegada.Margin = new System.Windows.Forms.Padding(0, 0, 0, 0);
             this.lblLlegada.Name = "lblLlegada";
-            this.lblLlegada.Size = new System.Drawing.Size(150, 28);
+            this.lblLlegada.Size = new System.Drawing.Size(150, 25);
             this.lblLlegada.TabIndex = 7;
             this.lblLlegada.Text = "Llegada";
             this.lblLlegada.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
@@ -2256,10 +2572,10 @@
             this.lblLlegadaValor.Dock = System.Windows.Forms.DockStyle.Fill;
             this.lblLlegadaValor.Font = new System.Drawing.Font("Segoe UI Semibold", 9.75F, System.Drawing.FontStyle.Bold);
             this.lblLlegadaValor.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(33)))), ((int)(((byte)(33)))), ((int)(((byte)(33)))));
-            this.lblLlegadaValor.Location = new System.Drawing.Point(150, 112);
+            this.lblLlegadaValor.Location = new System.Drawing.Point(150, 105);
             this.lblLlegadaValor.Margin = new System.Windows.Forms.Padding(0, 0, 0, 0);
             this.lblLlegadaValor.Name = "lblLlegadaValor";
-            this.lblLlegadaValor.Size = new System.Drawing.Size(270, 28);
+            this.lblLlegadaValor.Size = new System.Drawing.Size(270, 25);
             this.lblLlegadaValor.TabIndex = 8;
             this.lblLlegadaValor.Text = "—";
             this.lblLlegadaValor.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
@@ -2269,10 +2585,10 @@
             this.lblClase.Dock = System.Windows.Forms.DockStyle.Fill;
             this.lblClase.Font = new System.Drawing.Font("Segoe UI", 9F);
             this.lblClase.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(96)))), ((int)(((byte)(125)))), ((int)(((byte)(139)))));
-            this.lblClase.Location = new System.Drawing.Point(0, 140);
+            this.lblClase.Location = new System.Drawing.Point(0, 130);
             this.lblClase.Margin = new System.Windows.Forms.Padding(0, 0, 0, 0);
             this.lblClase.Name = "lblClase";
-            this.lblClase.Size = new System.Drawing.Size(150, 28);
+            this.lblClase.Size = new System.Drawing.Size(150, 25);
             this.lblClase.TabIndex = 9;
             this.lblClase.Text = "Clase";
             this.lblClase.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
@@ -2283,10 +2599,10 @@
             this.lblClaseValor.Dock = System.Windows.Forms.DockStyle.Fill;
             this.lblClaseValor.Font = new System.Drawing.Font("Segoe UI Semibold", 9.75F, System.Drawing.FontStyle.Bold);
             this.lblClaseValor.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(33)))), ((int)(((byte)(33)))), ((int)(((byte)(33)))));
-            this.lblClaseValor.Location = new System.Drawing.Point(150, 140);
+            this.lblClaseValor.Location = new System.Drawing.Point(150, 130);
             this.lblClaseValor.Margin = new System.Windows.Forms.Padding(0, 0, 0, 0);
             this.lblClaseValor.Name = "lblClaseValor";
-            this.lblClaseValor.Size = new System.Drawing.Size(270, 28);
+            this.lblClaseValor.Size = new System.Drawing.Size(270, 25);
             this.lblClaseValor.TabIndex = 10;
             this.lblClaseValor.Text = "—";
             this.lblClaseValor.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
@@ -2296,10 +2612,10 @@
             this.lblPuerta.Dock = System.Windows.Forms.DockStyle.Fill;
             this.lblPuerta.Font = new System.Drawing.Font("Segoe UI", 9F);
             this.lblPuerta.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(96)))), ((int)(((byte)(125)))), ((int)(((byte)(139)))));
-            this.lblPuerta.Location = new System.Drawing.Point(0, 168);
+            this.lblPuerta.Location = new System.Drawing.Point(0, 155);
             this.lblPuerta.Margin = new System.Windows.Forms.Padding(0, 0, 0, 0);
             this.lblPuerta.Name = "lblPuerta";
-            this.lblPuerta.Size = new System.Drawing.Size(150, 28);
+            this.lblPuerta.Size = new System.Drawing.Size(150, 25);
             this.lblPuerta.TabIndex = 11;
             this.lblPuerta.Text = "Puerta de embarque";
             this.lblPuerta.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
@@ -2310,10 +2626,10 @@
             this.lblPuertaValor.Dock = System.Windows.Forms.DockStyle.Fill;
             this.lblPuertaValor.Font = new System.Drawing.Font("Segoe UI Semibold", 9.75F, System.Drawing.FontStyle.Bold);
             this.lblPuertaValor.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(33)))), ((int)(((byte)(33)))), ((int)(((byte)(33)))));
-            this.lblPuertaValor.Location = new System.Drawing.Point(150, 168);
+            this.lblPuertaValor.Location = new System.Drawing.Point(150, 155);
             this.lblPuertaValor.Margin = new System.Windows.Forms.Padding(0, 0, 0, 0);
             this.lblPuertaValor.Name = "lblPuertaValor";
-            this.lblPuertaValor.Size = new System.Drawing.Size(270, 28);
+            this.lblPuertaValor.Size = new System.Drawing.Size(270, 25);
             this.lblPuertaValor.TabIndex = 12;
             this.lblPuertaValor.Text = "—";
             this.lblPuertaValor.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
@@ -2323,10 +2639,10 @@
             this.lblSecServicios.Dock = System.Windows.Forms.DockStyle.Fill;
             this.lblSecServicios.Font = new System.Drawing.Font("Segoe UI Semibold", 11.25F, System.Drawing.FontStyle.Bold);
             this.lblSecServicios.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(13)))), ((int)(((byte)(71)))), ((int)(((byte)(161)))));
-            this.lblSecServicios.Location = new System.Drawing.Point(0, 196);
+            this.lblSecServicios.Location = new System.Drawing.Point(0, 180);
             this.lblSecServicios.Margin = new System.Windows.Forms.Padding(0, 0, 0, 0);
             this.lblSecServicios.Name = "lblSecServicios";
-            this.lblSecServicios.Size = new System.Drawing.Size(420, 30);
+            this.lblSecServicios.Size = new System.Drawing.Size(420, 32);
             this.lblSecServicios.TabIndex = 13;
             this.lblSecServicios.Text = "Servicios adicionales";
             this.lblSecServicios.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
@@ -2336,7 +2652,7 @@
             this.lblServiciosValor.Dock = System.Windows.Forms.DockStyle.Fill;
             this.lblServiciosValor.Font = new System.Drawing.Font("Segoe UI", 10F);
             this.lblServiciosValor.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(33)))), ((int)(((byte)(33)))), ((int)(((byte)(33)))));
-            this.lblServiciosValor.Location = new System.Drawing.Point(0, 230);
+            this.lblServiciosValor.Location = new System.Drawing.Point(0, 212);
             this.lblServiciosValor.Margin = new System.Windows.Forms.Padding(0, 2, 0, 0);
             this.lblServiciosValor.Name = "lblServiciosValor";
             this.lblServiciosValor.Size = new System.Drawing.Size(472, 70);
@@ -2346,6 +2662,7 @@
             // pnlVentana
             // 
             this.pnlVentana.Controls.Add(this.lblVentana);
+            this.pnlVentana.Controls.Add(this.lblInfantes);
             this.pnlVentana.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(227)))), ((int)(((byte)(242)))), ((int)(((byte)(253)))));
             this.pnlVentana.Dock = System.Windows.Forms.DockStyle.Bottom;
             this.pnlVentana.Location = new System.Drawing.Point(24, 340);
@@ -2365,6 +2682,20 @@
             this.lblVentana.TabIndex = 0;
             this.lblVentana.Text = "—";
             this.lblVentana.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
+            // 
+            // lblInfantes
+            // 
+            this.lblInfantes.AutoEllipsis = true;
+            this.lblInfantes.Dock = System.Windows.Forms.DockStyle.Bottom;
+            this.lblInfantes.Font = new System.Drawing.Font("Segoe UI Semibold", 9F, System.Drawing.FontStyle.Bold);
+            this.lblInfantes.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(13)))), ((int)(((byte)(71)))), ((int)(((byte)(161)))));
+            this.lblInfantes.Location = new System.Drawing.Point(14, 23);
+            this.lblInfantes.Name = "lblInfantes";
+            this.lblInfantes.Size = new System.Drawing.Size(916, 21);
+            this.lblInfantes.TabIndex = 1;
+            this.lblInfantes.Text = "Viaja con infante en brazos";
+            this.lblInfantes.TextAlign = System.Drawing.ContentAlignment.TopLeft;
+            this.lblInfantes.Visible = false;
             // 
             // lblTituloVerificar
             // 
@@ -2404,6 +2735,7 @@
             this.dgvPasajeros.ColumnHeadersHeight = 38;
             this.dgvPasajeros.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.DisableResizing;
             this.dgvPasajeros.Columns.AddRange(new System.Windows.Forms.DataGridViewColumn[] {
+            this.colMarcar,
             this.colDni,
             this.colPasajero,
             this.colTramo,
@@ -2423,7 +2755,20 @@
             this.dgvPasajeros.TabIndex = 5;
             this.dgvPasajeros.CellFormatting += new System.Windows.Forms.DataGridViewCellFormattingEventHandler(this.dgvPasajeros_CellFormatting);
             this.dgvPasajeros.SelectionChanged += new System.EventHandler(this.dgvPasajeros_SelectionChanged);
+            this.dgvPasajeros.CellClick += new System.Windows.Forms.DataGridViewCellEventHandler(this.dgvPasajeros_CellClick);
             this.dgvPasajeros.CellDoubleClick += new System.Windows.Forms.DataGridViewCellEventHandler(this.dgvPasajeros_CellDoubleClick);
+            this.dgvPasajeros.CellPainting += new System.Windows.Forms.DataGridViewCellPaintingEventHandler(this.dgvPasajeros_CellPainting);
+            this.dgvPasajeros.KeyDown += new System.Windows.Forms.KeyEventHandler(this.dgvPasajeros_KeyDown);
+            // 
+            // colMarcar
+            // 
+            this.colMarcar.AutoSizeMode = System.Windows.Forms.DataGridViewAutoSizeColumnMode.None;
+            this.colMarcar.DataPropertyName = "Marcado";
+            this.colMarcar.HeaderText = "";
+            this.colMarcar.Name = "colMarcar";
+            this.colMarcar.ReadOnly = true;
+            this.colMarcar.Resizable = System.Windows.Forms.DataGridViewTriState.False;
+            this.colMarcar.Width = 44;
             // 
             // colDni
             // 
@@ -2565,6 +2910,7 @@
             this.tlpBusqueda.Controls.Add(this.txtNumeroReserva, 0, 1);
             this.tlpBusqueda.Controls.Add(this.txtDni, 1, 1);
             this.tlpBusqueda.Controls.Add(this.btnBuscar, 2, 1);
+            this.tlpBusqueda.Controls.Add(this.btnMarcarTodos, 3, 1);
             this.tlpBusqueda.Dock = System.Windows.Forms.DockStyle.Top;
             this.tlpBusqueda.Location = new System.Drawing.Point(24, 74);
             this.tlpBusqueda.Name = "tlpBusqueda";
@@ -2645,6 +2991,22 @@
             this.btnBuscar.UseVisualStyleBackColor = false;
             this.btnBuscar.Click += new System.EventHandler(this.btnBuscar_Click);
             // 
+            // btnMarcarTodos
+            // 
+            this.btnMarcarTodos.Anchor = System.Windows.Forms.AnchorStyles.Right;
+            this.btnMarcarTodos.Estilo = PROYECTO_ING_DE_SOFTWARE.EstiloBoton_GV42.Secundario;
+            this.btnMarcarTodos.FlatAppearance.BorderSize = 0;
+            this.btnMarcarTodos.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.btnMarcarTodos.Font = new System.Drawing.Font("Segoe UI Semibold", 10F, System.Drawing.FontStyle.Bold);
+            this.btnMarcarTodos.Location = new System.Drawing.Point(744, 23);
+            this.btnMarcarTodos.Margin = new System.Windows.Forms.Padding(3, 3, 0, 3);
+            this.btnMarcarTodos.Name = "btnMarcarTodos";
+            this.btnMarcarTodos.Size = new System.Drawing.Size(200, 36);
+            this.btnMarcarTodos.TabIndex = 5;
+            this.btnMarcarTodos.Text = "Seleccionar todos";
+            this.btnMarcarTodos.UseVisualStyleBackColor = false;
+            this.btnMarcarTodos.Click += new System.EventHandler(this.btnMarcarTodos_Click);
+            // 
             // lblAyudaBuscar
             // 
             this.lblAyudaBuscar.Dock = System.Windows.Forms.DockStyle.Top;
@@ -2697,6 +3059,10 @@
             this.tlpDatosVuelo.PerformLayout();
             this.tlpDatosPasajero.ResumeLayout(false);
             this.tlpDatosPasajero.PerformLayout();
+            this.pnlGrupoVerificar.ResumeLayout(false);
+            this.pnlIzqVerificar.ResumeLayout(false);
+            this.pnlTituloEquipaje.ResumeLayout(false);
+            this.pnlTituloAsiento.ResumeLayout(false);
             this.tlpVerificar.ResumeLayout(false);
             this.tlpVerificar.PerformLayout();
             this.pnlPasoVerificar.ResumeLayout(false);
@@ -2759,6 +3125,8 @@
             this.pnlEncabezado.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)(this.numBultos)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.dgvPasajeros)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.dgvGrupo)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.dgvResultado)).EndInit();
             this.ResumeLayout(false);
 
         }
@@ -2784,6 +3152,11 @@
         private System.Windows.Forms.Panel pnlResultadoCentro;
         private PROYECTO_ING_DE_SOFTWARE.BotonModerno_GV42 btnVerTarjetaResultado;
         private PROYECTO_ING_DE_SOFTWARE.BotonModerno_GV42 btnOtroPasajero;
+        private PROYECTO_ING_DE_SOFTWARE.GrillaModerna_GV42 dgvResultado;
+        private System.Windows.Forms.DataGridViewTextBoxColumn colResPasajero;
+        private System.Windows.Forms.DataGridViewTextBoxColumn colResTarjeta;
+        private System.Windows.Forms.DataGridViewTextBoxColumn colResAsiento;
+        private System.Windows.Forms.DataGridViewTextBoxColumn colResEstado;
         private System.Windows.Forms.TableLayoutPanel tlpResultado;
         private System.Windows.Forms.Label lblResTarjeta;
         private System.Windows.Forms.Label lblResTarjetaValor;
@@ -2822,7 +3195,9 @@
         private System.Windows.Forms.Label lblAsientoPreferencialValor;
         private PROYECTO_ING_DE_SOFTWARE.BotonModerno_GV42 btnCambiarAsiento;
         private System.Windows.Forms.Label lblAyudaAsiento;
+        private System.Windows.Forms.Panel pnlTituloAsiento;
         private System.Windows.Forms.Label lblTituloAsiento;
+        private PROYECTO_ING_DE_SOFTWARE.CtrlNavegadorPasajero_GV42 ctrlNavAsiento;
         private PROYECTO_ING_DE_SOFTWARE.PanelTarjeta_GV42 pnlPasoEquipaje;
         private System.Windows.Forms.TableLayoutPanel tlpEquipaje;
         private System.Windows.Forms.Panel pnlDatosEquipaje;
@@ -2883,9 +3258,21 @@
         private System.Windows.Forms.Panel pnlAvisoMostrador;
         private System.Windows.Forms.Label lblAvisoMostrador;
         private System.Windows.Forms.Label lblAyudaEquipaje;
+        private System.Windows.Forms.Panel pnlTituloEquipaje;
         private System.Windows.Forms.Label lblTituloEquipaje;
+        private PROYECTO_ING_DE_SOFTWARE.CtrlNavegadorPasajero_GV42 ctrlNavEquipaje;
         private PROYECTO_ING_DE_SOFTWARE.PanelTarjeta_GV42 pnlPasoVerificar;
         private System.Windows.Forms.TableLayoutPanel tlpVerificar;
+        private System.Windows.Forms.Panel pnlIzqVerificar;
+        private System.Windows.Forms.Panel pnlGrupoVerificar;
+        private PROYECTO_ING_DE_SOFTWARE.GrillaModerna_GV42 dgvGrupo;
+        private System.Windows.Forms.DataGridViewTextBoxColumn colGrupoPasajero;
+        private System.Windows.Forms.DataGridViewTextBoxColumn colGrupoDni;
+        private System.Windows.Forms.DataGridViewTextBoxColumn colGrupoTipo;
+        private System.Windows.Forms.DataGridViewTextBoxColumn colGrupoAsiento;
+        private System.Windows.Forms.DataGridViewTextBoxColumn colGrupoAsistencia;
+        private System.Windows.Forms.Label lblReservaGrupo;
+        private System.Windows.Forms.Label lblSecGrupo;
         private System.Windows.Forms.TableLayoutPanel tlpDatosPasajero;
         private System.Windows.Forms.Label lblSecPasajero;
         private System.Windows.Forms.Label lblNombre;
@@ -2894,6 +3281,10 @@
         private System.Windows.Forms.Label lblDniVerValor;
         private System.Windows.Forms.Label lblEmail;
         private System.Windows.Forms.Label lblEmailValor;
+        private System.Windows.Forms.Label lblTipoPasajero;
+        private System.Windows.Forms.Label lblTipoPasajeroValor;
+        private System.Windows.Forms.Label lblAsistencia;
+        private System.Windows.Forms.Label lblAsistenciaValor;
         private System.Windows.Forms.Label lblSecReserva;
         private System.Windows.Forms.Label lblReserva;
         private System.Windows.Forms.Label lblReservaValor;
@@ -2921,9 +3312,11 @@
         private System.Windows.Forms.Label lblServiciosValor;
         private System.Windows.Forms.Panel pnlVentana;
         private System.Windows.Forms.Label lblVentana;
+        private System.Windows.Forms.Label lblInfantes;
         private System.Windows.Forms.Label lblTituloVerificar;
         private PROYECTO_ING_DE_SOFTWARE.PanelTarjeta_GV42 pnlPasoBuscar;
         private PROYECTO_ING_DE_SOFTWARE.GrillaModerna_GV42 dgvPasajeros;
+        private System.Windows.Forms.DataGridViewCheckBoxColumn colMarcar;
         private System.Windows.Forms.DataGridViewTextBoxColumn colDni;
         private System.Windows.Forms.DataGridViewTextBoxColumn colPasajero;
         private System.Windows.Forms.DataGridViewTextBoxColumn colTramo;
@@ -2942,6 +3335,7 @@
         private PROYECTO_ING_DE_SOFTWARE.TextBoxModerno_GV42 txtNumeroReserva;
         private PROYECTO_ING_DE_SOFTWARE.TextBoxModerno_GV42 txtDni;
         private PROYECTO_ING_DE_SOFTWARE.BotonModerno_GV42 btnBuscar;
+        private PROYECTO_ING_DE_SOFTWARE.BotonModerno_GV42 btnMarcarTodos;
         private System.Windows.Forms.Label lblAyudaBuscar;
         private System.Windows.Forms.Label lblTituloBuscar;
     }

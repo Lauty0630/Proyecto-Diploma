@@ -17,6 +17,15 @@ namespace BE
     // Presencial: lo genera un Vendedor. Autogestion: el propio Cliente reserva desde su cuenta.
     public enum CanalVenta_GV42 { Presencial = 1, Autogestion = 2 }
 
+    // Según la edad el día del vuelo de ida: adulto (12 o más), niño (2 a 11) e infante (menor de 2,
+    // viaja en brazos de un adulto y no ocupa asiento).
+    public enum TipoPasajero_GV42 { Adulto = 1, Nino = 2, Infante = 3 }
+
+    // Asistencia especial que pide un pasajero (sin costo).
+    public enum AsistenciaEspecial_GV42 { Ninguna = 0, SillaDeRuedas = 1, Visual = 2, Auditiva = 3, MovilidadReducida = 4 }
+
+    public enum EstadoReembolso_GV42 { Pendiente = 1, Procesado = 2 }
+
     public static class Textos_GV42
     {
         #region Propiedades
@@ -73,6 +82,37 @@ namespace BE
         public static string Texto(this CanalVenta_GV42 v)
         {
             return v == CanalVenta_GV42.Presencial ? Tr("enum.canal.presencial", "Presencial") : Tr("enum.canal.autogestion", "Autogestión");
+        }
+
+        #endregion
+
+        #region Métodos privados
+
+        public static string Texto(this TipoPasajero_GV42 v)
+        {
+            switch (v)
+            {
+                case TipoPasajero_GV42.Nino: return Tr("enum.tipoPasajero.nino", "Niño");
+                case TipoPasajero_GV42.Infante: return Tr("enum.tipoPasajero.infante", "Infante");
+                default: return Tr("enum.tipoPasajero.adulto", "Adulto");
+            }
+        }
+
+        public static string Texto(this AsistenciaEspecial_GV42 v)
+        {
+            switch (v)
+            {
+                case AsistenciaEspecial_GV42.SillaDeRuedas: return Tr("enum.asistencia.silla", "Silla de ruedas");
+                case AsistenciaEspecial_GV42.Visual: return Tr("enum.asistencia.visual", "Discapacidad visual");
+                case AsistenciaEspecial_GV42.Auditiva: return Tr("enum.asistencia.auditiva", "Discapacidad auditiva");
+                case AsistenciaEspecial_GV42.MovilidadReducida: return Tr("enum.asistencia.movilidad", "Movilidad reducida");
+                default: return Tr("enum.asistencia.ninguna", "Ninguna");
+            }
+        }
+
+        public static string Texto(this EstadoReembolso_GV42 v)
+        {
+            return v == EstadoReembolso_GV42.Pendiente ? Tr("enum.reembolso.pendiente", "Pendiente") : Tr("enum.reembolso.procesado", "Procesado");
         }
 
         #endregion

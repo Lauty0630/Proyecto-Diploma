@@ -75,6 +75,10 @@
     <Compile Include="Vuelos\Vuelo_GV42.cs" />
     <Compile Include="Vuelos\VueloCambio_GV42.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Reservas\TarifaFamilia_GV42.cs" />
+    <Compile Include="Pagos\Reembolso_GV42.cs" />
+    <Compile Include="Reservas\CotizacionCambio_GV42.cs" />
+    <Compile Include="Vuelos\PrecioFecha_GV42.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
  </Project>

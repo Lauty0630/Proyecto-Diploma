@@ -34,12 +34,13 @@ namespace DAL
 
         public Pasajero_GV42 BuscarPorDni(string dni)
         {
-            string query = "SELECT DNI, Nombre, Apellido, Email, Telefono FROM Pasajero WHERE DNI = @DNI";
+            string query = "SELECT DNI, Nombre, Apellido, Email, Telefono, FechaNacimiento FROM Pasajero WHERE DNI = @DNI";
             DataTable dt = _acceso.leer(query, new[] { new SqlParameter("@DNI", dni) });
             if (dt.Rows.Count == 0) return null;
 
             var p = new Pasajero_GV42();
             DALUtil_GV42.LlenarPersona(p, dt.Rows[0], "");
+            p.FechaNacimiento = DALUtil_GV42.FechaNull(dt.Rows[0], "FechaNacimiento");
             return p;
         }
 
@@ -72,10 +73,11 @@ namespace DAL
         public void Insertar(Pasajero_GV42 p)
         {
             string query =
-                "INSERT INTO Pasajero (DNI, Nombre, Apellido, Email, Telefono) " +
-                "VALUES (@DNI, @Nombre, @Apellido, @Email, @Telefono)";
+                "INSERT INTO Pasajero (DNI, Nombre, Apellido, Email, Telefono, FechaNacimiento) " +
+                "VALUES (@DNI, @Nombre, @Apellido, @Email, @Telefono, @Nacimiento)";
 
             SqlParameter[] prm = {
+                new SqlParameter("@Nacimiento", SqlDbType.Date) { Value = DALUtil_GV42.ADb(p.FechaNacimiento) },
                 new SqlParameter("@DNI",      p.DNI),
                 new SqlParameter("@Nombre",   p.Nombre),
                 new SqlParameter("@Apellido", p.Apellido),

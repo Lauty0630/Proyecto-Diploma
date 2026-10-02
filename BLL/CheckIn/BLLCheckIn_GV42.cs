@@ -247,7 +247,8 @@ namespace BLL
             int extra = Math.Max(0, ci.EquipajeExtraComprado);
             return new FranquiciaEquipaje_GV42
             {
-                BultosIncluidos = BultosIncluidos(ci.VueloClase.Clase),
+                // Valijas incluidas: las que define la tarifa de la reserva (Light 0, Plus 1, Top 2).
+                BultosIncluidos = Math.Max(0, ci.ValijasIncluidas),
                 KgPorBultoIncluido = ci.VueloClase.FranquiciaEquipajeKg,
                 KgPorUnidadExtra = KG_POR_EQUIPAJE_EXTRA,
                 UnidadesExtraDisponibles = extra,
@@ -262,7 +263,7 @@ namespace BLL
         public CargoExcesoEquipaje_GV42 CalcularCargoExceso(int idCheckIn, IList<decimal> pesosPorBulto)
         {
             CheckIn_GV42 ci = ObtenerParaEquipaje(idCheckIn);
-            return CalcularCargo(CalcularFranquicia(ci), pesosPorBulto, ci.VueloClase.ClaseTexto);
+            return CalcularCargo(CalcularFranquicia(ci), pesosPorBulto, ci.TarifaNombre ?? ci.VueloClase.ClaseTexto);
         }
 
         // Valida cantidad y peso de cada valija y calcula el exceso. A cada valija se le asigna una
@@ -274,7 +275,7 @@ namespace BLL
                 throw new NegocioException_GV42(IdiomaManager_GV42.T("neg.checkin.bultosMinimo"));
             if (pesos.Count > f.BultosPermitidos)
                 throw new NegocioException_GV42(IdiomaManager_GV42.T("neg.checkin.bultosPermitidos",
-                    f.BultosPermitidos, f.BultosIncluidos, (claseTexto ?? "").ToLower(), f.UnidadesExtraAplicables));
+                    f.BultosPermitidos, f.BultosIncluidos, claseTexto ?? "", f.UnidadesExtraAplicables));
 
             for (int i = 0; i < pesos.Count; i++)
             {
@@ -429,7 +430,8 @@ namespace BLL
 
         public bool PuedeElegirPreferencial(CheckIn_GV42 ci)
         {
-            return ci != null && ci.Asiento != null && ci.Asiento.EsPreferencial;
+            // Butaca preferencial: si ya la tiene (la pagó al reservar) o si su tarifa la incluye (Top).
+            return ci != null && ((ci.Asiento != null && ci.Asiento.EsPreferencial) || ci.TarifaIncluyePreferencial);
         }
 
         // Confirma el asiento que el pasajero eligió al reservar. Si por algún motivo no tiene (reservas

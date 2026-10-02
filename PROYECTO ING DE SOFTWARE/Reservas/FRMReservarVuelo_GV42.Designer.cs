@@ -142,6 +142,14 @@
             this.btnCerrar = new PROYECTO_ING_DE_SOFTWARE.BotonModerno_GV42();
             this.pnlEncabezado.SuspendLayout();
             this.lblChipVuelta = new System.Windows.Forms.Label();
+            this.lblChipTarifa = new System.Windows.Forms.Label();
+            this.pnlPasoTarifa = new PROYECTO_ING_DE_SOFTWARE.PanelTarjeta_GV42();
+            this.flpTarifas = new System.Windows.Forms.FlowLayoutPanel();
+            this.lblAyudaTarifa = new System.Windows.Forms.Label();
+            this.lblTituloTarifa = new System.Windows.Forms.Label();
+            this.ctrlFechasIda = new PROYECTO_ING_DE_SOFTWARE.CtrlFechasFlexibles_GV42();
+            this.ctrlFechasVuelta = new PROYECTO_ING_DE_SOFTWARE.CtrlFechasFlexibles_GV42();
+            this.chkAsientoAutomatico = new System.Windows.Forms.CheckBox();
             this.pnlPasoVuelta = new PROYECTO_ING_DE_SOFTWARE.PanelTarjeta_GV42();
             this.pnlTituloVuelta = new System.Windows.Forms.Panel();
             this.lblTituloVuelta = new System.Windows.Forms.Label();
@@ -162,6 +170,7 @@
             this.pnlContenido.SuspendLayout();
             this.pnlPasoBusqueda.SuspendLayout();
             this.pnlPasoVuelta.SuspendLayout();
+            this.pnlPasoTarifa.SuspendLayout();
             this.pnlTituloVuelta.SuspendLayout();
             this.tlpFiltros.SuspendLayout();
             this.pnlTituloVuelos.SuspendLayout();
@@ -231,6 +240,7 @@
             // 
             this.flpPasos.Controls.Add(this.lblChipBusqueda);
             this.flpPasos.Controls.Add(this.lblChipVuelta);
+            this.flpPasos.Controls.Add(this.lblChipTarifa);
             this.flpPasos.Controls.Add(this.lblChipCliente);
             this.flpPasos.Controls.Add(this.lblChipPasajeros);
             this.flpPasos.Controls.Add(this.lblChipAsientos);
@@ -251,7 +261,7 @@
             this.lblChipBusqueda.Location = new System.Drawing.Point(0, 0);
             this.lblChipBusqueda.Margin = new System.Windows.Forms.Padding(0, 0, 8, 0);
             this.lblChipBusqueda.Name = "lblChipBusqueda";
-            this.lblChipBusqueda.Size = new System.Drawing.Size(132, 32);
+            this.lblChipBusqueda.Size = new System.Drawing.Size(116, 32);
             this.lblChipBusqueda.TabIndex = 0;
             this.lblChipBusqueda.Text = "1  Vuelo";
             this.lblChipBusqueda.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
@@ -264,11 +274,24 @@
             this.lblChipVuelta.Location = new System.Drawing.Point(144, 0);
             this.lblChipVuelta.Margin = new System.Windows.Forms.Padding(0, 0, 8, 0);
             this.lblChipVuelta.Name = "lblChipVuelta";
-            this.lblChipVuelta.Size = new System.Drawing.Size(132, 32);
+            this.lblChipVuelta.Size = new System.Drawing.Size(116, 32);
             this.lblChipVuelta.TabIndex = 6;
             this.lblChipVuelta.Text = "2  Vuelo vuelta";
             this.lblChipVuelta.Visible = false;
             this.lblChipVuelta.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
+            // 
+            // lblChipTarifa
+            // 
+            this.lblChipTarifa.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(240)))), ((int)(((byte)(247)))), ((int)(((byte)(255)))));
+            this.lblChipTarifa.Font = new System.Drawing.Font("Segoe UI Semibold", 9.75F, System.Drawing.FontStyle.Bold);
+            this.lblChipTarifa.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(96)))), ((int)(((byte)(125)))), ((int)(((byte)(139)))));
+            this.lblChipTarifa.Location = new System.Drawing.Point(144, 0);
+            this.lblChipTarifa.Margin = new System.Windows.Forms.Padding(0, 0, 8, 0);
+            this.lblChipTarifa.Name = "lblChipTarifa";
+            this.lblChipTarifa.Size = new System.Drawing.Size(116, 32);
+            this.lblChipTarifa.TabIndex = 7;
+            this.lblChipTarifa.Text = "2  Tarifa";
+            this.lblChipTarifa.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
             // 
             // lblChipCliente
             // 
@@ -278,7 +301,7 @@
             this.lblChipCliente.Location = new System.Drawing.Point(144, 0);
             this.lblChipCliente.Margin = new System.Windows.Forms.Padding(0, 0, 8, 0);
             this.lblChipCliente.Name = "lblChipCliente";
-            this.lblChipCliente.Size = new System.Drawing.Size(132, 32);
+            this.lblChipCliente.Size = new System.Drawing.Size(116, 32);
             this.lblChipCliente.TabIndex = 1;
             this.lblChipCliente.Text = "2  Cliente";
             this.lblChipCliente.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
@@ -291,7 +314,7 @@
             this.lblChipPasajeros.Location = new System.Drawing.Point(288, 0);
             this.lblChipPasajeros.Margin = new System.Windows.Forms.Padding(0, 0, 8, 0);
             this.lblChipPasajeros.Name = "lblChipPasajeros";
-            this.lblChipPasajeros.Size = new System.Drawing.Size(132, 32);
+            this.lblChipPasajeros.Size = new System.Drawing.Size(116, 32);
             this.lblChipPasajeros.TabIndex = 2;
             this.lblChipPasajeros.Text = "3  Pasajeros";
             this.lblChipPasajeros.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
@@ -304,7 +327,7 @@
             this.lblChipAsientos.Location = new System.Drawing.Point(432, 0);
             this.lblChipAsientos.Margin = new System.Windows.Forms.Padding(0, 0, 8, 0);
             this.lblChipAsientos.Name = "lblChipAsientos";
-            this.lblChipAsientos.Size = new System.Drawing.Size(132, 32);
+            this.lblChipAsientos.Size = new System.Drawing.Size(116, 32);
             this.lblChipAsientos.TabIndex = 3;
             this.lblChipAsientos.Text = "4  Asientos";
             this.lblChipAsientos.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
@@ -317,7 +340,7 @@
             this.lblChipAdicionales.Location = new System.Drawing.Point(576, 0);
             this.lblChipAdicionales.Margin = new System.Windows.Forms.Padding(0, 0, 8, 0);
             this.lblChipAdicionales.Name = "lblChipAdicionales";
-            this.lblChipAdicionales.Size = new System.Drawing.Size(132, 32);
+            this.lblChipAdicionales.Size = new System.Drawing.Size(116, 32);
             this.lblChipAdicionales.TabIndex = 4;
             this.lblChipAdicionales.Text = "5  Adicionales";
             this.lblChipAdicionales.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
@@ -330,7 +353,7 @@
             this.lblChipResumen.Location = new System.Drawing.Point(720, 0);
             this.lblChipResumen.Margin = new System.Windows.Forms.Padding(0, 0, 8, 0);
             this.lblChipResumen.Name = "lblChipResumen";
-            this.lblChipResumen.Size = new System.Drawing.Size(132, 32);
+            this.lblChipResumen.Size = new System.Drawing.Size(116, 32);
             this.lblChipResumen.TabIndex = 5;
             this.lblChipResumen.Text = "6  Confirmar";
             this.lblChipResumen.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
@@ -383,6 +406,7 @@
             this.pnlContenido.Controls.Add(this.pnlPasoAsientos);
             this.pnlContenido.Controls.Add(this.pnlPasoPasajeros);
             this.pnlContenido.Controls.Add(this.pnlPasoCliente);
+            this.pnlContenido.Controls.Add(this.pnlPasoTarifa);
             this.pnlContenido.Controls.Add(this.pnlPasoVuelta);
             this.pnlContenido.Controls.Add(this.pnlPasoBusqueda);
             this.pnlContenido.Dock = System.Windows.Forms.DockStyle.Fill;
@@ -395,6 +419,7 @@
             // pnlPasoBusqueda
             // 
             this.pnlPasoBusqueda.Controls.Add(this.dgvVuelos);
+            this.pnlPasoBusqueda.Controls.Add(this.ctrlFechasIda);
             this.pnlPasoBusqueda.Controls.Add(this.pnlTituloVuelos);
             this.pnlPasoBusqueda.Controls.Add(this.tlpFiltros);
             this.pnlPasoBusqueda.Dock = System.Windows.Forms.DockStyle.Fill;
@@ -797,6 +822,7 @@
             // pnlPasoVuelta
             // 
             this.pnlPasoVuelta.Controls.Add(this.dgvVuelosVuelta);
+            this.pnlPasoVuelta.Controls.Add(this.ctrlFechasVuelta);
             this.pnlPasoVuelta.Controls.Add(this.pnlTituloVuelta);
             this.pnlPasoVuelta.Dock = System.Windows.Forms.DockStyle.Fill;
             this.pnlPasoVuelta.Location = new System.Drawing.Point(24, 16);
@@ -947,6 +973,93 @@
             this.colVueltaDisponibles.MinimumWidth = 45;
             this.colVueltaDisponibles.Name = "colVueltaDisponibles";
             this.colVueltaDisponibles.ReadOnly = true;
+            // 
+            // pnlPasoTarifa
+            // 
+            this.pnlPasoTarifa.Controls.Add(this.flpTarifas);
+            this.pnlPasoTarifa.Controls.Add(this.lblAyudaTarifa);
+            this.pnlPasoTarifa.Controls.Add(this.lblTituloTarifa);
+            this.pnlPasoTarifa.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.pnlPasoTarifa.Location = new System.Drawing.Point(24, 16);
+            this.pnlPasoTarifa.Name = "pnlPasoTarifa";
+            this.pnlPasoTarifa.Padding = new System.Windows.Forms.Padding(24, 18, 24, 18);
+            this.pnlPasoTarifa.Size = new System.Drawing.Size(992, 420);
+            this.pnlPasoTarifa.TabIndex = 8;
+            this.pnlPasoTarifa.Visible = false;
+            // 
+            // flpTarifas
+            // 
+            this.flpTarifas.AutoScroll = true;
+            this.flpTarifas.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.flpTarifas.Location = new System.Drawing.Point(24, 76);
+            this.flpTarifas.Name = "flpTarifas";
+            this.flpTarifas.Padding = new System.Windows.Forms.Padding(0, 6, 0, 0);
+            this.flpTarifas.Size = new System.Drawing.Size(944, 326);
+            this.flpTarifas.TabIndex = 2;
+            this.flpTarifas.WrapContents = false;
+            // 
+            // lblAyudaTarifa
+            // 
+            this.lblAyudaTarifa.Dock = System.Windows.Forms.DockStyle.Top;
+            this.lblAyudaTarifa.Font = new System.Drawing.Font("Segoe UI", 8.75F, System.Drawing.FontStyle.Italic);
+            this.lblAyudaTarifa.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(96)))), ((int)(((byte)(125)))), ((int)(((byte)(139)))));
+            this.lblAyudaTarifa.Location = new System.Drawing.Point(24, 48);
+            this.lblAyudaTarifa.Name = "lblAyudaTarifa";
+            this.lblAyudaTarifa.Size = new System.Drawing.Size(944, 28);
+            this.lblAyudaTarifa.TabIndex = 1;
+            this.lblAyudaTarifa.Text = "La tarifa define el equipaje incluido, la elección de asiento y las condiciones de cambio y reembolso.";
+            // 
+            // lblTituloTarifa
+            // 
+            this.lblTituloTarifa.Dock = System.Windows.Forms.DockStyle.Top;
+            this.lblTituloTarifa.Font = new System.Drawing.Font("Segoe UI Semibold", 11.25F, System.Drawing.FontStyle.Bold);
+            this.lblTituloTarifa.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(13)))), ((int)(((byte)(71)))), ((int)(((byte)(161)))));
+            this.lblTituloTarifa.Location = new System.Drawing.Point(24, 18);
+            this.lblTituloTarifa.Name = "lblTituloTarifa";
+            this.lblTituloTarifa.Size = new System.Drawing.Size(944, 30);
+            this.lblTituloTarifa.TabIndex = 0;
+            this.lblTituloTarifa.Text = "Elegí tu tarifa";
+            this.lblTituloTarifa.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
+            // 
+            // ctrlFechasIda
+            // 
+            this.ctrlFechasIda.BackColor = System.Drawing.Color.White;
+            this.ctrlFechasIda.Dock = System.Windows.Forms.DockStyle.Top;
+            this.ctrlFechasIda.Font = new System.Drawing.Font("Segoe UI", 9F);
+            this.ctrlFechasIda.Location = new System.Drawing.Point(24, 184);
+            this.ctrlFechasIda.Name = "ctrlFechasIda";
+            this.ctrlFechasIda.Padding = new System.Windows.Forms.Padding(0, 0, 0, 8);
+            this.ctrlFechasIda.Size = new System.Drawing.Size(944, 52);
+            this.ctrlFechasIda.TabIndex = 3;
+            this.ctrlFechasIda.Visible = false;
+            this.ctrlFechasIda.FechaElegida += new System.EventHandler<System.DateTime>(this.ctrlFechasIda_FechaElegida);
+            // 
+            // ctrlFechasVuelta
+            // 
+            this.ctrlFechasVuelta.BackColor = System.Drawing.Color.White;
+            this.ctrlFechasVuelta.Dock = System.Windows.Forms.DockStyle.Top;
+            this.ctrlFechasVuelta.Font = new System.Drawing.Font("Segoe UI", 9F);
+            this.ctrlFechasVuelta.Location = new System.Drawing.Point(24, 62);
+            this.ctrlFechasVuelta.Name = "ctrlFechasVuelta";
+            this.ctrlFechasVuelta.Padding = new System.Windows.Forms.Padding(0, 0, 0, 8);
+            this.ctrlFechasVuelta.Size = new System.Drawing.Size(944, 52);
+            this.ctrlFechasVuelta.TabIndex = 2;
+            this.ctrlFechasVuelta.Visible = false;
+            this.ctrlFechasVuelta.FechaElegida += new System.EventHandler<System.DateTime>(this.ctrlFechasVuelta_FechaElegida);
+            // 
+            // chkAsientoAutomatico
+            // 
+            this.chkAsientoAutomatico.Dock = System.Windows.Forms.DockStyle.Top;
+            this.chkAsientoAutomatico.Font = new System.Drawing.Font("Segoe UI", 9.75F);
+            this.chkAsientoAutomatico.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(33)))), ((int)(((byte)(33)))), ((int)(((byte)(33)))));
+            this.chkAsientoAutomatico.Location = new System.Drawing.Point(24, 68);
+            this.chkAsientoAutomatico.Name = "chkAsientoAutomatico";
+            this.chkAsientoAutomatico.Size = new System.Drawing.Size(944, 30);
+            this.chkAsientoAutomatico.TabIndex = 2;
+            this.chkAsientoAutomatico.Text = "No elegir asientos ahora: se asignan sin costo en el check-in.";
+            this.chkAsientoAutomatico.UseVisualStyleBackColor = true;
+            this.chkAsientoAutomatico.Visible = false;
+            this.chkAsientoAutomatico.CheckedChanged += new System.EventHandler(this.chkAsientoAutomatico_CheckedChanged);
             // 
             // pnlPasoCliente
             // 
@@ -1223,6 +1336,7 @@
             // pnlPasoAsientos
             // 
             this.pnlPasoAsientos.Controls.Add(this.ctrlButacas);
+            this.pnlPasoAsientos.Controls.Add(this.chkAsientoAutomatico);
             this.pnlPasoAsientos.Controls.Add(this.pnlBarraAsientos);
             this.pnlPasoAsientos.Dock = System.Windows.Forms.DockStyle.Fill;
             this.pnlPasoAsientos.Location = new System.Drawing.Point(24, 16);
@@ -1781,6 +1895,7 @@
             this.pnlTituloVuelta.PerformLayout();
             this.pnlPasoVuelta.ResumeLayout(false);
             this.pnlPasoVuelta.PerformLayout();
+            this.pnlPasoTarifa.ResumeLayout(false);
             this.pnlContenido.ResumeLayout(false);
             this.pnlContenido.PerformLayout();
             this.pnlNavegacion.ResumeLayout(false);
@@ -1807,6 +1922,14 @@
         private System.Windows.Forms.FlowLayoutPanel flpPasos;
         private System.Windows.Forms.Label lblChipBusqueda;
         private System.Windows.Forms.Label lblChipVuelta;
+        private System.Windows.Forms.Label lblChipTarifa;
+        private PROYECTO_ING_DE_SOFTWARE.PanelTarjeta_GV42 pnlPasoTarifa;
+        private System.Windows.Forms.FlowLayoutPanel flpTarifas;
+        private System.Windows.Forms.Label lblAyudaTarifa;
+        private System.Windows.Forms.Label lblTituloTarifa;
+        private PROYECTO_ING_DE_SOFTWARE.CtrlFechasFlexibles_GV42 ctrlFechasIda;
+        private PROYECTO_ING_DE_SOFTWARE.CtrlFechasFlexibles_GV42 ctrlFechasVuelta;
+        private System.Windows.Forms.CheckBox chkAsientoAutomatico;
         private PROYECTO_ING_DE_SOFTWARE.PanelTarjeta_GV42 pnlPasoVuelta;
         private System.Windows.Forms.Panel pnlTituloVuelta;
         private System.Windows.Forms.Label lblTituloVuelta;

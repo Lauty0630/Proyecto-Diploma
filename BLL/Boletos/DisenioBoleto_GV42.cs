@@ -59,6 +59,9 @@ namespace BLL
         {
             // Textos que dependen del idioma: si el boleto trae los valores sin traducir, se traducen ahora.
             string clase = b.ClaseValor.HasValue ? b.ClaseValor.Value.Texto() : b.Clase;
+            // Junto a la clase: la tarifa (Light / Plus / Top) y, si no es adulto, el tipo de pasajero.
+            if (!string.IsNullOrEmpty(b.TarifaNombre)) clase += " · " + b.TarifaNombre;
+            if (b.TipoPasajero != TipoPasajero_GV42.Adulto) clase += " · " + b.TipoPasajero.Texto();
             string tipoViaje = b.TipoViajeValor.HasValue ? b.TipoViajeValor.Value.Texto() : b.TipoViaje;
             // Ida y vuelta: cada boleto aclara si es el de la ida o el de la vuelta.
             if (b.EsIdaYVuelta)

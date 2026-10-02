@@ -73,6 +73,36 @@ namespace DAL
             return lista;
         }
 
+        // Fechas flexibles: precio base más barato de cada día del rango para la ruta (solo días con
+        // vuelos futuros y con lugar para la cantidad de pasajeros).
+        public Dictionary<DateTime, decimal> PreciosMinimosPorFecha(CriterioBusquedaVuelo_GV42 criterio, DateTime desde, DateTime hasta)
+        {
+            string query =
+                "SELECT CAST(V.FechaHoraSalida AS DATE) AS Fecha, MIN(VC.PrecioBase) AS Precio " +
+                "FROM Vuelo V INNER JOIN VueloClase VC ON VC.IdVuelo = V.Id " +
+                "WHERE V.BorradoLogico = 0 AND V.IdOrigen = @IdOrigen AND V.IdDestino = @IdDestino" +
+                "  AND CAST(V.FechaHoraSalida AS DATE) BETWEEN @Desde AND @Hasta" +
+                "  AND V.FechaHoraSalida > GETDATE()" +
+                "  AND (VC.CapacidadAsientos - VC.AsientosReservados) >= @Cantidad" +
+                (criterio.Clase.HasValue ? "  AND VC.IdClase = @IdClase" : "") +
+                " GROUP BY CAST(V.FechaHoraSalida AS DATE)";
+
+            var parametros = new List<SqlParameter> {
+                new SqlParameter("@IdOrigen",  criterio.IdOrigen),
+                new SqlParameter("@IdDestino", criterio.IdDestino),
+                new SqlParameter("@Desde",     desde.Date),
+                new SqlParameter("@Hasta",     hasta.Date),
+                new SqlParameter("@Cantidad",  criterio.CantidadPasajeros)
+            };
+            if (criterio.Clase.HasValue)
+                parametros.Add(new SqlParameter("@IdClase", (int)criterio.Clase.Value));
+
+            var precios = new Dictionary<DateTime, decimal>();
+            foreach (DataRow r in _acceso.leer(query, parametros.ToArray()).Rows)
+                precios[DALUtil_GV42.Fecha(r, "Fecha").Date] = DALUtil_GV42.Dec(r, "Precio");
+            return precios;
+        }
+
         public VueloClase_GV42 BuscarVueloClase(int idVuelo, ClaseVuelo_GV42 clase)
         {
             string query = SELECT_BASE + " WHERE V.Id = @IdVuelo AND VC.IdClase = @IdClase AND V.BorradoLogico = 0";

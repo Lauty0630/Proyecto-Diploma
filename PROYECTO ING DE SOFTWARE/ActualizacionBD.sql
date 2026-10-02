@@ -879,3 +879,222 @@ IF NOT EXISTS (SELECT 1 FROM dbo.VersionBD_GV42 WHERE Version = 7)
     INSERT INTO dbo.VersionBD_GV42 (Version, Descripcion)
     VALUES (7, N'Ida y vuelta con vuelo de regreso: tramos en pasajeros, adicionales, boletos y check-in');
 GO
+
+
+/* =====================================================================================
+   VERSIÓN 8 - Vencimiento de reservas, reembolsos, familias tarifarias, tipos de pasajero,
+               asistencia especial y cambio de vuelo
+   ===================================================================================== */
+
+/* ---------- 21) Reserva: vencimiento del plazo de pago, tarifa y asientos ocupados ----------
+   FechaVencimiento: hasta cuándo se puede pagar una reserva pendiente. Pasada esa fecha la
+   reserva está vencida: no se puede pagar y sus asientos vuelven a estar libres.
+   VencidaSinPago: la canceló el sistema por vencimiento (no el cliente ni un vendedor).
+   IdTarifa: familia tarifaria (Light / Plus / Top) con la que se vendió toda la reserva.
+   CantidadAsientos: lugares que ocupa en cada vuelo (los infantes viajan en brazos y no ocupan). */
+IF COL_LENGTH('dbo.Reserva', 'FechaVencimiento') IS NULL
+    ALTER TABLE dbo.Reserva ADD FechaVencimiento DATETIME2(0) NULL;
+IF COL_LENGTH('dbo.Reserva', 'VencidaSinPago') IS NULL
+    ALTER TABLE dbo.Reserva ADD VencidaSinPago BIT NOT NULL
+        CONSTRAINT DF_Reserva_VencidaSinPago DEFAULT (0);
+IF COL_LENGTH('dbo.Reserva', 'CantidadAsientos') IS NULL
+    ALTER TABLE dbo.Reserva ADD CantidadAsientos INT NULL;
+IF COL_LENGTH('dbo.Reserva', 'IdTarifa') IS NULL
+    ALTER TABLE dbo.Reserva ADD IdTarifa INT NULL;
+GO
+
+/* ---------- 22) Familias tarifarias ----------
+   Cada reserva se vende con una tarifa que define el precio (recargo sobre el precio base del
+   vuelo y la clase), las valijas despachadas incluidas, si elegir asiento es pago y las
+   condiciones de cambio y de reembolso.
+   AsientoIncluido: 0 = elegir asiento es pago (si no se elige, se asigna gratis en el check-in);
+                    1 = elegir asiento común es gratis; 2 = también las butacas preferenciales.
+   TipoReembolso:   0 = no reembolsable; 1 = con penalidad según la anticipación; 2 = total. */
+IF OBJECT_ID('dbo.TarifaFamilia', 'U') IS NULL
+    CREATE TABLE dbo.TarifaFamilia (
+        Id                       INT NOT NULL CONSTRAINT PK_TarifaFamilia PRIMARY KEY,
+        Codigo                   NVARCHAR(10) NOT NULL CONSTRAINT UQ_TarifaFamilia_Codigo UNIQUE,
+        Nombre                   NVARCHAR(30) NOT NULL,
+        PorcentajeRecargo        DECIMAL(5, 2) NOT NULL CONSTRAINT CK_TarifaFamilia_Recargo CHECK (PorcentajeRecargo >= 0),
+        ValijasIncluidas         INT NOT NULL CONSTRAINT CK_TarifaFamilia_Valijas CHECK (ValijasIncluidas >= 0),
+        AsientoIncluido          TINYINT NOT NULL CONSTRAINT CK_TarifaFamilia_Asiento CHECK (AsientoIncluido IN (0, 1, 2)),
+        PorcentajePenalidadCambio DECIMAL(5, 2) NOT NULL CONSTRAINT CK_TarifaFamilia_Cambio CHECK (PorcentajePenalidadCambio BETWEEN 0 AND 100),
+        TipoReembolso            TINYINT NOT NULL CONSTRAINT CK_TarifaFamilia_Reembolso CHECK (TipoReembolso IN (0, 1, 2)),
+        Activo                   BIT NOT NULL CONSTRAINT DF_TarifaFamilia_Activo DEFAULT (1)
+    );
+GO
+
+IF NOT EXISTS (SELECT 1 FROM dbo.TarifaFamilia WHERE Id = 1)
+    INSERT INTO dbo.TarifaFamilia (Id, Codigo, Nombre, PorcentajeRecargo, ValijasIncluidas, AsientoIncluido, PorcentajePenalidadCambio, TipoReembolso)
+    VALUES (1, N'LIGHT', N'Light', 0, 0, 0, 20, 0);
+IF NOT EXISTS (SELECT 1 FROM dbo.TarifaFamilia WHERE Id = 2)
+    INSERT INTO dbo.TarifaFamilia (Id, Codigo, Nombre, PorcentajeRecargo, ValijasIncluidas, AsientoIncluido, PorcentajePenalidadCambio, TipoReembolso)
+    VALUES (2, N'PLUS', N'Plus', 20, 1, 1, 10, 1);
+IF NOT EXISTS (SELECT 1 FROM dbo.TarifaFamilia WHERE Id = 3)
+    INSERT INTO dbo.TarifaFamilia (Id, Codigo, Nombre, PorcentajeRecargo, ValijasIncluidas, AsientoIncluido, PorcentajePenalidadCambio, TipoReembolso)
+    VALUES (3, N'TOP', N'Top', 45, 2, 2, 0, 2);
+GO
+
+-- Servicio que cobra la elección de asiento en la tarifa Light (lo agrega el sistema, no se elige a mano).
+IF NOT EXISTS (SELECT 1 FROM dbo.TipoAdicional WHERE Codigo = N'SELECCION_ASIENTO')
+    INSERT INTO dbo.TipoAdicional (Nombre, Activo, PrecioUnitario, MaxPorPasajero, Codigo, SeleccionManual)
+    VALUES (N'Selección de asiento', 1, 6000, 1, N'SELECCION_ASIENTO', 0);
+GO
+
+/* ---------- 23) Pasajeros: fecha de nacimiento, tipo y asistencia especial ----------
+   IdTipoPasajero (según la edad el día del vuelo de ida): 1 = adulto (12 o más), 2 = niño (2 a 11),
+   3 = infante (menor de 2: viaja en brazos, no ocupa asiento ni hace check-in propio).
+   IdAsistencia: 0 = ninguna, 1 = silla de ruedas, 2 = discapacidad visual, 3 = discapacidad auditiva,
+   4 = movilidad reducida. */
+IF COL_LENGTH('dbo.Pasajero', 'FechaNacimiento') IS NULL
+    ALTER TABLE dbo.Pasajero ADD FechaNacimiento DATE NULL;
+IF COL_LENGTH('dbo.ReservaPasajero', 'IdTipoPasajero') IS NULL
+    ALTER TABLE dbo.ReservaPasajero ADD IdTipoPasajero TINYINT NOT NULL
+        CONSTRAINT DF_ReservaPasajero_Tipo DEFAULT (1)
+        CONSTRAINT CK_ReservaPasajero_Tipo CHECK (IdTipoPasajero IN (1, 2, 3));
+IF COL_LENGTH('dbo.ReservaPasajero', 'IdAsistencia') IS NULL
+    ALTER TABLE dbo.ReservaPasajero ADD IdAsistencia TINYINT NOT NULL
+        CONSTRAINT DF_ReservaPasajero_Asistencia DEFAULT (0)
+        CONSTRAINT CK_ReservaPasajero_Asistencia CHECK (IdAsistencia BETWEEN 0 AND 4);
+GO
+
+/* ---------- 24) Reembolsos ----------
+   Al cancelar una reserva paga se registra lo que hay que devolverle al cliente (lo pagado menos
+   la penalidad), por el mismo medio de pago. IdEstado: 1 = pendiente, 2 = procesado. */
+IF OBJECT_ID('dbo.Reembolso', 'U') IS NULL
+    CREATE TABLE dbo.Reembolso (
+        Id             INT IDENTITY(1, 1) NOT NULL CONSTRAINT PK_Reembolso PRIMARY KEY,
+        IdReserva      INT NOT NULL CONSTRAINT FK_Reembolso_Reserva REFERENCES dbo.Reserva (Id),
+        Importe        DECIMAL(12, 2) NOT NULL CONSTRAINT CK_Reembolso_Importe CHECK (Importe > 0),
+        IdMedioPago    INT NOT NULL CONSTRAINT FK_Reembolso_MedioPago REFERENCES dbo.MedioPago (Id),
+        IdEstado       TINYINT NOT NULL CONSTRAINT DF_Reembolso_Estado DEFAULT (1)
+                       CONSTRAINT CK_Reembolso_Estado CHECK (IdEstado IN (1, 2)),
+        FechaSolicitud DATETIME2(0) NOT NULL CONSTRAINT DF_Reembolso_Fecha DEFAULT (SYSDATETIME()),
+        FechaProceso   DATETIME2(0) NULL,
+        LoginProceso   NVARCHAR(50) NULL,
+        CONSTRAINT UQ_Reembolso_Reserva UNIQUE (IdReserva)
+    );
+GO
+
+/* ---------- 25) Cambios de vuelo ----------
+   Historial de cada cambio de fecha / vuelo de un tramo de la reserva, con lo que se cobró
+   (penalidad de la tarifa + diferencia de tarifa con impuestos) y cómo se pagó. */
+IF OBJECT_ID('dbo.CambioReserva', 'U') IS NULL
+    CREATE TABLE dbo.CambioReserva (
+        Id                INT IDENTITY(1, 1) NOT NULL CONSTRAINT PK_CambioReserva PRIMARY KEY,
+        IdReserva         INT NOT NULL CONSTRAINT FK_CambioReserva_Reserva REFERENCES dbo.Reserva (Id),
+        Tramo             TINYINT NOT NULL CONSTRAINT CK_CambioReserva_Tramo CHECK (Tramo IN (1, 2)),
+        IdVueloAnterior   INT NOT NULL,
+        IdClaseAnterior   INT NOT NULL,
+        IdVueloNuevo      INT NOT NULL,
+        IdClaseNuevo      INT NOT NULL,
+        Penalidad         DECIMAL(12, 2) NOT NULL CONSTRAINT CK_CambioReserva_Penalidad CHECK (Penalidad >= 0),
+        DiferenciaTarifa  DECIMAL(12, 2) NOT NULL CONSTRAINT CK_CambioReserva_Diferencia CHECK (DiferenciaTarifa >= 0),
+        ImporteCobrado    DECIMAL(12, 2) NOT NULL CONSTRAINT CK_CambioReserva_Importe CHECK (ImporteCobrado >= 0),
+        IdMedioPago       INT NULL CONSTRAINT FK_CambioReserva_MedioPago REFERENCES dbo.MedioPago (Id),
+        NumeroTransaccion NVARCHAR(40) NULL,
+        FechaCambio       DATETIME2(0) NOT NULL CONSTRAINT DF_CambioReserva_Fecha DEFAULT (SYSDATETIME()),
+        LoginUsuario      NVARCHAR(50) NOT NULL
+    );
+GO
+
+/* ---------- 26) Vencimiento exacto de las reservas impagas ----------
+   Una reserva pendiente cuyo plazo de pago ya pasó se cancela (sin penalidad), libera sus asientos
+   y devuelve el cupo de sus vuelos. El sistema ejecuta este procedimiento dentro de cada operación
+   que consulta disponibilidad o reservas, así que el vencimiento rige desde la hora exacta
+   aunque nadie haya tenido el sistema abierto. Devuelve cuántas reservas vencieron. */
+IF OBJECT_ID('dbo.LiberarReservasVencidas_GV42', 'P') IS NOT NULL
+    DROP PROCEDURE dbo.LiberarReservasVencidas_GV42;
+GO
+
+CREATE PROCEDURE dbo.LiberarReservasVencidas_GV42
+AS
+BEGIN
+    SET NOCOUNT ON;
+    SET XACT_ABORT ON;
+
+    DECLARE @Vencidas TABLE (Id INT PRIMARY KEY, IdVuelo INT, IdClase INT, IdVueloVuelta INT NULL, IdClaseVuelta INT NULL, Asientos INT);
+
+    BEGIN TRANSACTION;
+
+    UPDATE dbo.Reserva
+       SET IdEstadoReserva = 3, FechaCancelacion = FechaVencimiento, MontoPenalidadCancelacion = 0, VencidaSinPago = 1
+    OUTPUT inserted.Id, inserted.IdVuelo, inserted.IdClase, inserted.IdVueloVuelta, inserted.IdClaseVuelta,
+           ISNULL(inserted.CantidadAsientos, inserted.CantidadPasajeros)
+      INTO @Vencidas (Id, IdVuelo, IdClase, IdVueloVuelta, IdClaseVuelta, Asientos)
+     WHERE IdEstadoReserva = 1 AND FechaVencimiento IS NOT NULL AND FechaVencimiento <= SYSDATETIME();
+
+    DECLARE @Cantidad INT = @@ROWCOUNT;
+
+    IF @Cantidad > 0
+    BEGIN
+        UPDATE RP SET IdAsiento = NULL
+        FROM dbo.ReservaPasajero RP INNER JOIN @Vencidas V ON V.Id = RP.IdReserva;
+
+        ;WITH Cupo AS (
+            SELECT X.IdVuelo, X.IdClase, SUM(X.Asientos) AS Asientos
+            FROM (SELECT IdVuelo, IdClase, Asientos FROM @Vencidas
+                  UNION ALL
+                  SELECT IdVueloVuelta, IdClaseVuelta, Asientos FROM @Vencidas WHERE IdVueloVuelta IS NOT NULL) X
+            GROUP BY X.IdVuelo, X.IdClase
+        )
+        UPDATE VC
+           SET AsientosReservados = CASE WHEN VC.AsientosReservados >= C.Asientos THEN VC.AsientosReservados - C.Asientos ELSE 0 END
+        FROM dbo.VueloClase VC INNER JOIN Cupo C ON C.IdVuelo = VC.IdVuelo AND C.IdClase = VC.IdClase;
+    END
+
+    COMMIT TRANSACTION;
+
+    SELECT @Cantidad AS Cantidad;
+END
+GO
+
+/* ---------- 27) Patentes nuevas ---------- */
+IF NOT EXISTS (SELECT 1 FROM dbo.Patente WHERE DataKey = N'Reservas.Cambiar')
+    INSERT INTO dbo.Patente (Nombre, DataKey) VALUES (N'Reservas - Cambiar vuelo', N'Reservas.Cambiar');
+IF NOT EXISTS (SELECT 1 FROM dbo.Patente WHERE DataKey = N'Reservas.CambiarPropia')
+    INSERT INTO dbo.Patente (Nombre, DataKey) VALUES (N'Reservas - Cambiar vuelo (propia)', N'Reservas.CambiarPropia');
+IF NOT EXISTS (SELECT 1 FROM dbo.Patente WHERE DataKey = N'Reembolsos.Procesar')
+    INSERT INTO dbo.Patente (Nombre, DataKey) VALUES (N'Reembolsos - Procesar', N'Reembolsos.Procesar');
+GO
+
+-- Cambiar vuelo: quien puede cancelar (cualquiera / las propias). Procesar reembolsos: quien registra pagos.
+INSERT INTO dbo.RolPatente (IdRol, IdPatente)
+SELECT DISTINCT RP.IdRol, N.Id
+FROM dbo.RolPatente RP
+INNER JOIN dbo.Patente P ON P.Id = RP.IdPatente
+INNER JOIN (VALUES (N'Reservas.Cancelar',       N'Reservas.Cambiar'),
+                   (N'Reservas.CancelarPropia', N'Reservas.CambiarPropia'),
+                   (N'Pagos.Registrar',         N'Reembolsos.Procesar')) AS M(Origen, Nueva) ON M.Origen = P.DataKey
+INNER JOIN dbo.Patente N ON N.DataKey = M.Nueva
+WHERE NOT EXISTS (SELECT 1 FROM dbo.RolPatente X WHERE X.IdRol = RP.IdRol AND X.IdPatente = N.Id);
+GO
+
+IF NOT EXISTS (SELECT 1 FROM dbo.VersionBD_GV42 WHERE Version = 8)
+BEGIN
+    -- Reservas anteriores: ocupan un asiento por pasajero; las pendientes tienen 24 hs para pagarse
+    -- (o hasta la salida del vuelo, lo que ocurra primero).
+    UPDATE dbo.Reserva SET CantidadAsientos = CantidadPasajeros WHERE CantidadAsientos IS NULL;
+
+    UPDATE R SET FechaVencimiento = CASE WHEN V.FechaHoraSalida < DATEADD(HOUR, 24, SYSDATETIME())
+                                         THEN V.FechaHoraSalida ELSE DATEADD(HOUR, 24, SYSDATETIME()) END
+    FROM dbo.Reserva R INNER JOIN dbo.Vuelo V ON V.Id = R.IdVuelo
+    WHERE R.IdEstadoReserva = 1 AND R.FechaVencimiento IS NULL;
+
+    -- Tarifa de las reservas anteriores, según lo que ya tenían: Económica incluía 1 valija (Plus);
+    -- Ejecutiva y Primera incluían 2 (Top).
+    UPDATE dbo.Reserva SET IdTarifa = CASE WHEN IdClase = 1 THEN 2 ELSE 3 END WHERE IdTarifa IS NULL;
+
+    -- Las filas nuevas de Patente y RolPatente necesitan su dígito verificador: lo calcula el sistema.
+    INSERT INTO dbo.TareaPendiente_GV42 (Nombre)
+    SELECT X.T FROM (VALUES (N'RecalcularDV:Patente'), (N'RecalcularDV:RolPatente')) AS X(T)
+    WHERE NOT EXISTS (SELECT 1 FROM dbo.TareaPendiente_GV42 P WHERE P.Nombre = X.T);
+
+    INSERT INTO dbo.VersionBD_GV42 (Version, Descripcion)
+    VALUES (8, N'Vencimiento de reservas, reembolsos, familias tarifarias, tipos de pasajero, asistencia especial y cambio de vuelo');
+END
+GO
+
+IF OBJECT_ID('dbo.FK_Reserva_Tarifa', 'F') IS NULL
+    ALTER TABLE dbo.Reserva ADD CONSTRAINT FK_Reserva_Tarifa FOREIGN KEY (IdTarifa) REFERENCES dbo.TarifaFamilia (Id);
+GO

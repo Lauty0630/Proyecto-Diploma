@@ -48,7 +48,9 @@ namespace BLL
             if (boletos.Count == 0)
                 throw new NegocioException_GV42(IdiomaManager_GV42.T("neg.boleto.sinBoletos"));
 
-            int cantidad = Math.Max(1, reserva.CantidadPasajeros);
+            // La tarifa se reparte según lo que paga cada pasajero (adulto completa, niño con descuento, infante una fracción).
+            decimal factores = reserva.Pasajeros.Sum(x => BLLReserva_GV42.FactorTarifa(x.Tipo));
+            if (factores <= 0) factores = Math.Max(1, reserva.CantidadPasajeros);
             // Tarifa de la reserva repartida entre los tramos según el precio de cada vuelo.
             decimal precioIda = reserva.VueloClase.PrecioBase;
             decimal precioVuelta = reserva.TieneVuelta ? reserva.VueloClaseVuelta.PrecioBase : 0m;
@@ -73,7 +75,9 @@ namespace BLL
                 decimal proporcion = (precioIda + precioVuelta) > 0
                     ? (tramo == Reserva_GV42.TRAMO_VUELTA ? precioVuelta : precioIda) / (precioIda + precioVuelta)
                     : 1m;
-                decimal tarifa = Math.Round(reserva.ImporteBase / cantidad * proporcion, 2);
+                Pasajero_GV42 enReserva = reserva.Pasajeros.FirstOrDefault(x => x.DNI == b.PasajeroDni);
+                TipoPasajero_GV42 tipoPasajero = enReserva != null ? enReserva.Tipo : TipoPasajero_GV42.Adulto;
+                decimal tarifa = Math.Round(reserva.ImporteBase / factores * BLLReserva_GV42.FactorTarifa(tipoPasajero) * proporcion, 2);
 
                 lista.Add(new BoletoElectronico_GV42
                 {
@@ -101,9 +105,14 @@ namespace BLL
                     CierreEmbarque = v.FechaHoraSalida.AddMinutes(-MINUTOS_CIERRE_EMBARQUE),
                     PuertaEmbarque = v.PuertaEmbarque,
                     Clase = vc.ClaseTexto,
+                    TarifaNombre = reserva.Tarifa != null ? reserva.Tarifa.Nombre : null,
+                    TipoPasajero = tipoPasajero,
+                    Asistencia = enReserva != null ? enReserva.Asistencia : AsistenciaEspecial_GV42.Ninguna,
                     Asiento = asiento?.NumeroAsiento,
                     UbicacionAsiento = asiento?.Ubicacion,
-                    FranquiciaEquipajeKg = vc.FranquiciaEquipajeKg,
+                    // La tarifa Light no incluye valija despachada.
+                    FranquiciaEquipajeKg = reserva.Tarifa != null && reserva.Tarifa.ValijasIncluidas == 0 ? 0m
+                                         : vc.FranquiciaEquipajeKg * (reserva.Tarifa != null ? reserva.Tarifa.ValijasIncluidas : 1),
                     TipoViaje = reserva.TipoViaje.Texto(),
                     TarifaPasajero = tarifa,
                     // Impuesto de la tarifa del pasajero (los adicionales y su impuesto se ven en el total de la reserva).

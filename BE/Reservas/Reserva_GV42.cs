@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace BE
 {
@@ -20,6 +21,9 @@ namespace BE
         // Vuelo y clase de la vuelta (tramo 2). Null si el viaje es solo de ida (o en reservas de ida y
         // vuelta anteriores a esta versión, que solo guardaban la fecha de regreso).
         public VueloClase_GV42 VueloClaseVuelta { get; set; }
+        // Familia tarifaria (Light / Plus / Top) con la que se vendió toda la reserva.
+        public TarifaFamilia_GV42 Tarifa { get; set; }
+
         public TipoViaje_GV42 TipoViaje { get; set; }
         public DateTime? FechaRegreso { get; set; }
 
@@ -44,6 +48,20 @@ namespace BE
 
         // Solo tiene valor una vez registrado el pago.
         public Pago_GV42 Pago { get; set; }
+
+        // Hasta cuándo se puede pagar mientras está pendiente. Pasada esa hora la reserva vence:
+        // se cancela sola (VencidaSinPago) y libera sus asientos.
+        public DateTime? FechaVencimiento { get; set; }
+        public bool VencidaSinPago { get; set; }
+
+        // Devolución generada al cancelar una reserva paga (null si no corresponde).
+        public Reembolso_GV42 Reembolso { get; set; }
+
+        // Lugares que ocupa la reserva en cada vuelo: los infantes viajan en brazos y no ocupan asiento.
+        public int CantidadAsientos
+        {
+            get { return Pasajeros != null ? Pasajeros.Count(p => p != null && !p.EsInfante) : 0; }
+        }
 
         public Vuelo_GV42 Vuelo { get { return VueloClase != null ? VueloClase.Vuelo : null; } }
         public ClaseVuelo_GV42 Clase { get { return VueloClase != null ? VueloClase.Clase : ClaseVuelo_GV42.Economica; } }

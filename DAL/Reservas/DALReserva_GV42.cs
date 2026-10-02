@@ -16,7 +16,7 @@ namespace DAL
             "SELECT R.Id AS IdReserva, R.NumeroReserva, R.IdTipoViaje, R.FechaRegreso, R.IdVueloVuelta, R.IdClaseVuelta, " +
             "       R.ImporteBase, R.SubtotalAdicionales, R.Impuestos, R.ImporteTotal, " +
             "       R.IdEstadoReserva, R.FechaRealizacion, R.LoginVendedor, " +
-            "       R.FechaCancelacion, R.MontoPenalidadCancelacion, " +
+            "       R.FechaCancelacion, R.MontoPenalidadCancelacion, R.FechaVencimiento, R.VencidaSinPago, R.IdTarifa, R.IdCanalVenta, " +
             "       C.DNI AS CliDNI, C.Nombre AS CliNombre, C.Apellido AS CliApellido, " +
             "       C.Email AS CliEmail, C.Telefono AS CliTelefono, " +
             DALUtil_GV42.COLUMNAS_VUELO_CLASE + " " +
@@ -46,6 +46,9 @@ namespace DAL
         {
             try
             {
+                // Lugares que ocupa en cada vuelo (los infantes viajan en brazos).
+                int asientos = r.CantidadAsientos;
+
                 return _acceso.EjecutarEnTransaccion(tx =>
                 {
                     // 1) Reservar los asientos. La condición evita vender de más si dos vendedores compiten.
@@ -57,7 +60,7 @@ namespace DAL
                         // (la BLL lo valida antes, pero fuera de esta transacción).
                         "AND EXISTS (SELECT 1 FROM Vuelo V WHERE V.Id = @IdVuelo AND V.BorradoLogico = 0 AND V.FechaHoraSalida > GETDATE())",
                         new[] {
-                        new SqlParameter("@Cant",    r.CantidadPasajeros),
+                        new SqlParameter("@Cant",    asientos),
                         new SqlParameter("@IdVuelo", r.Vuelo.Id),
                         new SqlParameter("@IdClase", (int)r.Clase)
                         });
@@ -75,7 +78,7 @@ namespace DAL
                             "AND (CapacidadAsientos - AsientosReservados) >= @Cant " +
                             "AND EXISTS (SELECT 1 FROM Vuelo V WHERE V.Id = @IdVuelo AND V.BorradoLogico = 0 AND V.FechaHoraSalida > GETDATE())",
                             new[] {
-                            new SqlParameter("@Cant",    r.CantidadPasajeros),
+                            new SqlParameter("@Cant",    asientos),
                             new SqlParameter("@IdVuelo", r.VueloClaseVuelta.Vuelo.Id),
                             new SqlParameter("@IdClase", (int)r.VueloClaseVuelta.Clase)
                             });
@@ -87,8 +90,10 @@ namespace DAL
                     // 2) Cabecera de la reserva.
                     object idObj = _acceso.leerEscalar(tx,
                         "INSERT INTO Reserva (DniCliente, IdVuelo, IdClase, IdVueloVuelta, IdClaseVuelta, IdTipoViaje, FechaRegreso, CantidadPasajeros, " +
+                        "                     CantidadAsientos, IdTarifa, FechaVencimiento, " +
                         "                     ImporteBase, SubtotalAdicionales, Impuestos, ImporteTotal, IdEstadoReserva, LoginVendedor, IdCanalVenta) " +
                         "VALUES (@DniCliente, @IdVuelo, @IdClase, @IdVueloVuelta, @IdClaseVuelta, @IdTipoViaje, @FechaRegreso, @Cantidad, " +
+                        "        @Asientos, @IdTarifa, @Vencimiento, " +
                         "        @ImporteBase, @Subtotal, @Impuestos, @Total, @IdEstado, @Login, @IdCanal); " +
                         "SELECT CAST(SCOPE_IDENTITY() AS INT);",
                         new[] {
@@ -100,6 +105,9 @@ namespace DAL
                         new SqlParameter("@IdTipoViaje", (int)r.TipoViaje),
                         new SqlParameter("@FechaRegreso", DALUtil_GV42.ADb(r.FechaRegreso)),
                         new SqlParameter("@Cantidad",    r.CantidadPasajeros),
+                        new SqlParameter("@Asientos",    asientos),
+                        new SqlParameter("@IdTarifa",    r.Tarifa != null ? (object)r.Tarifa.Id : DBNull.Value),
+                        new SqlParameter("@Vencimiento", SqlDbType.DateTime2) { Value = DALUtil_GV42.ADb(r.FechaVencimiento) },
                         new SqlParameter("@ImporteBase", r.ImporteBase),
                         new SqlParameter("@Subtotal",    r.SubtotalAdicionales),
                         new SqlParameter("@Impuestos",   r.Impuestos),
@@ -120,8 +128,12 @@ namespace DAL
                     {
                         _acceso.escribir(tx,
                             "IF NOT EXISTS (SELECT 1 FROM Pasajero WHERE DNI = @DNI) " +
-                            "    INSERT INTO Pasajero (DNI, Nombre, Apellido, Email, Telefono) VALUES (@DNI, @Nombre, @Apellido, @Email, @Telefono)",
+                            "    INSERT INTO Pasajero (DNI, Nombre, Apellido, Email, Telefono, FechaNacimiento) VALUES (@DNI, @Nombre, @Apellido, @Email, @Telefono, @Nacimiento) " +
+                            // Pasajeros registrados antes de que se pidiera la fecha de nacimiento: se completa.
+                            "ELSE IF @Nacimiento IS NOT NULL " +
+                            "    UPDATE Pasajero SET FechaNacimiento = @Nacimiento WHERE DNI = @DNI AND FechaNacimiento IS NULL",
                             new[] {
+                            new SqlParameter("@Nacimiento", SqlDbType.Date) { Value = DALUtil_GV42.ADb(p.FechaNacimiento) },
                             new SqlParameter("@DNI",      p.DNI),
                             new SqlParameter("@Nombre",   p.Nombre),
                             new SqlParameter("@Apellido", p.Apellido),
@@ -145,18 +157,23 @@ namespace DAL
                             });
                     }
 
-                    // 3.5) Asiento elegido por cada pasajero (selección estilo cine). El índice único
-                    // filtrado UX_ReservaPasajero_Asiento asegura que dos pasajeros no se queden con el mismo
-                    // asiento aunque compitan al mismo tiempo.
+                    // 3.5) Una fila por pasajero y por tramo, con el asiento elegido (selección estilo cine), su
+                    // equipaje extra, su tipo (adulto / niño / infante) y la asistencia especial que pidió.
+                    // El asiento puede quedar sin elegir (tarifa Light o infante): se asigna en el check-in.
+                    // El índice único filtrado UX_ReservaPasajero_Asiento asegura que dos pasajeros no se
+                    // queden con el mismo asiento aunque compitan al mismo tiempo.
                     foreach (AsientoPasajero_GV42 ap in r.AsientosPorPasajero)
                     {
+                        Pasajero_GV42 pasajero = r.Pasajeros.Find(x => x.DNI == ap.DniPasajero);
                         _acceso.escribir(tx,
-                            "INSERT INTO ReservaPasajero (IdReserva, DniPasajero, Tramo, IdAsiento, EquipajeExtra) " +
-                            "VALUES (@IdReserva, @DNI, @Tramo, @IdAsiento, @Extra)",
+                            "INSERT INTO ReservaPasajero (IdReserva, DniPasajero, Tramo, IdAsiento, EquipajeExtra, IdTipoPasajero, IdAsistencia) " +
+                            "VALUES (@IdReserva, @DNI, @Tramo, @IdAsiento, @Extra, @Tipo, @Asistencia)",
                             new[] {
+                            new SqlParameter("@Tipo",       pasajero != null ? (int)pasajero.Tipo : (int)TipoPasajero_GV42.Adulto),
+                            new SqlParameter("@Asistencia", pasajero != null ? (int)pasajero.Asistencia : 0),
                             new SqlParameter("@Tramo",     ap.Tramo == 2 ? 2 : 1),
                             new SqlParameter("@Extra",     Math.Max(0, ap.EquipajeExtra)),
-                            new SqlParameter("@IdAsiento", ap.Asiento.Id),
+                            new SqlParameter("@IdAsiento", ap.Asiento != null ? (object)ap.Asiento.Id : DBNull.Value),
                             new SqlParameter("@IdReserva", idReserva),
                             new SqlParameter("@DNI",       ap.DniPasajero)
                             });
@@ -191,6 +208,7 @@ namespace DAL
                 "SELECT R.Id AS IdReserva, R.NumeroReserva, R.IdTipoViaje, R.FechaRegreso, R.IdVueloVuelta, R.IdClaseVuelta, " +
                 "       R.ImporteBase, R.SubtotalAdicionales, R.Impuestos, R.ImporteTotal, " +
                 "       R.IdEstadoReserva, R.FechaRealizacion, R.LoginVendedor, " +
+                "       R.FechaCancelacion, R.MontoPenalidadCancelacion, R.FechaVencimiento, R.VencidaSinPago, R.IdTarifa, R.IdCanalVenta, " +
                 "       C.DNI AS CliDNI, C.Nombre AS CliNombre, C.Apellido AS CliApellido, " +
                 "       C.Email AS CliEmail, C.Telefono AS CliTelefono, " +
                 DALUtil_GV42.COLUMNAS_VUELO_CLASE + " " +
@@ -225,11 +243,13 @@ namespace DAL
                 FechaRealizacion = DALUtil_GV42.Fecha(row, "FechaRealizacion"),
                 LoginVendedor = DALUtil_GV42.Str(row, "LoginVendedor")
             };
+            LlenarDatosComunes(reserva, row);
 
             reserva.Pasajeros = ListarPasajeros(reserva.Id);
             reserva.AsientosPorPasajero = ListarAsientosPorPasajero(reserva.Id);
             reserva.Adicionales = ListarAdicionales(reserva.Id);
             reserva.Pago = new DALPago_GV42().BuscarPorReserva(reserva.Id);
+            reserva.Reembolso = BuscarReembolso(reserva.Id);
             return reserva;
         }
 
@@ -270,12 +290,14 @@ namespace DAL
 
         // Cancela la reserva, libera los asientos que tenían sus pasajeros y descuenta el cupo
         // ocupado del vuelo, todo en una sola transacción.
-        public Reserva_GV42 Cancelar(int idReserva, decimal montoPenalidad)
+        // Si corresponde devolverle plata al cliente (reserva paga), 'reembolso' trae el importe y el
+        // medio de pago: queda registrado como pendiente en la misma transacción.
+        public Reserva_GV42 Cancelar(int idReserva, decimal montoPenalidad, Reembolso_GV42 reembolso)
         {
             return _acceso.EjecutarEnTransaccion(tx =>
             {
                 DataTable dtRes = _acceso.leer(tx,
-                    "SELECT IdVuelo, IdClase, IdVueloVuelta, IdClaseVuelta, CantidadPasajeros, IdEstadoReserva FROM Reserva WHERE Id = @Id",
+                    "SELECT IdVuelo, IdClase, IdVueloVuelta, IdClaseVuelta, ISNULL(CantidadAsientos, CantidadPasajeros) AS CantidadPasajeros, IdEstadoReserva FROM Reserva WHERE Id = @Id",
                     new[] { new SqlParameter("@Id", idReserva) });
                 if (dtRes.Rows.Count == 0)
                     throw new NegocioException_GV42("La reserva no existe.");
@@ -330,10 +352,193 @@ namespace DAL
                             new SqlParameter("@IdClase", DALUtil_GV42.Int(dtRes.Rows[0], "IdClaseVuelta"))
                         });
 
+                if (reembolso != null && reembolso.Importe > 0)
+                    _acceso.escribir(tx,
+                        "INSERT INTO Reembolso (IdReserva, Importe, IdMedioPago) VALUES (@IdReserva, @Importe, @IdMedio)",
+                        new[] {
+                            new SqlParameter("@IdReserva", idReserva),
+                            new SqlParameter("@Importe",   reembolso.Importe),
+                            new SqlParameter("@IdMedio",   (int)reembolso.MedioPago)
+                        });
+
                 DataTable dt = _acceso.leer(tx, SELECT_LISTADO + " WHERE R.Id = @Id", new[] { new SqlParameter("@Id", idReserva) });
                 return MapearListado(dt.Rows[0]);
             });
         }
+
+        #region Vencimiento, reembolsos y cambio de vuelo
+
+        // Cancela las reservas pendientes cuyo plazo de pago ya pasó (libera asientos y cupo) y
+        // devuelve cuántas vencieron. Se llama dentro de cada operación que consulta disponibilidad o
+        // reservas: así el vencimiento rige desde la hora exacta, sin depender de un proceso programado.
+        public int LiberarVencidas()
+        {
+            object r = _acceso.leerEscalar("EXEC dbo.LiberarReservasVencidas_GV42", null);
+            return r == null || r == DBNull.Value ? 0 : Convert.ToInt32(r);
+        }
+
+        public Reembolso_GV42 BuscarReembolso(int idReserva)
+        {
+            DataTable dt = _acceso.leer(
+                "SELECT Id, IdReserva, Importe, IdMedioPago, IdEstado, FechaSolicitud, FechaProceso, LoginProceso " +
+                "FROM Reembolso WHERE IdReserva = @Id", new[] { new SqlParameter("@Id", idReserva) });
+            if (dt.Rows.Count == 0) return null;
+
+            DataRow r = dt.Rows[0];
+            return new Reembolso_GV42
+            {
+                Id = DALUtil_GV42.Int(r, "Id"),
+                IdReserva = DALUtil_GV42.Int(r, "IdReserva"),
+                Importe = DALUtil_GV42.Dec(r, "Importe"),
+                MedioPago = (MedioPago_GV42)DALUtil_GV42.Int(r, "IdMedioPago"),
+                Estado = (EstadoReembolso_GV42)DALUtil_GV42.Int(r, "IdEstado"),
+                FechaSolicitud = DALUtil_GV42.Fecha(r, "FechaSolicitud"),
+                FechaProceso = DALUtil_GV42.FechaNull(r, "FechaProceso"),
+                LoginProceso = DALUtil_GV42.Str(r, "LoginProceso")
+            };
+        }
+
+        // Marca el reembolso como procesado (ya se le devolvió la plata al cliente). False si no
+        // existía o ya estaba procesado.
+        public bool ProcesarReembolso(int idReserva, string login)
+        {
+            int filas = _acceso.escribir(
+                "UPDATE Reembolso SET IdEstado = @Procesado, FechaProceso = GETDATE(), LoginProceso = @Login " +
+                "WHERE IdReserva = @Id AND IdEstado = @Pendiente",
+                new[] {
+                    new SqlParameter("@Procesado", (int)EstadoReembolso_GV42.Procesado),
+                    new SqlParameter("@Pendiente", (int)EstadoReembolso_GV42.Pendiente),
+                    new SqlParameter("@Login",     login),
+                    new SqlParameter("@Id",        idReserva)
+                });
+            return filas > 0;
+        }
+
+        // Cambia el vuelo de un tramo de una reserva confirmada, todo en una transacción:
+        // devuelve el cupo del vuelo anterior, toma el del nuevo, reemplaza los asientos de los pasajeros
+        // (en la reserva y en su check-in pendiente), actualiza la reserva y sus importes y deja el
+        // historial del cambio con lo cobrado. Los boletos no cambian de número: muestran el vuelo nuevo.
+        // 'asientos': un elemento por pasajero del tramo; Asiento null = se asigna en el check-in.
+        public void CambiarVuelo(Reserva_GV42 reserva, int tramo, VueloClase_GV42 nuevo, List<AsientoPasajero_GV42> asientos,
+                                 CotizacionCambio_GV42 cotizacion, MedioPago_GV42? medioPago, string numeroTransaccion, string login)
+        {
+            VueloClase_GV42 anterior = reserva.VueloClaseDeTramo(tramo);
+            int cantidad = reserva.CantidadAsientos;
+            bool esVuelta = tramo == Reserva_GV42.TRAMO_VUELTA;
+
+            try
+            {
+                _acceso.EjecutarEnTransaccion(tx =>
+                {
+                    // 1) Cupo del vuelo nuevo (con la misma condición que al reservar).
+                    int filas = _acceso.escribir(tx,
+                        "UPDATE VueloClase SET AsientosReservados = AsientosReservados + @Cant " +
+                        "WHERE IdVuelo = @IdVuelo AND IdClase = @IdClase " +
+                        "AND (CapacidadAsientos - AsientosReservados) >= @Cant " +
+                        "AND EXISTS (SELECT 1 FROM Vuelo V WHERE V.Id = @IdVuelo AND V.BorradoLogico = 0 AND V.FechaHoraSalida > GETDATE())",
+                        new[] {
+                            new SqlParameter("@Cant",    cantidad),
+                            new SqlParameter("@IdVuelo", nuevo.Vuelo.Id),
+                            new SqlParameter("@IdClase", (int)nuevo.Clase)
+                        });
+                    if (filas == 0)
+                        throw new NegocioException_GV42("No se pudo cambiar: el vuelo nuevo no tiene asientos suficientes en esa clase, ya salió o fue dado de baja.");
+
+                    // 2) La reserva pasa al vuelo nuevo. Condicional: tiene que seguir confirmada y en el vuelo que se leyó.
+                    filas = _acceso.escribir(tx,
+                        (esVuelta
+                            ? "UPDATE Reserva SET IdVueloVuelta = @IdVuelo, IdClaseVuelta = @IdClase, FechaRegreso = @Fecha, "
+                            : "UPDATE Reserva SET IdVuelo = @IdVuelo, IdClase = @IdClase, ") +
+                        "       ImporteBase = ImporteBase + @Diferencia, Impuestos = Impuestos + @ImpDif, " +
+                        "       ImporteTotal = ImporteTotal + @Diferencia + @ImpDif " +
+                        "WHERE Id = @Id AND IdEstadoReserva = @Confirmada AND " +
+                        (esVuelta ? "IdVueloVuelta = @IdVueloAnterior" : "IdVuelo = @IdVueloAnterior"),
+                        new[] {
+                            new SqlParameter("@IdVuelo",    nuevo.Vuelo.Id),
+                            new SqlParameter("@IdClase",    (int)nuevo.Clase),
+                            new SqlParameter("@Fecha",      SqlDbType.Date) { Value = nuevo.Vuelo.FechaHoraSalida.Date },
+                            new SqlParameter("@Diferencia", cotizacion.DiferenciaTarifa),
+                            new SqlParameter("@ImpDif",     cotizacion.ImpuestosDiferencia),
+                            new SqlParameter("@Id",         reserva.Id),
+                            new SqlParameter("@Confirmada", (int)EstadoReserva_GV42.Confirmada),
+                            new SqlParameter("@IdVueloAnterior", anterior.Vuelo.Id)
+                        });
+                    if (filas == 0)
+                        throw new NegocioException_GV42("La reserva cambió mientras se hacía el cambio de vuelo. Volvé a consultarla.");
+
+                    // 3) Se devuelve el cupo del vuelo anterior.
+                    _acceso.escribir(tx,
+                        "UPDATE VueloClase SET AsientosReservados = CASE WHEN AsientosReservados >= @Cant " +
+                        "       THEN AsientosReservados - @Cant ELSE 0 END " +
+                        "WHERE IdVuelo = @IdVuelo AND IdClase = @IdClase",
+                        new[] {
+                            new SqlParameter("@Cant",    cantidad),
+                            new SqlParameter("@IdVuelo", anterior.Vuelo.Id),
+                            new SqlParameter("@IdClase", (int)anterior.Clase)
+                        });
+
+                    // 4) Asientos: primero se liberan los del vuelo anterior y después se asignan los nuevos
+                    //    (en la reserva y en el check-in pendiente de ese tramo).
+                    Func<SqlParameter[]> pTramo = () => new[] { new SqlParameter("@Id", reserva.Id), new SqlParameter("@Tramo", tramo) };
+                    _acceso.escribir(tx, "UPDATE ReservaPasajero SET IdAsiento = NULL WHERE IdReserva = @Id AND Tramo = @Tramo", pTramo());
+                    _acceso.escribir(tx, "UPDATE CheckIn SET IdAsiento = NULL WHERE IdReserva = @Id AND Tramo = @Tramo", pTramo());
+
+                    foreach (AsientoPasajero_GV42 ap in asientos)
+                    {
+                        if (ap.Asiento == null) continue;
+                        Func<SqlParameter[]> p = () => new[] {
+                            new SqlParameter("@IdAsiento", ap.Asiento.Id),
+                            new SqlParameter("@Id",        reserva.Id),
+                            new SqlParameter("@Tramo",     tramo),
+                            new SqlParameter("@DNI",       ap.DniPasajero)
+                        };
+                        _acceso.escribir(tx,
+                            "UPDATE ReservaPasajero SET IdAsiento = @IdAsiento WHERE IdReserva = @Id AND Tramo = @Tramo AND DniPasajero = @DNI", p());
+                        _acceso.escribir(tx,
+                            "UPDATE CheckIn SET IdAsiento = @IdAsiento WHERE IdReserva = @Id AND Tramo = @Tramo AND DniPasajero = @DNI", p());
+                    }
+
+                    // 5) Historial del cambio con lo cobrado.
+                    _acceso.escribir(tx,
+                        "INSERT INTO CambioReserva (IdReserva, Tramo, IdVueloAnterior, IdClaseAnterior, IdVueloNuevo, IdClaseNuevo, " +
+                        "                           Penalidad, DiferenciaTarifa, ImporteCobrado, IdMedioPago, NumeroTransaccion, LoginUsuario) " +
+                        "VALUES (@Id, @Tramo, @VA, @CA, @VN, @CN, @Penalidad, @Diferencia, @Cobrado, @IdMedio, @NumTx, @Login)",
+                        new[] {
+                            new SqlParameter("@Id",         reserva.Id),
+                            new SqlParameter("@Tramo",      tramo),
+                            new SqlParameter("@VA",         anterior.Vuelo.Id),
+                            new SqlParameter("@CA",         (int)anterior.Clase),
+                            new SqlParameter("@VN",         nuevo.Vuelo.Id),
+                            new SqlParameter("@CN",         (int)nuevo.Clase),
+                            new SqlParameter("@Penalidad",  cotizacion.Penalidad),
+                            new SqlParameter("@Diferencia", cotizacion.DiferenciaTarifa),
+                            new SqlParameter("@Cobrado",    cotizacion.Total),
+                            new SqlParameter("@IdMedio",    medioPago.HasValue ? (object)(int)medioPago.Value : DBNull.Value),
+                            new SqlParameter("@NumTx",      DALUtil_GV42.ADb(numeroTransaccion)),
+                            new SqlParameter("@Login",      login)
+                        });
+                    return true;
+                });
+            }
+            catch (SqlException ex)
+            {
+                if ((ex.Number == 2601 || ex.Number == 2627) && (ex.Message.Contains("UX_ReservaPasajero_Asiento") || ex.Message.Contains("UX_CheckIn_Asiento")))
+                    throw new NegocioException_GV42("Uno de los asientos elegidos ya fue tomado por otro pasajero. Volvé a elegir el asiento.", ex);
+                throw;
+            }
+        }
+
+        // ¿El tramo tiene algún check-in ya hecho? (entonces ese vuelo ya no se puede cambiar)
+        public bool TieneCheckInRealizado(int idReserva, int tramo)
+        {
+            object r = _acceso.leerEscalar(
+                "SELECT COUNT(1) FROM CheckIn WHERE IdReserva = @Id AND Tramo = @Tramo AND IdEstadoCheckIn = @Realizado",
+                new[] { new SqlParameter("@Id", idReserva), new SqlParameter("@Tramo", tramo),
+                        new SqlParameter("@Realizado", (int)EstadoCheckIn_GV42.Realizado) });
+            return r != null && Convert.ToInt32(r) > 0;
+        }
+
+        #endregion
 
         // ¿Algún pasajero de la reserva ya hizo el check-in? (entonces ya no se puede cancelar)
         public bool TieneCheckInRealizado(int idReserva)
@@ -347,7 +552,7 @@ namespace DAL
         public List<Pasajero_GV42> ListarPasajeros(int idReserva)
         {
             string query =
-                "SELECT P.DNI, P.Nombre, P.Apellido, P.Email, P.Telefono " +
+                "SELECT P.DNI, P.Nombre, P.Apellido, P.Email, P.Telefono, P.FechaNacimiento, RP.IdTipoPasajero, RP.IdAsistencia " +
                 "FROM ReservaPasajero RP INNER JOIN Pasajero P ON P.DNI = RP.DniPasajero " +
                 // Cada pasajero tiene una fila por tramo: se listan una sola vez (todos están en la ida).
                 "WHERE RP.IdReserva = @Id AND RP.Tramo = 1 ORDER BY P.Apellido, P.Nombre";
@@ -358,23 +563,28 @@ namespace DAL
             {
                 var p = new Pasajero_GV42();
                 DALUtil_GV42.LlenarPersona(p, r, "");
+                p.FechaNacimiento = DALUtil_GV42.FechaNull(r, "FechaNacimiento");
+                p.Tipo = (TipoPasajero_GV42)DALUtil_GV42.Int(r, "IdTipoPasajero");
+                p.Asistencia = (AsistenciaEspecial_GV42)DALUtil_GV42.Int(r, "IdAsistencia");
                 lista.Add(p);
             }
             return lista;
         }
 
+        // Una fila por pasajero y tramo. Asiento queda en null si todavía no tiene (tarifa Light sin
+        // asiento elegido, infante, o reserva cancelada que ya liberó sus asientos).
         public List<AsientoPasajero_GV42> ListarAsientosPorPasajero(int idReserva)
         {
             string query =
                 "SELECT RP.DniPasajero, RP.Tramo, RP.EquipajeExtra, A.Id, A.IdVuelo, A.Fila, A.Letra, A.NumeroAsiento, A.IdClase, A.Ubicacion, A.EsPreferencial " +
-                "FROM ReservaPasajero RP INNER JOIN Asiento A ON A.Id = RP.IdAsiento " +
+                "FROM ReservaPasajero RP LEFT JOIN Asiento A ON A.Id = RP.IdAsiento " +
                 "WHERE RP.IdReserva = @Id ORDER BY RP.Tramo, RP.DniPasajero";
 
             DataTable dt = _acceso.leer(query, new[] { new SqlParameter("@Id", idReserva) });
             var lista = new List<AsientoPasajero_GV42>();
             foreach (DataRow r in dt.Rows)
             {
-                var asiento = new Asiento_GV42
+                Asiento_GV42 asiento = r["Id"] == DBNull.Value ? null : new Asiento_GV42
                 {
                     Id = DALUtil_GV42.Int(r, "Id"),
                     IdVuelo = DALUtil_GV42.Int(r, "IdVuelo"),
@@ -437,7 +647,7 @@ namespace DAL
             var cliente = new Pasajero_GV42();
             DALUtil_GV42.LlenarPersona(cliente, row, "Cli");
 
-            return new Reserva_GV42
+            var reserva = new Reserva_GV42
             {
                 Id = DALUtil_GV42.Int(row, "IdReserva"),
                 NumeroReserva = DALUtil_GV42.Str(row, "NumeroReserva"),
@@ -456,6 +666,23 @@ namespace DAL
                 FechaCancelacion = DALUtil_GV42.FechaNull(row, "FechaCancelacion"),
                 MontoPenalidadCancelacion = row["MontoPenalidadCancelacion"] == DBNull.Value ? (decimal?)null : DALUtil_GV42.Dec(row, "MontoPenalidadCancelacion")
             };
+            LlenarDatosComunes(reserva, row);
+            // En los listados se necesita saber si hay un reembolso pendiente (columna y botón).
+            if (reserva.Estado == EstadoReserva_GV42.Cancelada && !reserva.VencidaSinPago)
+                reserva.Reembolso = BuscarReembolso(reserva.Id);
+            return reserva;
+        }
+
+        // Vencimiento, tarifa, canal y cancelación: columnas que traen tanto el listado como el detalle.
+        private static void LlenarDatosComunes(Reserva_GV42 reserva, DataRow row)
+        {
+            reserva.FechaVencimiento = DALUtil_GV42.FechaNull(row, "FechaVencimiento");
+            reserva.VencidaSinPago = row["VencidaSinPago"] != DBNull.Value && Convert.ToBoolean(row["VencidaSinPago"]);
+            reserva.CanalVenta = (CanalVenta_GV42)DALUtil_GV42.Int(row, "IdCanalVenta");
+            reserva.FechaCancelacion = DALUtil_GV42.FechaNull(row, "FechaCancelacion");
+            reserva.MontoPenalidadCancelacion = row["MontoPenalidadCancelacion"] == DBNull.Value ? (decimal?)null : DALUtil_GV42.Dec(row, "MontoPenalidadCancelacion");
+            if (row["IdTarifa"] != DBNull.Value)
+                reserva.Tarifa = new DALTarifa_GV42().BuscarPorId(DALUtil_GV42.Int(row, "IdTarifa"));
         }
 
         #endregion

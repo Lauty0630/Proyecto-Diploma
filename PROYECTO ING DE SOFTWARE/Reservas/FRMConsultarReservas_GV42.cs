@@ -25,6 +25,8 @@ namespace PROYECTO_ING_DE_SOFTWARE
         private readonly bool _esVendedor;
         private readonly bool _puedeCancelar;
         private readonly bool _puedeHacerCheckIn;
+        private readonly bool _puedeCambiarVuelo;
+        private readonly bool _puedeProcesarReembolsos;
         private List<Reserva_GV42> _reservas = new List<Reserva_GV42>();
 
         #endregion
@@ -37,6 +39,8 @@ namespace PROYECTO_ING_DE_SOFTWARE
 
             _esVendedor = _bll.PuedeConsultarTodas();
             _puedeCancelar = _bll.PuedeCancelar();
+            _puedeCambiarVuelo = _bll.PuedeCambiarVuelo();
+            _puedeProcesarReembolsos = _bll.PuedeProcesarReembolsos();
             var bllCheckIn = new BLLCheckIn_GV42();
             _puedeHacerCheckIn = bllCheckIn.PuedeAtenderMostrador() || bllCheckIn.PuedeHacerCheckInOnline();
 
@@ -66,6 +70,10 @@ namespace PROYECTO_ING_DE_SOFTWARE
             btnVerBoletos.Text = IdiomaManager_GV42.T("consulta.verBoletos");
             btnCancelar.Text = IdiomaManager_GV42.T(_esVendedor ? "consulta.cancelarSeleccionada" : "consulta.cancelarMia");
             btnCheckIn.Text = IdiomaManager_GV42.T("consulta.hacerCheckIn");
+            btnCambiarVuelo.Text = IdiomaManager_GV42.T("consulta.cambiarVuelo");
+            btnReembolso.Text = IdiomaManager_GV42.T("consulta.procesarReembolso");
+            toolTip.SetToolTip(btnCambiarVuelo, IdiomaManager_GV42.T("consulta.ayudaCambio", BLLReserva_GV42.HORAS_LIMITE_CAMBIO));
+            colReembolso.HeaderText = IdiomaManager_GV42.T("consulta.colReembolso");
             toolTip.SetToolTip(btnCheckIn, IdiomaManager_GV42.T("consulta.ayudaCheckIn",
                 BLLCheckIn_GV42.HORAS_APERTURA_CHECKIN, BLLCheckIn_GV42.MINUTOS_CIERRE_CHECKIN));
 
@@ -99,6 +107,8 @@ namespace PROYECTO_ING_DE_SOFTWARE
             colRol.Visible = !_esVendedor;
             btnCancelar.Visible = _puedeCancelar;
             btnCheckIn.Visible = _puedeHacerCheckIn;
+            btnCambiarVuelo.Visible = _puedeCambiarVuelo;
+            btnReembolso.Visible = _puedeProcesarReembolsos;
         }
 
         private void CargarReservas()
@@ -135,7 +145,9 @@ namespace PROYECTO_ING_DE_SOFTWARE
                 Ruta = r.VueloClase.OrigenDescripcion + (r.TieneVuelta ? " <-> " : " -> ") + r.VueloClase.DestinoDescripcion,
                 Salida = r.VueloClase.FechaHoraSalida,
                 Clase = r.VueloClase.ClaseTexto,
-                Estado = r.EstadoTexto,
+                Estado = TextoEstado(r),
+                Reembolso = r.Reembolso == null ? "—"
+                    : IdiomaManager_GV42.T("consulta.reembolsoTexto", r.Reembolso.Importe.ToString("C2"), r.Reembolso.EstadoTexto),
                 Rol = _esVendedor ? string.Empty
                     : IdiomaManager_GV42.T(_bll.EsTitularEnSesion(r) ? "consulta.rolTitular" : "consulta.rolPasajero"),
                 ImporteTotal = r.ImporteTotal,
@@ -159,6 +171,25 @@ namespace PROYECTO_ING_DE_SOFTWARE
             ActualizarBotones();
         }
 
+        // "Vencida" si la canceló el sistema por falta de pago; en las pendientes, hasta cuándo se puede pagar.
+        private static string TextoEstado(Reserva_GV42 r)
+        {
+            if (r.VencidaSinPago) return IdiomaManager_GV42.T("consulta.estadoVencida");
+            if (r.Estado == EstadoReserva_GV42.PendienteDePago && r.FechaVencimiento.HasValue)
+                return r.EstadoTexto + " · " + IdiomaManager_GV42.T("consulta.vence", r.FechaVencimiento.Value.ToString("dd/MM HH:mm"));
+            return r.EstadoTexto;
+        }
+
+        // Cambiar vuelo: reserva confirmada, propia (o vendedor) y con algún vuelo que salga con la
+        // anticipación mínima. La BLL vuelve a validar todo (y además que no haya check-in hecho).
+        private bool PuedeCambiarVuelo(Reserva_GV42 r)
+        {
+            if (!_puedeCambiarVuelo || r == null || r.Estado != EstadoReserva_GV42.Confirmada) return false;
+            if (!_esVendedor && !_bll.EsTitularEnSesion(r)) return false;
+            DateTime limite = DateTime.Now.AddHours(BLLReserva_GV42.HORAS_LIMITE_CAMBIO);
+            return r.VueloClase.FechaHoraSalida > limite || (r.TieneVuelta && r.VueloClaseVuelta.FechaHoraSalida > limite);
+        }
+
         private Reserva_GV42 ObtenerSeleccionada()
         {
             if (dgvReservas.SelectedRows.Count == 0) return null;
@@ -173,6 +204,9 @@ namespace PROYECTO_ING_DE_SOFTWARE
             Reserva_GV42 sel = ObtenerSeleccionada();
             btnVerBoletos.Enabled = sel != null && sel.Estado == EstadoReserva_GV42.Confirmada;
             btnCheckIn.Enabled = _puedeHacerCheckIn && sel != null && PuedeHacerCheckIn(sel);
+            btnCambiarVuelo.Enabled = PuedeCambiarVuelo(sel);
+            btnReembolso.Enabled = _puedeProcesarReembolsos && sel != null && sel.Reembolso != null
+                                   && sel.Reembolso.Estado == EstadoReembolso_GV42.Pendiente;
             if (!_puedeCancelar) { btnCancelar.Visible = false; return; }
             // El acompañante ve la reserva, su boleto y hace su check-in, pero solo el titular la cancela.
             btnCancelar.Enabled = sel != null && (_esVendedor || _bll.EsTitularEnSesion(sel)) &&
@@ -270,17 +304,21 @@ namespace PROYECTO_ING_DE_SOFTWARE
             Reserva_GV42 sel = ObtenerSeleccionada();
             if (sel == null) return;
 
-            // Pendiente de pago: no se cobró nada, así que no hay penalidad (igual que en la BLL).
-            decimal porcentaje = sel.Estado == EstadoReserva_GV42.PendienteDePago
-                ? 0m : _bll.CalcularPorcentajePenalidad(sel.VueloClase.FechaHoraSalida);
+            // La penalidad depende del estado y de la tarifa (igual que en la BLL): pendiente de pago no
+            // cobró nada; Light no es reembolsable; Top devuelve todo; el resto, según la anticipación.
+            decimal porcentaje = _bll.CalcularPorcentajePenalidad(sel);
             decimal estimado = Math.Round(sel.ImporteTotal * porcentaje, 2);
+            bool paga = sel.Estado == EstadoReserva_GV42.Confirmada;
+            bool noReembolsable = paga && sel.Tarifa != null && sel.Tarifa.TipoReembolso == TarifaFamilia_GV42.REEMBOLSO_NO;
 
             string mensaje = IdiomaManager_GV42.T("consulta.confirmarCancelar", sel.NumeroReserva);
-            mensaje += "\n\n" + (porcentaje > 0
-                ? IdiomaManager_GV42.T("consulta.conPenalidad", estimado.ToString("C2"), porcentaje * 100)
-                : (sel.Estado == EstadoReserva_GV42.PendienteDePago
-                    ? IdiomaManager_GV42.T("consulta.sinPenalidadImpaga")
-                    : IdiomaManager_GV42.T("consulta.sinPenalidad")));
+            mensaje += "\n\n" + (!paga ? IdiomaManager_GV42.T("consulta.sinPenalidadImpaga")
+                : noReembolsable ? IdiomaManager_GV42.T("consulta.noReembolsable", sel.Tarifa.Nombre)
+                : porcentaje > 0 ? IdiomaManager_GV42.T("consulta.conPenalidad", estimado.ToString("C2"), porcentaje * 100)
+                : IdiomaManager_GV42.T("consulta.sinPenalidad"));
+            // Lo que se le va a devolver al cliente (queda como reembolso pendiente).
+            if (paga && sel.ImporteTotal - estimado > 0)
+                mensaje += "\n\n" + IdiomaManager_GV42.T("consulta.reembolsoEstimado", (sel.ImporteTotal - estimado).ToString("C2"));
 
             if (MessageBox.Show(mensaje, IdiomaManager_GV42.T("consulta.confirmarTitulo"),
                                 MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes)
@@ -303,6 +341,45 @@ namespace PROYECTO_ING_DE_SOFTWARE
             }
         }
 
+        // Cambio de fecha / vuelo de un tramo (pantalla aparte). Al volver se recarga la lista.
+        private void btnCambiarVuelo_Click(object sender, EventArgs e)
+        {
+            Reserva_GV42 sel = ObtenerSeleccionada();
+            if (sel == null || !PuedeCambiarVuelo(sel)) return;
+            using (var frm = new FRMCambiarVuelo_GV42(sel.NumeroReserva))
+                frm.ShowDialog(this);
+            CargarReservas();
+        }
+
+        // El vendedor marca que ya se le devolvió la plata al cliente.
+        private void btnReembolso_Click(object sender, EventArgs e)
+        {
+            Reserva_GV42 sel = ObtenerSeleccionada();
+            if (sel == null || sel.Reembolso == null) return;
+
+            if (MessageBox.Show(IdiomaManager_GV42.T("consulta.confirmarReembolso", sel.Reembolso.Importe.ToString("C2"),
+                                                     sel.NumeroReserva, sel.Reembolso.MedioPago.Texto()),
+                                IdiomaManager_GV42.T("consulta.procesarReembolso"),
+                                MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes)
+                return;
+
+            try
+            {
+                _bll.ProcesarReembolso(sel.NumeroReserva);
+                MessageBox.Show(IdiomaManager_GV42.T("consulta.reembolsoProcesado"), IdiomaManager_GV42.T("consulta.listo"),
+                                MessageBoxButtons.OK, MessageBoxIcon.Information);
+                CargarReservas();
+            }
+            catch (NegocioException_GV42 ex)
+            {
+                MessageBox.Show(ex.Message, IdiomaManager_GV42.T("general.revisarDatos"), MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            }
+            catch (Exception ex)
+            {
+                Tema_GV42.MostrarErrorInesperado(IdiomaManager_GV42.T("consulta.accionReembolso"), ex);
+            }
+        }
+
         #endregion
 
         #region Tipos anidados
@@ -318,6 +395,7 @@ namespace PROYECTO_ING_DE_SOFTWARE
             public DateTime Salida { get; set; }
             public string Clase { get; set; }
             public string Estado { get; set; }
+            public string Reembolso { get; set; }
             public string Rol { get; set; }
             public decimal ImporteTotal { get; set; }
             public Reserva_GV42 Reserva { get; set; }

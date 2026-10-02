@@ -39,13 +39,15 @@ namespace DAL
             string query =
                 "SELECT ISNULL(CI.Id, 0) AS IdCheckIn, ISNULL(CI.IdEstadoCheckIn, @Pendiente) AS IdEstadoCheckIn, " +
                 "       CI.FechaHoraCheckIn, CI.LoginEncargado, CI.IdAsiento, CI.IdCanal, " +
-                "       R.Id AS IdReserva, R.NumeroReserva, R.IdEstadoReserva, R.DniCliente, R.IdTipoViaje, R.IdVueloVuelta, RP.EquipajeExtra, RP.Tramo, " +
+                "       R.Id AS IdReserva, R.NumeroReserva, R.IdEstadoReserva, R.DniCliente, R.IdTipoViaje, R.IdVueloVuelta, RP.EquipajeExtra, RP.Tramo, RP.IdTipoPasajero, RP.IdAsistencia, " +
+                "       TF.Nombre AS TarifaNombre, TF.ValijasIncluidas, TF.AsientoIncluido, " +
                 "       P.DNI AS PasDNI, P.Nombre AS PasNombre, P.Apellido AS PasApellido, " +
                 "       P.Email AS PasEmail, P.Telefono AS PasTelefono, " +
                 DALUtil_GV42.COLUMNAS_VUELO_CLASE + " " +
                 "FROM ReservaPasajero RP " +
                 "INNER JOIN Reserva R ON R.Id = RP.IdReserva " +
                 "INNER JOIN Pasajero P ON P.DNI = RP.DniPasajero " +
+                "LEFT JOIN TarifaFamilia TF ON TF.Id = R.IdTarifa " +
                 "LEFT JOIN CheckIn CI ON CI.IdReserva = RP.IdReserva AND CI.DniPasajero = RP.DniPasajero AND CI.Tramo = RP.Tramo" +
                 // Vuelo y clase del tramo (el de regreso si es la vuelta).
                 DALUtil_GV42.JoinVueloDeTramo("RP") +
@@ -80,8 +82,19 @@ namespace DAL
                 Canal = r["IdCanal"] == DBNull.Value ? (CanalVenta_GV42?)null : (CanalVenta_GV42)DALUtil_GV42.Int(r, "IdCanal"),
                 DniTitular = DALUtil_GV42.Str(r, "DniCliente"),
                 TipoViaje = (TipoViaje_GV42)DALUtil_GV42.Int(r, "IdTipoViaje"),
-                EquipajeExtraComprado = DALUtil_GV42.Int(r, "EquipajeExtra")
+                EquipajeExtraComprado = DALUtil_GV42.Int(r, "EquipajeExtra"),
+                TipoPasajero = (TipoPasajero_GV42)DALUtil_GV42.Int(r, "IdTipoPasajero"),
+                Asistencia = (AsistenciaEspecial_GV42)DALUtil_GV42.Int(r, "IdAsistencia"),
+                TarifaNombre = DALUtil_GV42.Str(r, "TarifaNombre")
             };
+            ci.VueloClase = DALUtil_GV42.MapearVueloClase(r);
+            // Valijas incluidas: las de la tarifa. Reservas sin tarifa (no debería pasar): como antes, por clase.
+            ci.ValijasIncluidas = r["ValijasIncluidas"] != DBNull.Value
+                ? DALUtil_GV42.Int(r, "ValijasIncluidas")
+                : (ci.VueloClase.Clase == ClaseVuelo_GV42.Economica ? 1 : 2);
+            ci.TarifaIncluyePreferencial = r["AsientoIncluido"] != DBNull.Value
+                && DALUtil_GV42.Int(r, "AsientoIncluido") == TarifaFamilia_GV42.ASIENTO_CUALQUIERA_GRATIS;
+            ci.Infantes = ListarInfantes(ci.IdReserva);
 
             // Solo los servicios contratados para este tramo.
             ci.ServiciosAdicionales = new DALReserva_GV42().ListarAdicionales(ci.IdReserva).FindAll(a => a.Tramo == ci.Tramo);
@@ -103,10 +116,24 @@ namespace DAL
         {
             DataTable dt = _acceso.leer(
                 "SELECT RP.DniPasajero FROM ReservaPasajero RP INNER JOIN Reserva R ON R.Id = RP.IdReserva " +
-                "WHERE R.NumeroReserva = @Numero AND RP.Tramo = 1 ORDER BY RP.DniPasajero",
+                // Los infantes no hacen check-in propio (viajan en brazos de un adulto).
+                "WHERE R.NumeroReserva = @Numero AND RP.Tramo = 1 AND RP.IdTipoPasajero <> 3 ORDER BY RP.DniPasajero",
                 new[] { new SqlParameter("@Numero", numeroReserva) });
             var lista = new System.Collections.Generic.List<string>();
             foreach (DataRow r in dt.Rows) lista.Add(DALUtil_GV42.Str(r, "DniPasajero"));
+            return lista;
+        }
+
+        // Nombres de los infantes de la reserva (viajan en brazos; se informan en el check-in).
+        public System.Collections.Generic.List<string> ListarInfantes(int idReserva)
+        {
+            DataTable dt = _acceso.leer(
+                "SELECT P.Nombre, P.Apellido FROM ReservaPasajero RP INNER JOIN Pasajero P ON P.DNI = RP.DniPasajero " +
+                "WHERE RP.IdReserva = @Id AND RP.Tramo = 1 AND RP.IdTipoPasajero = 3 ORDER BY P.Apellido, P.Nombre",
+                new[] { new SqlParameter("@Id", idReserva) });
+            var lista = new System.Collections.Generic.List<string>();
+            foreach (DataRow r in dt.Rows)
+                lista.Add((DALUtil_GV42.Str(r, "Nombre") + " " + DALUtil_GV42.Str(r, "Apellido")).Trim());
             return lista;
         }
 

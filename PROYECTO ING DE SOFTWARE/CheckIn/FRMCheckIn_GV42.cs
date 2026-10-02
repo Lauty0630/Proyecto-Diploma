@@ -17,6 +17,11 @@ namespace PROYECTO_ING_DE_SOFTWARE
     //    reservas, pero sin despachar valijas (el paso de equipaje es solo un aviso).
     // Toda la lógica de negocio está en BLLCheckIn_GV42 (vuelve a validar permisos, ventana y estado).
     //
+    // Check-in grupal: en el paso 1 se pueden tildar varios pasajeros del MISMO vuelo y hacerlos en
+    // una sola pasada: una verificación, el equipaje pasajero por pasajero (cada uno con su franquicia
+    // y su cobro), los asientos de todos en el mismo mapa y, al final, todas las tarjetas de embarque.
+    // La BLL sigue trabajando por pasajero (idCheckIn): el formulario solo recorre el grupo.
+    //
     // El diseño está en FRMCheckIn_GV42.Designer.cs (Form Designer): cada paso es una tarjeta
     // (PanelTarjeta_GV42) con Dock Fill dentro de pnlContenido y solo se muestra la del paso actual.
     // Lo único que se arma en código es lo que depende de los datos (filas de la grilla, textos del
@@ -55,8 +60,21 @@ namespace PROYECTO_ING_DE_SOFTWARE
         private List<CheckIn_GV42> _pasajeros;
         private List<FilaPasajero> _filas = new List<FilaPasajero>();
 
-        // Check-in del pasajero que se está atendiendo.
+        // Paso 1: pasajeros tildados para el check-in grupal (clave "DNI|tramo"). Se guardan aparte
+        // de las filas porque la grilla se regenera al cambiar el idioma y al volver a buscar.
+        private readonly HashSet<string> _marcados = new HashSet<string>();
+
+        // Check-in del pasajero que se está atendiendo (en un grupo, el pasajero activo).
         private CheckIn_GV42 _ci;
+
+        // Check-in grupal: pasajeros que se atienden en la misma pasada y cuál está activo. En el
+        // flujo de un solo pasajero la lista tiene un elemento (o ninguno) y no se usa.
+        // _ci, _franquicia, _cargo y _errorCalculo son siempre los del pasajero activo.
+        private List<EstadoPasajero> _grupo = new List<EstadoPasajero>();
+        private int _indiceActivo;
+
+        // El mapa se abre solo la primera vez que un grupo llega al paso de asientos.
+        private bool _mapaGrupoAbierto;
 
         // true: el pasajero ya hizo el check-in online y solo se despacha su equipaje en el mostrador.
         private bool _despachoPosterior;
@@ -156,6 +174,7 @@ namespace PROYECTO_ING_DE_SOFTWARE
                 colEstado.HeaderText = IdiomaManager_GV42.T("checkin.col.estado");
                 colCanal.HeaderText = IdiomaManager_GV42.T("checkin.col.canal");
                 colSituacion.HeaderText = IdiomaManager_GV42.T("checkin.col.situacion");
+                colMarcar.ToolTipText = IdiomaManager_GV42.T("checkin.grupo.ayudaTilde");
                 MostrarPasajeros();
 
                 // Paso 2: verificar
@@ -164,6 +183,13 @@ namespace PROYECTO_ING_DE_SOFTWARE
                 lblNombre.Text = IdiomaManager_GV42.T("checkin.nombre");
                 lblDniVer.Text = IdiomaManager_GV42.T("checkin.dni");
                 lblEmail.Text = IdiomaManager_GV42.T("checkin.email");
+                lblTipoPasajero.Text = IdiomaManager_GV42.T("checkin.tipoPasajero");
+                lblAsistencia.Text = IdiomaManager_GV42.T("checkin.asistencia");
+                colGrupoPasajero.HeaderText = IdiomaManager_GV42.T("checkin.col.pasajero");
+                colGrupoDni.HeaderText = IdiomaManager_GV42.T("checkin.col.dni");
+                colGrupoTipo.HeaderText = IdiomaManager_GV42.T("checkin.grupo.col.tipo");
+                colGrupoAsiento.HeaderText = IdiomaManager_GV42.T("checkin.col.asiento");
+                colGrupoAsistencia.HeaderText = IdiomaManager_GV42.T("checkin.grupo.col.asistencia");
                 lblSecReserva.Text = IdiomaManager_GV42.T("checkin.sec.reserva");
                 lblReserva.Text = IdiomaManager_GV42.T("checkin.numeroReserva");
                 lblEstadoReserva.Text = IdiomaManager_GV42.T("checkin.estadoReserva");
@@ -214,6 +240,9 @@ namespace PROYECTO_ING_DE_SOFTWARE
                 MostrarFranquicia();
                 MostrarCargo();
                 ActualizarIndicadorTarjeta();
+                ctrlNavEquipaje.FijarAyudas(IdiomaManager_GV42.T("checkin.grupo.navAnterior"), IdiomaManager_GV42.T("checkin.grupo.navSiguiente"));
+                ctrlNavAsiento.FijarAyudas(IdiomaManager_GV42.T("checkin.grupo.navAnterior"), IdiomaManager_GV42.T("checkin.grupo.navSiguiente"));
+                ActualizarNavegadores();
 
                 // Paso 4: asiento
                 lblTituloAsiento.Text = IdiomaManager_GV42.T("checkin.asiento.titulo");
@@ -241,6 +270,10 @@ namespace PROYECTO_ING_DE_SOFTWARE
                 lblResEmbarque.Text = IdiomaManager_GV42.T("checkin.resultado.embarque");
                 btnOtroPasajero.Text = IdiomaManager_GV42.T("checkin.otroPasajero");
                 btnVerTarjetaResultado.Text = IdiomaManager_GV42.T("checkin.verTarjeta");
+                colResPasajero.HeaderText = IdiomaManager_GV42.T("checkin.col.pasajero");
+                colResTarjeta.HeaderText = IdiomaManager_GV42.T("checkin.grupo.col.tarjeta");
+                colResAsiento.HeaderText = IdiomaManager_GV42.T("checkin.col.asiento");
+                colResEstado.HeaderText = IdiomaManager_GV42.T("checkin.grupo.col.resultado");
                 MostrarResultado();
 
                 // Encabezado, indicador y botonera según el paso actual.
@@ -293,7 +326,15 @@ namespace PROYECTO_ING_DE_SOFTWARE
         private void ActualizarTextoSiguiente()
         {
             string clave = "checkin.siguiente";
-            if (_pasoActual == PASO_CONFIRMAR) clave = "checkin.confirmar";
+            if (_pasoActual == PASO_CONFIRMAR)
+            {
+                if (EsGrupo)
+                {
+                    btnSiguiente.Text = IdiomaManager_GV42.T("checkin.grupo.confirmar", _grupo.Count);
+                    return;
+                }
+                clave = "checkin.confirmar";
+            }
             else if (_pasoActual == PASO_EQUIPAJE && _esMostrador && _ci != null && _ci.Equipaje == null && numBultos.Value > 0)
                 clave = _despachoPosterior ? "checkin.despachar" : "checkin.despacharSeguir";
             btnSiguiente.Text = IdiomaManager_GV42.T(clave);
@@ -341,6 +382,7 @@ namespace PROYECTO_ING_DE_SOFTWARE
             _errorCalculo = null;
             _mapa = null;
             _mapaVisible = false;
+            _mapaGrupoAbierto = false;
             _ciConfirmado = null;
 
             _refrescando = true;
@@ -352,6 +394,114 @@ namespace PROYECTO_ING_DE_SOFTWARE
             }
             finally { _refrescando = false; }
             LimpiarDatosDePago();
+        }
+
+        #endregion
+
+        #region Check-in grupal (pasajero activo)
+
+        // Hay más de un pasajero en la pasada. Con uno solo todo funciona como el check-in individual.
+        private bool EsGrupo { get { return _grupo.Count > 1; } }
+
+        // Arma el grupo con los check-in ya validados por la BLL; el primero queda activo.
+        private void IniciarGrupo(List<CheckIn_GV42> checkIns)
+        {
+            _grupo = checkIns.Select(c => new EstadoPasajero { CheckIn = c }).ToList();
+            _indiceActivo = 0;
+            _ci = checkIns[0];
+        }
+
+        // Guarda en el grupo lo que se cargó para el pasajero activo (para no perderlo al pasar a otro).
+        private void GuardarActivo()
+        {
+            if (!EsGrupo || _indiceActivo >= _grupo.Count) return;
+            EstadoPasajero e = _grupo[_indiceActivo];
+            e.CheckIn = _ci;
+            e.Franquicia = _franquicia;
+            e.Cargo = _cargo;
+            e.ErrorCalculo = _errorCalculo;
+            e.Pesos = PesosIngresados();
+        }
+
+        // Pasa a otro pasajero del grupo: recupera su franquicia, su cálculo y las valijas que ya se
+        // le habían cargado. Los datos del medio de pago NO se arrastran de un pasajero a otro.
+        private void CambiarActivo(int indice, bool prepararPaso = true)
+        {
+            if (!EsGrupo || indice < 0 || indice >= _grupo.Count) return;
+            GuardarActivo();
+
+            _indiceActivo = indice;
+            EstadoPasajero e = _grupo[indice];
+            _ci = e.CheckIn;
+            _franquicia = e.Franquicia;
+            _cargo = e.Cargo;
+            _errorCalculo = e.ErrorCalculo;
+
+            _refrescando = true;
+            try
+            {
+                numBultos.Value = 0;
+                SincronizarValijas();
+                if (numBultos.Maximum < e.Pesos.Count) numBultos.Maximum = e.Pesos.Count;
+                numBultos.Value = e.Pesos.Count;
+                SincronizarValijas();
+                List<CtrlPesoValija_GV42> valijas = flpPesos.Controls.OfType<CtrlPesoValija_GV42>().ToList();
+                for (int i = 0; i < valijas.Count && i < e.Pesos.Count; i++)
+                    valijas[i].Peso = e.Pesos[i];
+                cmbMedioCobro.SelectedIndex = -1;
+            }
+            finally { _refrescando = false; }
+            LimpiarDatosDePago();
+
+            if (prepararPaso && _pasoActual == PASO_EQUIPAJE) PrepararPasoEquipaje();
+            else if (prepararPaso && _pasoActual == PASO_ASIENTO) PrepararPasoAsiento();
+            ActualizarNavegadores();
+        }
+
+        // "Pasajero 2 de 3 · Sofía Vergara" en los pasos de equipaje y de asientos (solo en grupo).
+        private void ActualizarNavegadores()
+        {
+            bool ver = EsGrupo && !_despachoPosterior && _ci != null;
+            ctrlNavEquipaje.Visible = ver;
+            ctrlNavAsiento.Visible = ver;
+            if (!ver) return;
+
+            string texto = IdiomaManager_GV42.T("checkin.grupo.pasajeroDe", _indiceActivo + 1, _grupo.Count, _ci.Pasajero.NombreCompleto);
+            ctrlNavEquipaje.Texto = texto + (_esMostrador && _ci.Equipaje != null
+                ? "  " + IdiomaManager_GV42.T("checkin.grupo.navDespachado") : string.Empty);
+            ctrlNavAsiento.Texto = texto;
+            ctrlNavEquipaje.PuedeAnterior = ctrlNavAsiento.PuedeAnterior = _indiceActivo > 0;
+            ctrlNavEquipaje.PuedeSiguiente = ctrlNavAsiento.PuedeSiguiente = _indiceActivo < _grupo.Count - 1;
+        }
+
+        // Falta pasar por el equipaje de este pasajero, o se le cargaron valijas que no se despacharon.
+        private static bool EquipajePendiente(EstadoPasajero e)
+        {
+            return !e.EquipajeAtendido || (e.CheckIn.Equipaje == null && e.Pesos.Count > 0);
+        }
+
+        // Después de despachar (o de seguir sin valijas) al pasajero activo: si queda otro del grupo
+        // sin atender se pasa a él y devuelve true; si ya están todos, devuelve false (se sigue al
+        // paso de asientos). El cliente online no despacha, así que no recorre a los pasajeros.
+        private bool SeguirConOtroPasajeroEquipaje()
+        {
+            if (!EsGrupo || !_esMostrador) return false;
+            GuardarActivo();
+            _grupo[_indiceActivo].EquipajeAtendido = true;
+
+            int siguiente = -1;
+            for (int i = _indiceActivo + 1; i < _grupo.Count && siguiente < 0; i++)
+                if (EquipajePendiente(_grupo[i])) siguiente = i;
+            for (int i = 0; i < _indiceActivo && siguiente < 0; i++)
+                if (EquipajePendiente(_grupo[i])) siguiente = i;
+            if (siguiente < 0) return false;
+
+            // Ya se había pasado por él pero quedaron valijas cargadas sin despachar: se avisa por qué vuelve.
+            if (_grupo[siguiente].EquipajeAtendido)
+                MessageBox.Show(IdiomaManager_GV42.T("checkin.grupo.faltaDespachar", _grupo[siguiente].CheckIn.Pasajero.NombreCompleto),
+                                IdiomaManager_GV42.T("checkin.grupo.titulo"), MessageBoxButtons.OK, MessageBoxIcon.Information);
+            CambiarActivo(siguiente);
+            return true;
         }
 
         #endregion
@@ -407,6 +557,12 @@ namespace PROYECTO_ING_DE_SOFTWARE
             CheckIn_GV42 anterior = PasajeroSeleccionado();
 
             _filas = (_pasajeros ?? new List<CheckIn_GV42>()).Select(CrearFila).ToList();
+            // Los tildados se conservan solo mientras sigan disponibles (por ejemplo, al volver del
+            // check-in grupal los que ya lo hicieron dejan de estar tildados).
+            if (_pasajeros != null)
+                _marcados.RemoveWhere(k => !_filas.Any(f => f.Tipo == TipoSituacion.Disponible && ClaveMarca(f.CheckIn) == k));
+            foreach (FilaPasajero f in _filas)
+                f.Marcado = f.Tipo == TipoSituacion.Disponible && _marcados.Contains(ClaveMarca(f.CheckIn));
             dgvPasajeros.DataSource = null;
             dgvPasajeros.DataSource = _filas;
             dgvPasajeros.ClearSelection();
@@ -493,17 +649,132 @@ namespace PROYECTO_ING_DE_SOFTWARE
             btnVerTarjeta.Enabled = f != null && f.Tipo == TipoSituacion.Realizado;
             btnDespachar.Visible = _esMostrador;
             btnDespachar.Enabled = f != null && f.PuedeDespachar;
+
+            // Check-in grupal: cuántos hay tildados y si el botón tilda a todos o quita los tildes.
+            int tildados = _filas.Count(x => x.Marcado);
+            List<FilaPasajero> candidatas = FilasParaMarcarTodas();
+            btnMarcarTodos.Enabled = candidatas.Count > 0;
+            btnMarcarTodos.Text = IdiomaManager_GV42.T(tildados > 0 && candidatas.All(x => x.Marcado)
+                ? "checkin.grupo.quitarMarcas" : "checkin.grupo.marcarTodos");
+            lblAyudaPasajero.Text = tildados == 0 ? IdiomaManager_GV42.T("checkin.grupo.ayudaLista")
+                                  : tildados == 1 ? IdiomaManager_GV42.T("checkin.grupo.unTildado")
+                                  : IdiomaManager_GV42.T("checkin.grupo.tildados", tildados);
+        }
+
+        // Un check-in por pasajero y por tramo: la marca se identifica con las dos cosas.
+        private static string ClaveMarca(CheckIn_GV42 ci)
+        {
+            return (ci.Pasajero != null ? ci.Pasajero.DNI : string.Empty) + "|" + ci.Tramo;
+        }
+
+        private static int IdVuelo(CheckIn_GV42 ci)
+        {
+            return ci.Vuelo != null ? ci.Vuelo.Id : 0;
+        }
+
+        // Tilda o destilda una fila. Solo se pueden combinar pasajeros con el check-in disponible y
+        // del mismo vuelo (en ida y vuelta, cada tramo tiene su propia ventana y su propio mapa).
+        private void AlternarMarca(FilaPasajero fila)
+        {
+            if (fila == null) return;
+            if (!fila.Marcado)
+            {
+                if (fila.Tipo != TipoSituacion.Disponible)
+                {
+                    MessageBox.Show(IdiomaManager_GV42.T("checkin.grupo.errNoDisponible", fila.Pasajero, fila.Situacion),
+                                    IdiomaManager_GV42.T("checkin.grupo.titulo"), MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    return;
+                }
+                FilaPasajero otra = _filas.FirstOrDefault(x => x.Marcado && !MismoVuelo(x.CheckIn, fila.CheckIn));
+                if (otra != null)
+                {
+                    MessageBox.Show(IdiomaManager_GV42.T("checkin.grupo.errOtroVuelo", otra.Tramo, fila.Tramo),
+                                    IdiomaManager_GV42.T("checkin.grupo.titulo"), MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    return;
+                }
+            }
+
+            fila.Marcado = !fila.Marcado;
+            if (fila.Marcado) _marcados.Add(ClaveMarca(fila.CheckIn));
+            else _marcados.Remove(ClaveMarca(fila.CheckIn));
+            dgvPasajeros.Invalidate();
+            ActualizarBotonesPasajero();
+        }
+
+        private static bool MismoVuelo(CheckIn_GV42 a, CheckIn_GV42 b)
+        {
+            return a.Tramo == b.Tramo && IdVuelo(a) == IdVuelo(b);
+        }
+
+        // Filas que tilda "Seleccionar todos": las disponibles del vuelo de los ya tildados o, si no
+        // hay ninguno, del vuelo de la fila seleccionada (o del primero que tenga check-in disponible).
+        private List<FilaPasajero> FilasParaMarcarTodas()
+        {
+            List<FilaPasajero> disponibles = _filas.Where(x => x.Tipo == TipoSituacion.Disponible).ToList();
+            if (disponibles.Count == 0) return disponibles;
+
+            FilaPasajero sel = FilaSeleccionada();
+            FilaPasajero referencia = disponibles.FirstOrDefault(x => x.Marcado)
+                                      ?? (sel != null && sel.Tipo == TipoSituacion.Disponible ? sel : disponibles[0]);
+            return disponibles.Where(x => MismoVuelo(x.CheckIn, referencia.CheckIn)).ToList();
+        }
+
+        private void MarcarTodas()
+        {
+            List<FilaPasajero> candidatas = FilasParaMarcarTodas();
+            bool quitar = candidatas.Count > 0 && candidatas.All(x => x.Marcado);
+            foreach (FilaPasajero f in candidatas)
+            {
+                f.Marcado = !quitar;
+                if (f.Marcado) _marcados.Add(ClaveMarca(f.CheckIn));
+                else _marcados.Remove(ClaveMarca(f.CheckIn));
+            }
+            dgvPasajeros.Invalidate();
+            ActualizarBotonesPasajero();
         }
 
         private void ValidarYAvanzarBuscar()
         {
-            CheckIn_GV42 sel = PasajeroSeleccionado();
-            if (sel == null)
-                throw new NegocioException_GV42(IdiomaManager_GV42.T(_pasajeros == null ? "checkin.buscarPrimero" : "checkin.elegiPasajero"));
+            // Con pasajeros tildados el check-in se hace para ellos (uno o varios); sin tildes, para
+            // la fila seleccionada, como siempre.
+            List<FilaPasajero> tildadas = _filas.Where(f => f.Marcado).ToList();
+            List<CheckIn_GV42> elegidos = tildadas.Select(f => f.CheckIn).ToList();
+            if (elegidos.Count == 0)
+            {
+                CheckIn_GV42 sel = PasajeroSeleccionado();
+                if (sel == null)
+                    throw new NegocioException_GV42(IdiomaManager_GV42.T(_pasajeros == null ? "checkin.buscarPrimero" : "checkin.elegiPasajero"));
+                elegidos.Add(sel);
+            }
 
-            // La BLL valida permisos, estado de la reserva, check-in ya hecho y ventana horaria.
-            CheckIn_GV42 ci = _bll.IniciarCheckIn(sel.NumeroReserva, sel.Pasajero.DNI, sel.Tramo);
-            _ci = ci;
+            // Por si las marcas quedaron viejas (se controla al tildar, pero la situación puede cambiar).
+            if (elegidos.Count > 1)
+            {
+                FilaPasajero noDisponible = tildadas.FirstOrDefault(f => f.Tipo != TipoSituacion.Disponible);
+                if (noDisponible != null)
+                    throw new NegocioException_GV42(IdiomaManager_GV42.T("checkin.grupo.errNoDisponible", noDisponible.Pasajero, noDisponible.Situacion));
+                FilaPasajero otroVuelo = tildadas.FirstOrDefault(f => !MismoVuelo(f.CheckIn, elegidos[0]));
+                if (otroVuelo != null)
+                    throw new NegocioException_GV42(IdiomaManager_GV42.T("checkin.grupo.errOtroVuelo", tildadas[0].Tramo, otroVuelo.Tramo));
+            }
+
+            // La BLL valida permisos, estado de la reserva, check-in ya hecho y ventana horaria (por pasajero).
+            var iniciados = new List<CheckIn_GV42>();
+            foreach (CheckIn_GV42 sel in elegidos)
+            {
+                try
+                {
+                    iniciados.Add(_bll.IniciarCheckIn(sel.NumeroReserva, sel.Pasajero.DNI, sel.Tramo));
+                }
+                catch (NegocioException_GV42 ex)
+                {
+                    // En un grupo hay que decir cuál de los pasajeros es el que no puede.
+                    if (elegidos.Count == 1) throw;
+                    throw new NegocioException_GV42(IdiomaManager_GV42.T("checkin.grupo.errPasajero", sel.Pasajero.NombreCompleto, ex.Message));
+                }
+            }
+
+            IniciarGrupo(iniciados);
             _despachoPosterior = false;
             ReiniciarPasajero();
             IrAPaso(PASO_VERIFICAR);
@@ -515,13 +786,24 @@ namespace PROYECTO_ING_DE_SOFTWARE
 
         private void MostrarVerificacion()
         {
-            Label[] valores = { lblNombreValor, lblDniVerValor, lblEmailValor, lblReservaValor, lblEstadoReservaValor, lblEstadoCheckInValor,
-                                lblTipoViajeValor, lblVueloValor, lblRutaValor, lblSalidaValor, lblLlegadaValor, lblClaseValor, lblPuertaValor };
+            Label[] valores = { lblNombreValor, lblDniVerValor, lblEmailValor, lblTipoPasajeroValor, lblAsistenciaValor, lblReservaValor,
+                                lblEstadoReservaValor, lblEstadoCheckInValor, lblTipoViajeValor, lblVueloValor, lblRutaValor, lblSalidaValor,
+                                lblLlegadaValor, lblClaseValor, lblPuertaValor };
+
+            // Un pasajero: sus datos en etiquetas. Grupo: la lista de pasajeros en una grilla (los
+            // datos del vuelo se muestran una sola vez, a la derecha).
+            bool grupo = EsGrupo && _ci != null;
+            tlpDatosPasajero.Visible = !grupo;
+            pnlGrupoVerificar.Visible = grupo;
+            lblTituloVerificar.Text = IdiomaManager_GV42.T(grupo ? "checkin.grupo.verificar.titulo" : "checkin.verificar.titulo");
+
             if (_ci == null)
             {
                 foreach (Label l in valores) l.Text = "—";
                 lblServiciosValor.Text = "—";
                 lblVentana.Text = string.Empty;
+                lblInfantes.Visible = false;
+                dgvGrupo.DataSource = null;
                 return;
             }
 
@@ -541,9 +823,22 @@ namespace PROYECTO_ING_DE_SOFTWARE
             lblRutaValor.Text = _ci.VueloClase.OrigenDescripcion + " -> " + _ci.VueloClase.DestinoDescripcion;
             lblSalidaValor.Text = v.FechaHoraSalida.ToString("dd/MM/yyyy HH:mm");
             lblLlegadaValor.Text = v.FechaHoraLlegada.ToString("dd/MM/yyyy HH:mm");
-            lblClaseValor.Text = _ci.VueloClase.ClaseTexto;
+            lblClaseValor.Text = TextoClaseYTarifa(_ci);
             lblPuertaValor.Text = string.IsNullOrWhiteSpace(v.PuertaEmbarque) ? "—" : v.PuertaEmbarque;
-            lblServiciosValor.Text = TextoServicios();
+            lblServiciosValor.Text = grupo ? TextoServiciosGrupo() : TextoServicios(_ci);
+
+            // Datos nuevos de la reserva: tipo de pasajero y asistencia especial (destacada si pidió una).
+            lblTipoPasajeroValor.Text = _ci.TipoPasajero.Texto();
+            lblAsistenciaValor.Text = _ci.Asistencia.Texto();
+            lblAsistenciaValor.ForeColor = _ci.Asistencia != AsistenciaEspecial_GV42.Ninguna ? Tema_GV42.Advertencia : Tema_GV42.Texto;
+
+            // Los infantes viajan en brazos y no hacen check-in propio: se avisa en el de los adultos.
+            List<string> infantes = (_ci.Infantes ?? new List<string>()).Where(n => !string.IsNullOrWhiteSpace(n)).ToList();
+            lblInfantes.Visible = infantes.Count > 0;
+            lblInfantes.Text = infantes.Count == 0 ? string.Empty
+                : IdiomaManager_GV42.T(infantes.Count == 1 ? "checkin.infante" : "checkin.infantes", string.Join(", ", infantes));
+
+            if (grupo) MostrarPasajerosDelGrupo();
 
             // Ventana de check-in: de 48 hs a 60 minutos antes de la salida.
             DateTime apertura = v.FechaHoraSalida.AddHours(-BLLCheckIn_GV42.HORAS_APERTURA_CHECKIN);
@@ -555,13 +850,48 @@ namespace PROYECTO_ING_DE_SOFTWARE
             pnlVentana.BackColor = abierta ? Tema_GV42.Fondo : Tema_GV42.FondoError;
         }
 
-        // Servicios adicionales de la reserva (nombres del catálogo traducidos).
-        private string TextoServicios()
+        // Lista de pasajeros del grupo (paso 2) y los datos de la reserva, que son comunes a todos.
+        private void MostrarPasajerosDelGrupo()
         {
-            var servicios = (_ci.ServiciosAdicionales ?? new List<AdicionalReserva_GV42>()).Where(a => a.Cantidad > 0).ToList();
+            lblSecGrupo.Text = IdiomaManager_GV42.T("checkin.grupo.sec.pasajeros", _grupo.Count);
+            dgvGrupo.AutoGenerateColumns = false;
+            dgvGrupo.DataSource = _grupo.Select(e => new FilaGrupo
+            {
+                Pasajero = e.CheckIn.Pasajero.NombreCompleto,
+                Dni = e.CheckIn.Pasajero.DNI,
+                Tipo = e.CheckIn.TipoPasajero.Texto(),
+                Asiento = e.CheckIn.Asiento != null ? e.CheckIn.Asiento.NumeroAsiento : "—",
+                Asistencia = e.CheckIn.Asistencia != AsistenciaEspecial_GV42.Ninguna ? e.CheckIn.Asistencia.Texto() : "—",
+                TieneAsistencia = e.CheckIn.Asistencia != AsistenciaEspecial_GV42.Ninguna
+            }).ToList();
+            dgvGrupo.ClearSelection();   // es una lista para leer: sin fila resaltada
+            dgvGrupo.CurrentCell = null;
+
+            lblReservaGrupo.Text = IdiomaManager_GV42.T("checkin.grupo.reserva", _ci.NumeroReserva, _ci.EstadoReservaTexto, lblTipoViajeValor.Text);
+        }
+
+        // "Económica · tarifa Plus": la familia tarifaria define las valijas incluidas y la butaca preferencial.
+        private static string TextoClaseYTarifa(CheckIn_GV42 ci)
+        {
+            return string.IsNullOrWhiteSpace(ci.TarifaNombre)
+                ? ci.VueloClase.ClaseTexto
+                : IdiomaManager_GV42.T("checkin.claseTarifa", ci.VueloClase.ClaseTexto, ci.TarifaNombre);
+        }
+
+        // Servicios adicionales del pasajero (nombres del catálogo traducidos).
+        private static string TextoServicios(CheckIn_GV42 ci)
+        {
+            var servicios = (ci.ServiciosAdicionales ?? new List<AdicionalReserva_GV42>()).Where(a => a.Cantidad > 0).ToList();
             if (servicios.Count == 0) return IdiomaManager_GV42.T("checkin.sinServicios");
             return string.Join(Environment.NewLine, servicios.Select(a =>
                 "• " + IdiomaManager_GV42.TConDefecto("adicional." + a.TipoNombre, a.TipoNombre) + "  x" + a.Cantidad));
+        }
+
+        // Los servicios adicionales se contratan por tramo para toda la reserva (no por pasajero): en un
+        // grupo son los mismos para todos, así que se muestran una sola vez.
+        private string TextoServiciosGrupo()
+        {
+            return _grupo.Count == 0 ? IdiomaManager_GV42.T("checkin.sinServicios") : TextoServicios(_grupo[0].CheckIn);
         }
 
         #endregion
@@ -571,6 +901,7 @@ namespace PROYECTO_ING_DE_SOFTWARE
         private void PrepararPasoEquipaje()
         {
             lblTituloEquipaje.Text = IdiomaManager_GV42.T(_despachoPosterior ? "checkin.equipaje.tituloPosterior" : "checkin.equipaje.titulo");
+            ActualizarNavegadores();
 
             // Cliente online: no despacha valijas, solo se le avisa que las entrega en el mostrador.
             tlpEquipaje.Visible = _esMostrador;
@@ -728,6 +1059,7 @@ namespace PROYECTO_ING_DE_SOFTWARE
                 }
             }
             MostrarSeccionMedio(cobrar);
+            ActualizarNavegadores();   // en un grupo, el navegador indica si el activo ya despachó
         }
 
         private string TextoUnidadesUsadas(int unidades)
@@ -1099,6 +1431,13 @@ namespace PROYECTO_ING_DE_SOFTWARE
 
         private void PrepararPasoAsiento()
         {
+            // En un grupo el mapa es la vista principal (se ven los asientos de todos): se abre solo.
+            if (EsGrupo && !_mapaGrupoAbierto)
+            {
+                _mapaVisible = true;
+                _mapaGrupoAbierto = true;
+            }
+            ActualizarNavegadores();
             MostrarAsientoActual();
             if (_mapaVisible) CargarMapa();
         }
@@ -1115,10 +1454,21 @@ namespace PROYECTO_ING_DE_SOFTWARE
             bool puedePreferencial = _ci != null && _bll.PuedeElegirPreferencial(_ci);
             lblAvisoPreferencial.Text = IdiomaManager_GV42.T(puedePreferencial ? "checkin.prefPermitido" : "checkin.prefNoPermitido");
 
-            lblAsientoConforme.Text = IdiomaManager_GV42.T(a == null ? "checkin.sinAsiento" : "checkin.asientoConforme");
+            lblAsientoConforme.Text = IdiomaManager_GV42.T(a == null ? "checkin.sinAsiento"
+                : EsGrupo ? "checkin.grupo.asientoConforme" : "checkin.asientoConforme");
+            lblTituloAsiento.Text = IdiomaManager_GV42.T(EsGrupo ? "checkin.grupo.asiento.titulo" : "checkin.asiento.titulo");
+            lblAyudaAsiento.Text = EsGrupo ? TextoAsientosGrupo() : IdiomaManager_GV42.T("checkin.asiento.ayuda");
             lblAsientoConforme.Visible = !_mapaVisible;
             ctrlButacas.Visible = _mapaVisible;
             btnCambiarAsiento.Text = IdiomaManager_GV42.T(_mapaVisible ? "checkin.ocultarMapa" : "checkin.cambiarAsiento");
+        }
+
+        // "Asientos del grupo: Lautaro Millo 12A · Sofía Vergara 12B · Mateo Millo sin asiento".
+        private string TextoAsientosGrupo()
+        {
+            return IdiomaManager_GV42.T("checkin.grupo.asiento.resumen", string.Join("  ·  ", _grupo.Select(e =>
+                e.CheckIn.Pasajero.NombreCompleto + " " + (e.CheckIn.Asiento != null
+                    ? e.CheckIn.Asiento.NumeroAsiento : IdiomaManager_GV42.T("checkin.grupo.sinAsiento")))));
         }
 
         // La ubicación viene de la base en español (Ventana / Central / Pasillo).
@@ -1147,17 +1497,85 @@ namespace PROYECTO_ING_DE_SOFTWARE
 
         // El asiento actual figura ocupado en el mapa: se pasa como selección para que se vea "Tu selección".
         // Las preferenciales solo se pueden elegir si el pasajero ya pagó una al reservar.
+        //
+        // En un grupo, los asientos de los demás pasajeros se marcan como "asignado (otro pasajero)",
+        // igual que al reservar. En la base esas butacas ya figuran ocupadas y el control pinta primero
+        // las ocupadas, así que se le pasa una copia del mapa donde esas butacas no figuran ocupadas.
         private void PintarMapa()
         {
+            if (_mapa == null || _ci == null) return;
+
+            HashSet<int> deOtros = null;
+            List<AsientoDisponibilidad_GV42> vista = _mapa;
+            if (EsGrupo)
+            {
+                deOtros = new HashSet<int>(_grupo.Where((e, i) => i != _indiceActivo && e.CheckIn.Asiento != null)
+                                                 .Select(e => e.CheckIn.Asiento.Id));
+                vista = _mapa.Select(m => m.Asiento != null && deOtros.Contains(m.Asiento.Id)
+                    ? new AsientoDisponibilidad_GV42 { Asiento = m.Asiento, Fila = m.Fila, Letra = m.Letra, Ocupado = false }
+                    : m).ToList();
+            }
+
             ctrlButacas.PermitirPreferenciales = _bll.PuedeElegirPreferencial(_ci);
             ctrlButacas.RecargoPreferencial = 0m;
-            ctrlButacas.CargarMapa(_mapa, null, _ci.Asiento != null ? (int?)_ci.Asiento.Id : null);
+            ctrlButacas.CargarMapa(vista, deOtros, _ci.Asiento != null ? (int?)_ci.Asiento.Id : null);
         }
 
         private void ValidarYAvanzarAsiento()
         {
+            if (EsGrupo)
+            {
+                ValidarAsientosDelGrupo();
+                return;
+            }
+
             // Confirma el asiento elegido (si el pasajero no tenía, la BLL le asigna uno libre).
             _ci.Asiento = _bll.ValidarAsiento(_ci.Id);
+            IrAPaso(PASO_CONFIRMAR);
+        }
+
+        // Valida el asiento de cada pasajero del grupo. A los que no tenían (tarifa Light: no eligen al
+        // reservar) la BLL les asigna uno libre: en ese caso se muestra cuál le tocó a cada uno y se
+        // queda en el paso, para que puedan cambiarlo en el mapa antes de seguir.
+        private void ValidarAsientosDelGrupo()
+        {
+            GuardarActivo();
+            var asignados = new List<string>();
+            try
+            {
+                foreach (EstadoPasajero e in _grupo)
+                {
+                    bool tenia = e.CheckIn.Asiento != null;
+                    try
+                    {
+                        e.CheckIn.Asiento = _bll.ValidarAsiento(e.CheckIn.Id);
+                    }
+                    catch (NegocioException_GV42 ex)
+                    {
+                        throw new NegocioException_GV42(IdiomaManager_GV42.T("checkin.grupo.errPasajero", e.CheckIn.Pasajero.NombreCompleto, ex.Message));
+                    }
+                    if (!tenia && e.CheckIn.Asiento != null)
+                        asignados.Add("• " + IdiomaManager_GV42.T("checkin.grupo.asientoAsignado",
+                            e.CheckIn.Pasajero.NombreCompleto, e.CheckIn.Asiento.NumeroAsiento));
+                }
+            }
+            finally
+            {
+                // Aunque falle uno, en pantalla quedan los asientos que ya se asignaron.
+                if (asignados.Count > 0)
+                {
+                    MostrarAsientoActual();
+                    if (_mapaVisible) CargarMapa();
+                }
+            }
+
+            if (asignados.Count > 0)
+            {
+                MessageBox.Show(string.Join(Environment.NewLine, asignados) + Environment.NewLine + Environment.NewLine +
+                                IdiomaManager_GV42.T("checkin.grupo.asientoAsignadoPie"),
+                                IdiomaManager_GV42.T("checkin.grupo.titulo"), MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return;
+            }
             IrAPaso(PASO_CONFIRMAR);
         }
 
@@ -1167,6 +1585,12 @@ namespace PROYECTO_ING_DE_SOFTWARE
 
         private void ArmarResumen()
         {
+            bool grupo = EsGrupo && _ci != null;
+            lblTituloConfirmar.Text = grupo ? IdiomaManager_GV42.T("checkin.grupo.confirmar.titulo", _grupo.Count)
+                                            : IdiomaManager_GV42.T("checkin.confirmar.titulo");
+            lblSecConfPasajero.Text = IdiomaManager_GV42.T(grupo ? "checkin.grupo.sec.pasajerosAsientos" : "checkin.sec.pasajero");
+            lblSecConfVuelo.Text = IdiomaManager_GV42.T(grupo ? "checkin.sec.vuelo" : "checkin.sec.vueloAsiento");
+
             if (_ci == null)
             {
                 lblConfPasajero.Text = lblConfVuelo.Text = lblConfEquipaje.Text = "-";
@@ -1175,8 +1599,27 @@ namespace PROYECTO_ING_DE_SOFTWARE
 
             Vuelo_GV42 v = _ci.Vuelo;
             var pasajero = new StringBuilder();
-            pasajero.AppendLine(_ci.Pasajero.NombreCompleto);
-            pasajero.AppendLine(IdiomaManager_GV42.T("checkin.res.dni", _ci.Pasajero.DNI));
+            if (grupo)
+            {
+                // Por cada pasajero: el nombre, el DNI con el asiento y la asistencia especial si pidió una.
+                foreach (EstadoPasajero e in _grupo)
+                {
+                    CheckIn_GV42 c = e.CheckIn;
+                    pasajero.AppendLine("• " + c.Pasajero.NombreCompleto);
+                    pasajero.AppendLine("   " + IdiomaManager_GV42.T("checkin.grupo.res.dniAsiento", c.Pasajero.DNI, c.Asiento != null
+                        ? c.Asiento.NumeroAsiento + " (" + TextoUbicacion(c.Asiento.Ubicacion) + ")" : "—"));
+                    if (c.Asistencia != AsistenciaEspecial_GV42.Ninguna)
+                        pasajero.AppendLine("   " + IdiomaManager_GV42.T("checkin.res.asistencia", c.Asistencia.Texto()));
+                }
+                pasajero.AppendLine();
+            }
+            else
+            {
+                pasajero.AppendLine(_ci.Pasajero.NombreCompleto);
+                pasajero.AppendLine(IdiomaManager_GV42.T("checkin.res.dni", _ci.Pasajero.DNI));
+                if (_ci.Asistencia != AsistenciaEspecial_GV42.Ninguna)
+                    pasajero.AppendLine(IdiomaManager_GV42.T("checkin.res.asistencia", _ci.Asistencia.Texto()));
+            }
             pasajero.AppendLine(IdiomaManager_GV42.T("checkin.res.reserva", _ci.NumeroReserva));
             lblConfPasajero.Text = pasajero.ToString();
 
@@ -1185,9 +1628,10 @@ namespace PROYECTO_ING_DE_SOFTWARE
             vuelo.AppendLine(_ci.VueloClase.OrigenDescripcion + " -> " + _ci.VueloClase.DestinoDescripcion);
             vuelo.AppendLine();
             vuelo.AppendLine(IdiomaManager_GV42.T("checkin.res.salida", v.FechaHoraSalida.ToString("dd/MM/yyyy HH:mm")));
-            vuelo.AppendLine(IdiomaManager_GV42.T("checkin.res.clase", _ci.VueloClase.ClaseTexto));
-            vuelo.AppendLine(IdiomaManager_GV42.T("checkin.res.asiento", _ci.Asiento != null
-                ? _ci.Asiento.NumeroAsiento + " (" + TextoUbicacion(_ci.Asiento.Ubicacion) + ")" : "—"));
+            vuelo.AppendLine(IdiomaManager_GV42.T("checkin.res.clase", TextoClaseYTarifa(_ci)));
+            if (!grupo)
+                vuelo.AppendLine(IdiomaManager_GV42.T("checkin.res.asiento", _ci.Asiento != null
+                    ? _ci.Asiento.NumeroAsiento + " (" + TextoUbicacion(_ci.Asiento.Ubicacion) + ")" : "—"));
             vuelo.AppendLine(IdiomaManager_GV42.T("checkin.res.puerta", string.IsNullOrWhiteSpace(v.PuertaEmbarque) ? "—" : v.PuertaEmbarque));
             vuelo.AppendLine(IdiomaManager_GV42.T("checkin.res.embarque",
                 v.FechaHoraSalida.AddMinutes(-BLLCheckIn_GV42.MINUTOS_LIMITE_EMBARQUE).ToString("HH:mm")));
@@ -1195,14 +1639,85 @@ namespace PROYECTO_ING_DE_SOFTWARE
 
             if (!_esMostrador)
                 lblConfEquipaje.Text = IdiomaManager_GV42.T("checkin.res.equipajeMostrador");
+            else if (grupo)
+                lblConfEquipaje.Text = TextoEquipajeGrupo();
             else if (_ci.Equipaje == null)
                 lblConfEquipaje.Text = IdiomaManager_GV42.T("checkin.res.sinEquipaje");
             else
                 lblConfEquipaje.Text = TextoEquipajeRegistrado(_ci.Equipaje).Replace("✓ ", string.Empty);
         }
 
+        // Una línea por pasajero: lo que despachó y, si hubo, el exceso cobrado.
+        private string TextoEquipajeGrupo()
+        {
+            var sb = new StringBuilder();
+            foreach (EstadoPasajero e in _grupo)
+            {
+                Equipaje_GV42 eq = e.CheckIn.Equipaje;
+                string nombre = e.CheckIn.Pasajero.NombreCompleto;
+                if (eq == null)
+                    sb.AppendLine("• " + IdiomaManager_GV42.T("checkin.grupo.res.sinEquipaje", nombre));
+                else if (eq.CargoExceso != null && eq.CargoExceso.TieneExceso)
+                    sb.AppendLine("• " + IdiomaManager_GV42.T("checkin.grupo.res.equipajeExceso", nombre, eq.CantidadBultos,
+                        Kg(eq.PesoTotalKg), eq.CargoExceso.ImporteCargo.ToString("C2")));
+                else
+                    sb.AppendLine("• " + IdiomaManager_GV42.T("checkin.grupo.res.equipaje", nombre, eq.CantidadBultos, Kg(eq.PesoTotalKg)));
+            }
+            return sb.ToString();
+        }
+
+        // Confirma el check-in de cada pasajero del grupo. Si alguno falla se informa cuál y por qué y
+        // se sigue con el resto: los que fallaron quedan pendientes en la lista del paso 1.
+        private void ConfirmarGrupo()
+        {
+            GuardarActivo();
+            var errores = new List<string>();
+            foreach (EstadoPasajero e in _grupo.Where(x => !x.Confirmado))
+            {
+                try
+                {
+                    e.CheckIn = _bll.ConfirmarCheckIn(e.CheckIn.Id);
+                    e.Confirmado = true;
+                    e.ErrorConfirmacion = null;
+                }
+                catch (NegocioException_GV42 ex)
+                {
+                    e.ErrorConfirmacion = ex.Message;
+                }
+                catch (Exception ex)
+                {
+                    e.ErrorConfirmacion = (ex.InnerException ?? ex).Message;
+                }
+                if (!e.Confirmado) errores.Add("• " + e.CheckIn.Pasajero.NombreCompleto + ": " + e.ErrorConfirmacion);
+            }
+            _ci = _grupo[_indiceActivo].CheckIn;
+
+            if (errores.Count > 0)
+                MessageBox.Show(IdiomaManager_GV42.T("checkin.grupo.errConfirmar") + Environment.NewLine + Environment.NewLine +
+                                string.Join(Environment.NewLine, errores),
+                                IdiomaManager_GV42.T("general.advertencia"), MessageBoxButtons.OK, MessageBoxIcon.Warning);
+
+            // Si no se pudo confirmar ninguno, se queda en el paso para reintentar o volver atrás.
+            List<EstadoPasajero> confirmados = _grupo.Where(x => x.Confirmado).ToList();
+            if (confirmados.Count == 0) return;
+
+            IrAPaso(PASO_RESULTADO);
+
+            // Las tarjetas (y las etiquetas) se pueden ver una tras otra ahora, o después desde la lista.
+            if (MessageBox.Show(IdiomaManager_GV42.T("checkin.grupo.verTodas", confirmados.Count), IdiomaManager_GV42.T("checkin.grupo.titulo"),
+                                MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
+                foreach (EstadoPasajero e in confirmados)
+                    FRMTarjetaEmbarque_GV42.Mostrar(this, e.CheckIn);
+        }
+
         private void ConfirmarCheckIn()
         {
+            if (EsGrupo)
+            {
+                ConfirmarGrupo();
+                return;
+            }
+
             CheckIn_GV42 confirmado = _bll.ConfirmarCheckIn(_ci.Id);
             _ciConfirmado = confirmado;
             _ci = confirmado;
@@ -1214,6 +1729,17 @@ namespace PROYECTO_ING_DE_SOFTWARE
 
         private void MostrarResultado()
         {
+            // Grupo: la lista de pasajeros con su tarjeta. Un pasajero: sus datos en etiquetas.
+            bool grupo = EsGrupo;
+            tlpResultado.Visible = !grupo;
+            dgvResultado.Visible = grupo;
+            if (grupo)
+            {
+                MostrarResultadoGrupo();
+                return;
+            }
+            dgvResultado.DataSource = null;
+
             CheckIn_GV42 ci = _ciConfirmado;
             if (ci == null)
             {
@@ -1230,9 +1756,54 @@ namespace PROYECTO_ING_DE_SOFTWARE
             lblResEmbarqueValor.Text = t != null ? t.HoraLimiteEmbarque.ToString("dd/MM HH:mm") : "-";
         }
 
+        private void MostrarResultadoGrupo()
+        {
+            List<EstadoPasajero> confirmados = _grupo.Where(e => e.Confirmado).ToList();
+            CheckIn_GV42 primero = confirmados.Count > 0 ? confirmados[0].CheckIn : _grupo[0].CheckIn;
+            TarjetaEmbarque_GV42 t = primero.TarjetaEmbarque;
+            string puerta = t != null && !string.IsNullOrWhiteSpace(t.PuertaEmbarque) ? t.PuertaEmbarque : "-";
+            string embarque = t != null ? t.HoraLimiteEmbarque.ToString("dd/MM HH:mm") : "-";
+
+            // El vuelo, la puerta y la hora de embarque son los mismos para todo el grupo.
+            lblResultadoDetalle.Text = confirmados.Count == _grupo.Count
+                ? IdiomaManager_GV42.T("checkin.grupo.resultado.detalle", _grupo.Count, primero.Vuelo.CodigoVuelo, puerta, embarque)
+                : IdiomaManager_GV42.T("checkin.grupo.resultado.parcial", confirmados.Count, _grupo.Count, primero.Vuelo.CodigoVuelo, puerta, embarque);
+
+            int seleccion = dgvResultado.CurrentRow != null ? dgvResultado.CurrentRow.Index : 0;
+            dgvResultado.AutoGenerateColumns = false;
+            dgvResultado.DataSource = _grupo.Select(e => new FilaResultado
+            {
+                Pasajero = e.CheckIn.Pasajero.NombreCompleto,
+                Tarjeta = e.CheckIn.TarjetaEmbarque != null ? e.CheckIn.TarjetaEmbarque.NumeroTarjeta : "—",
+                Asiento = e.CheckIn.TarjetaEmbarque != null ? e.CheckIn.TarjetaEmbarque.NumeroAsiento
+                        : (e.CheckIn.Asiento != null ? e.CheckIn.Asiento.NumeroAsiento : "—"),
+                Estado = e.Confirmado ? IdiomaManager_GV42.T("checkin.grupo.resOk")
+                                      : IdiomaManager_GV42.T("checkin.grupo.resError", e.ErrorConfirmacion ?? "—"),
+                Ok = e.Confirmado,
+                CheckIn = e.CheckIn
+            }).ToList();
+            if (seleccion >= 0 && seleccion < dgvResultado.Rows.Count)
+                dgvResultado.CurrentCell = dgvResultado.Rows[seleccion].Cells[0];
+        }
+
+        // Tarjeta de embarque del pasajero elegido en la lista del resultado (check-in grupal).
+        private void VerTarjetaDelGrupo()
+        {
+            FilaResultado fila = dgvResultado.CurrentRow != null ? dgvResultado.CurrentRow.DataBoundItem as FilaResultado : null;
+            if (fila == null || !fila.Ok)
+            {
+                MessageBox.Show(IdiomaManager_GV42.T("checkin.grupo.elegiTarjeta"), IdiomaManager_GV42.T("checkin.grupo.titulo"),
+                                MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return;
+            }
+            FRMTarjetaEmbarque_GV42.Mostrar(this, fila.CheckIn);
+        }
+
         // Vuelve al paso 1 con la misma reserva (la lista se actualiza con los estados nuevos).
         private void VolverALaLista()
         {
+            _grupo.Clear();
+            _indiceActivo = 0;
             _ci = null;
             _despachoPosterior = false;
             ReiniciarPasajero();
@@ -1276,12 +1847,21 @@ namespace PROYECTO_ING_DE_SOFTWARE
             try
             {
                 if (_pasoActual == PASO_BUSCAR) ValidarYAvanzarBuscar();
-                else if (_pasoActual == PASO_VERIFICAR) IrAPaso(PASO_EQUIPAJE);
+                else if (_pasoActual == PASO_VERIFICAR)
+                {
+                    // En un grupo el equipaje se carga pasajero por pasajero, empezando por el primero.
+                    CambiarActivo(0, false);
+                    IrAPaso(PASO_EQUIPAJE);
+                }
                 else if (_pasoActual == PASO_EQUIPAJE)
                 {
                     if (!DespacharEquipaje()) return;
                     if (_despachoPosterior) TerminarDespachoPosterior();
-                    else IrAPaso(PASO_ASIENTO);
+                    else if (!SeguirConOtroPasajeroEquipaje())
+                    {
+                        CambiarActivo(0, false);
+                        IrAPaso(PASO_ASIENTO);
+                    }
                 }
                 else if (_pasoActual == PASO_ASIENTO) ValidarYAvanzarAsiento();
                 else if (_pasoActual == PASO_CONFIRMAR) ConfirmarCheckIn();
@@ -1310,6 +1890,7 @@ namespace PROYECTO_ING_DE_SOFTWARE
         // Si se cambia el número después de buscar, la lista deja de corresponder: se limpia.
         private void txtNumeroReserva_TextChanged(object sender, EventArgs e)
         {
+            _marcados.Clear();   // los tildes eran de otra reserva
             if (_pasajeros == null) return;
             _pasajeros = null;
             MostrarPasajeros();
@@ -1332,7 +1913,38 @@ namespace PROYECTO_ING_DE_SOFTWARE
 
         private void dgvPasajeros_CellDoubleClick(object sender, DataGridViewCellEventArgs e)
         {
-            if (e.RowIndex >= 0) btnSiguiente_Click(sender, e);
+            // El doble clic sobre el tilde no es "empezar el check-in": son dos clics en la marca.
+            if (e.RowIndex >= 0 && e.ColumnIndex != colMarcar.Index) btnSiguiente_Click(sender, e);
+        }
+
+        // La grilla es de solo lectura: el tilde del check-in grupal se cambia a mano con el clic.
+        private void dgvPasajeros_CellClick(object sender, DataGridViewCellEventArgs e)
+        {
+            if (e.RowIndex < 0 || e.ColumnIndex != colMarcar.Index) return;
+            AlternarMarca(dgvPasajeros.Rows[e.RowIndex].DataBoundItem as FilaPasajero);
+        }
+
+        // Con la barra espaciadora se tilda la fila seleccionada (para trabajar sin el mouse).
+        private void dgvPasajeros_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.KeyCode != Keys.Space) return;
+            e.Handled = true;
+            AlternarMarca(FilaSeleccionada());
+        }
+
+        // Solo los pasajeros con el check-in disponible muestran la casilla para tildar.
+        private void dgvPasajeros_CellPainting(object sender, DataGridViewCellPaintingEventArgs e)
+        {
+            if (e.RowIndex < 0 || e.ColumnIndex != colMarcar.Index) return;
+            var fila = dgvPasajeros.Rows[e.RowIndex].DataBoundItem as FilaPasajero;
+            if (fila == null || fila.Tipo == TipoSituacion.Disponible) return;
+            e.Paint(e.CellBounds, e.PaintParts & ~DataGridViewPaintParts.ContentForeground);
+            e.Handled = true;
+        }
+
+        private void btnMarcarTodos_Click(object sender, EventArgs e)
+        {
+            MarcarTodas();
         }
 
         // Situación pintada con la paleta: disponible (verde), realizado (azul) y no disponible (rojo).
@@ -1374,6 +1986,9 @@ namespace PROYECTO_ING_DE_SOFTWARE
             if (fila == null || !fila.PuedeDespachar) return;
             try
             {
+                // El despacho posterior es siempre de a un pasajero (aunque haya otros tildados).
+                _grupo.Clear();
+                _indiceActivo = 0;
                 _ci = _bll.Obtener(fila.CheckIn.Id);
                 _despachoPosterior = true;
                 ReiniciarPasajero();
@@ -1389,6 +2004,30 @@ namespace PROYECTO_ING_DE_SOFTWARE
                 _despachoPosterior = false;
                 Tema_GV42.MostrarErrorInesperado(IdiomaManager_GV42.T("checkin.accionContinuar"), ex);
             }
+        }
+
+        // ---- Paso 2
+
+        // La asistencia especial pedida se destaca en la lista del grupo.
+        private void dgvGrupo_CellFormatting(object sender, DataGridViewCellFormattingEventArgs e)
+        {
+            if (e.RowIndex < 0 || e.ColumnIndex != colGrupoAsistencia.Index) return;
+            var fila = dgvGrupo.Rows[e.RowIndex].DataBoundItem as FilaGrupo;
+            if (fila == null || !fila.TieneAsistencia) return;
+            e.CellStyle.ForeColor = Tema_GV42.Advertencia;
+            e.CellStyle.SelectionForeColor = Tema_GV42.Advertencia;
+        }
+
+        // ---- Pasos 3 y 4: pasajero anterior / siguiente del grupo
+
+        private void ctrlNav_Anterior(object sender, EventArgs e)
+        {
+            CambiarActivo(_indiceActivo - 1);
+        }
+
+        private void ctrlNav_Siguiente(object sender, EventArgs e)
+        {
+            CambiarActivo(_indiceActivo + 1);
         }
 
         // ---- Paso 3
@@ -1461,11 +2100,28 @@ namespace PROYECTO_ING_DE_SOFTWARE
 
         private void btnVerTarjetaResultado_Click(object sender, EventArgs e)
         {
-            if (_ciConfirmado != null) FRMTarjetaEmbarque_GV42.Mostrar(this, _ciConfirmado);
+            if (EsGrupo) VerTarjetaDelGrupo();
+            else if (_ciConfirmado != null) FRMTarjetaEmbarque_GV42.Mostrar(this, _ciConfirmado);
+        }
+
+        private void dgvResultado_CellDoubleClick(object sender, DataGridViewCellEventArgs e)
+        {
+            if (e.RowIndex >= 0) VerTarjetaDelGrupo();
+        }
+
+        // Resultado por pasajero: realizado (verde) o el motivo por el que no se pudo (rojo).
+        private void dgvResultado_CellFormatting(object sender, DataGridViewCellFormattingEventArgs e)
+        {
+            if (e.RowIndex < 0 || e.ColumnIndex != colResEstado.Index) return;
+            var fila = dgvResultado.Rows[e.RowIndex].DataBoundItem as FilaResultado;
+            if (fila == null) return;
+            e.CellStyle.ForeColor = fila.Ok ? Tema_GV42.Exito : Tema_GV42.Error;
+            e.CellStyle.SelectionForeColor = e.CellStyle.ForeColor;
         }
 
         private void btnOtroPasajero_Click(object sender, EventArgs e)
         {
+            _marcados.Clear();
             txtDni.Clear();
             VolverALaLista();
         }
@@ -1479,6 +2135,8 @@ namespace PROYECTO_ING_DE_SOFTWARE
         // Fila de la grilla de pasajeros: los textos ya vienen armados (y traducidos) para mostrar.
         private class FilaPasajero
         {
+            // Tildado para el check-in grupal.
+            public bool Marcado { get; set; }
             public string Dni { get; set; }
             public string Pasajero { get; set; }
             public string Tramo { get; set; }
@@ -1488,6 +2146,43 @@ namespace PROYECTO_ING_DE_SOFTWARE
             public string Situacion { get; set; }
             public TipoSituacion Tipo { get; set; }
             public bool PuedeDespachar { get; set; }
+            public CheckIn_GV42 CheckIn { get; set; }
+        }
+
+        // Lo que se va cargando para cada pasajero del check-in grupal mientras se atiende a otro.
+        private class EstadoPasajero
+        {
+            public CheckIn_GV42 CheckIn { get; set; }
+            public FranquiciaEquipaje_GV42 Franquicia { get; set; }
+            public CargoExcesoEquipaje_GV42 Cargo { get; set; }
+            public string ErrorCalculo { get; set; }
+            // Peso de cada valija cargada (despachada o todavía no).
+            public List<decimal> Pesos { get; set; } = new List<decimal>();
+            // Ya se pasó por su paso de equipaje (despachó o sigue sin valijas).
+            public bool EquipajeAtendido { get; set; }
+            public bool Confirmado { get; set; }
+            public string ErrorConfirmacion { get; set; }
+        }
+
+        // Fila de la lista de pasajeros del grupo en la verificación (paso 2).
+        private class FilaGrupo
+        {
+            public string Pasajero { get; set; }
+            public string Dni { get; set; }
+            public string Tipo { get; set; }
+            public string Asiento { get; set; }
+            public string Asistencia { get; set; }
+            public bool TieneAsistencia { get; set; }
+        }
+
+        // Fila de la lista del resultado del check-in grupal.
+        private class FilaResultado
+        {
+            public string Pasajero { get; set; }
+            public string Tarjeta { get; set; }
+            public string Asiento { get; set; }
+            public string Estado { get; set; }
+            public bool Ok { get; set; }
             public CheckIn_GV42 CheckIn { get; set; }
         }
 

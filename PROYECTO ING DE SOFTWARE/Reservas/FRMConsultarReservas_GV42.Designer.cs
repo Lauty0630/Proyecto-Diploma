@@ -59,11 +59,16 @@
             this.btnVerBoletos = new PROYECTO_ING_DE_SOFTWARE.BotonModerno_GV42();
             this.btnCancelar = new PROYECTO_ING_DE_SOFTWARE.BotonModerno_GV42();
             this.btnCheckIn = new PROYECTO_ING_DE_SOFTWARE.BotonModerno_GV42();
+            this.btnCambiarVuelo = new PROYECTO_ING_DE_SOFTWARE.BotonModerno_GV42();
+            this.btnReembolso = new PROYECTO_ING_DE_SOFTWARE.BotonModerno_GV42();
+            this.flpAcciones = new System.Windows.Forms.FlowLayoutPanel();
+            this.colReembolso = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.toolTip = new System.Windows.Forms.ToolTip(this.components);
             this.pnlEncabezado.SuspendLayout();
             this.pnlContenido.SuspendLayout();
             this.pnlGrilla.SuspendLayout();
             this.pnlAcciones.SuspendLayout();
+            this.flpAcciones.SuspendLayout();
             this.pnlBusqueda.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.dgvReservas)).BeginInit();
             this.SuspendLayout();
@@ -136,10 +141,8 @@
             // 
             // pnlAcciones
             // 
-            this.pnlAcciones.Controls.Add(this.btnCheckIn);
+            this.pnlAcciones.Controls.Add(this.flpAcciones);
             this.pnlAcciones.Controls.Add(this.lblAyudaAcciones);
-            this.pnlAcciones.Controls.Add(this.btnVerBoletos);
-            this.pnlAcciones.Controls.Add(this.btnCancelar);
             this.pnlAcciones.Dock = System.Windows.Forms.DockStyle.Bottom;
             this.pnlAcciones.Location = new System.Drawing.Point(24, 478);
             this.pnlAcciones.Name = "pnlAcciones";
@@ -234,6 +237,7 @@
             this.colClase,
             this.colRol,
             this.colEstado,
+            this.colReembolso,
             this.colImporte});
             this.dgvReservas.Dock = System.Windows.Forms.DockStyle.Fill;
             this.dgvReservas.Location = new System.Drawing.Point(12, 12);
@@ -327,6 +331,14 @@
             this.colEstado.Name = "colEstado";
             this.colEstado.ReadOnly = true;
             // 
+            // colReembolso
+            // 
+            this.colReembolso.DataPropertyName = "Reembolso";
+            this.colReembolso.FillWeight = 95F;
+            this.colReembolso.HeaderText = "Reembolso";
+            this.colReembolso.Name = "colReembolso";
+            this.colReembolso.ReadOnly = true;
+            // 
             // colImporte
             // 
             this.colImporte.DataPropertyName = "ImporteTotal";
@@ -346,16 +358,63 @@
             this.lblAyudaAcciones.TabIndex = 0;
             this.lblAyudaAcciones.Text = "Seleccioná una reserva para ver sus boletos o cancelarla.";
             this.lblAyudaAcciones.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
+            this.lblAyudaAcciones.Visible = false;
+            // 
+            // flpAcciones
+            // 
+            this.flpAcciones.Controls.Add(this.btnCancelar);
+            this.flpAcciones.Controls.Add(this.btnReembolso);
+            this.flpAcciones.Controls.Add(this.btnCambiarVuelo);
+            this.flpAcciones.Controls.Add(this.btnVerBoletos);
+            this.flpAcciones.Controls.Add(this.btnCheckIn);
+            this.flpAcciones.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.flpAcciones.FlowDirection = System.Windows.Forms.FlowDirection.RightToLeft;
+            this.flpAcciones.Location = new System.Drawing.Point(0, 0);
+            this.flpAcciones.Name = "flpAcciones";
+            this.flpAcciones.Padding = new System.Windows.Forms.Padding(16, 15, 16, 0);
+            this.flpAcciones.Size = new System.Drawing.Size(952, 72);
+            this.flpAcciones.TabIndex = 5;
+            this.flpAcciones.WrapContents = false;
+            // 
+            // btnCambiarVuelo
+            // 
+            this.btnCambiarVuelo.Estilo = PROYECTO_ING_DE_SOFTWARE.EstiloBoton_GV42.Secundario;
+            this.btnCambiarVuelo.FlatAppearance.BorderSize = 0;
+            this.btnCambiarVuelo.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.btnCambiarVuelo.Font = new System.Drawing.Font("Segoe UI Semibold", 10F, System.Drawing.FontStyle.Bold);
+            this.btnCambiarVuelo.Location = new System.Drawing.Point(390, 15);
+            this.btnCambiarVuelo.Margin = new System.Windows.Forms.Padding(8, 0, 0, 0);
+            this.btnCambiarVuelo.Name = "btnCambiarVuelo";
+            this.btnCambiarVuelo.Size = new System.Drawing.Size(150, 40);
+            this.btnCambiarVuelo.TabIndex = 4;
+            this.btnCambiarVuelo.Text = "Cambiar vuelo";
+            this.btnCambiarVuelo.UseVisualStyleBackColor = false;
+            this.btnCambiarVuelo.Click += new System.EventHandler(this.btnCambiarVuelo_Click);
+            // 
+            // btnReembolso
+            // 
+            this.btnReembolso.Estilo = PROYECTO_ING_DE_SOFTWARE.EstiloBoton_GV42.Advertencia;
+            this.btnReembolso.FlatAppearance.BorderSize = 0;
+            this.btnReembolso.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.btnReembolso.Font = new System.Drawing.Font("Segoe UI Semibold", 10F, System.Drawing.FontStyle.Bold);
+            this.btnReembolso.Location = new System.Drawing.Point(548, 15);
+            this.btnReembolso.Margin = new System.Windows.Forms.Padding(8, 0, 0, 0);
+            this.btnReembolso.Name = "btnReembolso";
+            this.btnReembolso.Size = new System.Drawing.Size(180, 40);
+            this.btnReembolso.TabIndex = 5;
+            this.btnReembolso.Text = "Procesar reembolso";
+            this.btnReembolso.UseVisualStyleBackColor = false;
+            this.btnReembolso.Click += new System.EventHandler(this.btnReembolso_Click);
             // 
             // btnVerBoletos
             // 
-            this.btnVerBoletos.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.btnVerBoletos.FlatAppearance.BorderSize = 0;
             this.btnVerBoletos.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.btnVerBoletos.Font = new System.Drawing.Font("Segoe UI Semibold", 10F, System.Drawing.FontStyle.Bold);
             this.btnVerBoletos.Location = new System.Drawing.Point(528, 15);
+            this.btnVerBoletos.Margin = new System.Windows.Forms.Padding(8, 0, 0, 0);
             this.btnVerBoletos.Name = "btnVerBoletos";
-            this.btnVerBoletos.Size = new System.Drawing.Size(150, 40);
+            this.btnVerBoletos.Size = new System.Drawing.Size(130, 40);
             this.btnVerBoletos.TabIndex = 1;
             this.btnVerBoletos.Text = "Ver boletos";
             this.btnVerBoletos.UseVisualStyleBackColor = false;
@@ -363,14 +422,14 @@
             // 
             // btnCancelar
             // 
-            this.btnCancelar.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.btnCancelar.Estilo = PROYECTO_ING_DE_SOFTWARE.EstiloBoton_GV42.Peligro;
             this.btnCancelar.FlatAppearance.BorderSize = 0;
             this.btnCancelar.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.btnCancelar.Font = new System.Drawing.Font("Segoe UI Semibold", 10F, System.Drawing.FontStyle.Bold);
             this.btnCancelar.Location = new System.Drawing.Point(688, 15);
+            this.btnCancelar.Margin = new System.Windows.Forms.Padding(8, 0, 0, 0);
             this.btnCancelar.Name = "btnCancelar";
-            this.btnCancelar.Size = new System.Drawing.Size(240, 40);
+            this.btnCancelar.Size = new System.Drawing.Size(200, 40);
             this.btnCancelar.TabIndex = 2;
             this.btnCancelar.Text = "Cancelar reserva seleccionada";
             this.btnCancelar.UseVisualStyleBackColor = false;
@@ -378,12 +437,12 @@
             // 
             // btnCheckIn
             // 
-            this.btnCheckIn.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.btnCheckIn.Estilo = PROYECTO_ING_DE_SOFTWARE.EstiloBoton_GV42.Exito;
             this.btnCheckIn.FlatAppearance.BorderSize = 0;
             this.btnCheckIn.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.btnCheckIn.Font = new System.Drawing.Font("Segoe UI Semibold", 10F, System.Drawing.FontStyle.Bold);
             this.btnCheckIn.Location = new System.Drawing.Point(368, 15);
+            this.btnCheckIn.Margin = new System.Windows.Forms.Padding(8, 0, 0, 0);
             this.btnCheckIn.Name = "btnCheckIn";
             this.btnCheckIn.Size = new System.Drawing.Size(150, 40);
             this.btnCheckIn.TabIndex = 3;
@@ -409,6 +468,7 @@
             this.pnlEncabezado.PerformLayout();
             this.pnlContenido.ResumeLayout(false);
             this.pnlGrilla.ResumeLayout(false);
+            this.flpAcciones.ResumeLayout(false);
             this.pnlAcciones.ResumeLayout(false);
             this.pnlAcciones.PerformLayout();
             this.pnlBusqueda.ResumeLayout(false);
@@ -448,6 +508,10 @@
         private PROYECTO_ING_DE_SOFTWARE.BotonModerno_GV42 btnVerBoletos;
         private PROYECTO_ING_DE_SOFTWARE.BotonModerno_GV42 btnCancelar;
         private PROYECTO_ING_DE_SOFTWARE.BotonModerno_GV42 btnCheckIn;
+        private PROYECTO_ING_DE_SOFTWARE.BotonModerno_GV42 btnCambiarVuelo;
+        private PROYECTO_ING_DE_SOFTWARE.BotonModerno_GV42 btnReembolso;
+        private System.Windows.Forms.FlowLayoutPanel flpAcciones;
+        private System.Windows.Forms.DataGridViewTextBoxColumn colReembolso;
         private System.Windows.Forms.ToolTip toolTip;
     }
 }

@@ -14,8 +14,8 @@ namespace BLL
     //  ┌──────────────── encabezado (marca, canal del check-in, aerolínea) ─┬─ talón ─────┐
     //  │ PASAJERO / DNI / RESERVA                                           ┊ pasajero    │
     //  │ EZE ─────✈───── MDQ          SALIDA 08:00     VUELO AR1302         ┊ EZE > MDQ   │
-    //  │ [ASIENTO] [PUERTA] [HORA LÍMITE DE EMBARQUE] [CLASE]               ┊ vuelo/fecha │
-    //  │ EQUIPAJE DESPACHADO: 2 bultos · 31 kg | franquicia | exceso        ┊ asiento...  │
+    //  │ [ASIENTO] [PUERTA] [HORA LÍMITE DE EMBARQUE] [CLASE + tarifa]      ┊ vuelo/fecha │
+    //  │ EQUIPAJE DESPACHADO: 2 bultos · 31 kg | ...   [ASISTENCIA: ...]    ┊ asiento...  │
     //  │ ||||| código de barras (N° de tarjeta) |||||   avisos              ┊ |||||||||   │
     //  └────────────────────────────────────────────────────────────────────┴─────────────┘
     public static class DisenioTarjetaEmbarque_GV42
@@ -124,11 +124,24 @@ namespace BLL
 
             xd += anchoD + 8;
             Destacado(l, xd, yd, anchoD, IdiomaManager_GV42.T("tarjetaEmb.clase"), clase, 13, null, false);
+            // Tarifa de la reserva (Light / Plus / Top), debajo de la clase.
+            if (!string.IsNullOrWhiteSpace(ci.TarifaNombre))
+                TextoAjustado(l, xd + 8, yd + ALTO_DESTACADO - 6,
+                              IdiomaManager_GV42.T("checkin.tarjeta.tarifa", ci.TarifaNombre), 6.5f, false, GRIS, anchoD - 16);
 
             // ---- Equipaje despachado ----
             float yEq = y0 + 214;
             l.Linea(x0 + 16, yEq - 12, x0 + ANCHO_PRINCIPAL - 16, yEq - 12, GRIS_CLARO, 0.6f);
             l.Texto(x, yEq, IdiomaManager_GV42.T("tarjetaEmb.equipaje"), 6.5f, true, GRIS);
+
+            // Asistencia especial pedida al reservar: leyenda destacada a la derecha, para que la vea
+            // el personal de embarque ("ASISTENCIA: SILLA DE RUEDAS").
+            if (ci.Asistencia != AsistenciaEspecial_GV42.Ninguna)
+            {
+                string asistencia = IdiomaManager_GV42.T("checkin.tarjeta.asistencia", ci.Asistencia.Texto()).ToUpper(CulturaFechas);
+                float anchoAsistencia = l.AnchoTexto(asistencia, 7, true) + 8;
+                Pastilla(l, x0 + ANCHO_PRINCIPAL - 16 - anchoAsistencia, yEq - 8, asistencia, 7, NARANJA, BLANCO);
+            }
             ResumenEquipaje(l, ci.Equipaje, x, yEq + 12, ANCHO_PRINCIPAL - 32);
 
             // ---- Código de barras (N° de tarjeta) y avisos ----

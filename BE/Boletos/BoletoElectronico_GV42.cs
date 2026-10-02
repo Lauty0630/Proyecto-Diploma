@@ -35,6 +35,10 @@ namespace BE
         public string PuertaEmbarque { get; set; }
 
         public string Clase { get; set; }
+        // Familia tarifaria (Light / Plus / Top) y tipo de pasajero, para mostrar junto a la clase.
+        public string TarifaNombre { get; set; }
+        public TipoPasajero_GV42 TipoPasajero { get; set; } = TipoPasajero_GV42.Adulto;
+        public AsistenciaEspecial_GV42 Asistencia { get; set; } = AsistenciaEspecial_GV42.Ninguna;
         public string Asiento { get; set; }
         public string UbicacionAsiento { get; set; }
         public decimal FranquiciaEquipajeKg { get; set; }
