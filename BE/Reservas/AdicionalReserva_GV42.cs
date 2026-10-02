@@ -11,6 +11,9 @@ namespace BE
         public int Cantidad { get; set; }
         public decimal CostoUnitario { get; set; }
 
+        // Tramo para el que se contrató el servicio: 1 = ida, 2 = vuelta.
+        public int Tramo { get; set; } = 1;
+
         public decimal Subtotal
         {
             get { return Cantidad * CostoUnitario; }

@@ -49,7 +49,7 @@ namespace DAL
         {
             string query =
                 "SELECT T.Id, T.NumeroTarjeta, T.PuertaEmbarque, T.HoraLimiteEmbarque, T.FechaHoraEmision, " +
-                "       R.NumeroReserva, R.IdClase, P.DNI, P.Nombre, P.Apellido, " +
+                "       R.NumeroReserva, CASE WHEN CI.Tramo = 2 THEN R.IdClaseVuelta ELSE R.IdClase END AS IdClase, P.DNI, P.Nombre, P.Apellido, " +
                 "       V.CodigoVuelo, V.FechaHoraSalida, " +
                 "       O.Ciudad AS OrigenCiudad, O.CodigoIata AS OrigenIata, " +
                 "       D.Ciudad AS DestinoCiudad, D.CodigoIata AS DestinoIata, " +
@@ -58,7 +58,7 @@ namespace DAL
                 "INNER JOIN CheckIn CI ON CI.Id = T.IdCheckIn " +
                 "INNER JOIN Reserva R ON R.Id = CI.IdReserva " +
                 "INNER JOIN Pasajero P ON P.DNI = CI.DniPasajero " +
-                "INNER JOIN Vuelo V ON V.Id = R.IdVuelo " +
+                "INNER JOIN Vuelo V ON V.Id = CASE WHEN CI.Tramo = 2 THEN R.IdVueloVuelta ELSE R.IdVuelo END " +
                 "INNER JOIN Aeropuerto O ON O.Id = V.IdOrigen " +
                 "INNER JOIN Aeropuerto D ON D.Id = V.IdDestino " +
                 "INNER JOIN Asiento A ON A.Id = CI.IdAsiento " +

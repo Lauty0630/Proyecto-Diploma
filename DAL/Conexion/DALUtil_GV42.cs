@@ -25,6 +25,16 @@ namespace DAL
             " INNER JOIN Aeropuerto O ON O.Id = V.IdOrigen" +
             " INNER JOIN Aeropuerto D ON D.Id = V.IdDestino";
 
+        // Vuelo y clase del tramo de una fila que tiene columna Tramo (ReservaPasajero, Boleto, CheckIn):
+        // tramo 2 = vuelo de regreso de la reserva; tramo 1 = vuelo de ida.
+        // {0} = alias de la tabla con Tramo, la reserva debe tener alias R.
+        public static string JoinVueloDeTramo(string aliasTramo)
+        {
+            return " INNER JOIN Vuelo V ON V.Id = CASE WHEN " + aliasTramo + ".Tramo = 2 THEN R.IdVueloVuelta ELSE R.IdVuelo END" +
+                   " INNER JOIN VueloClase VC ON VC.IdVuelo = V.Id" +
+                   "   AND VC.IdClase = CASE WHEN " + aliasTramo + ".Tramo = 2 THEN R.IdClaseVuelta ELSE R.IdClase END";
+        }
+
         #endregion
 
         #region Métodos públicos

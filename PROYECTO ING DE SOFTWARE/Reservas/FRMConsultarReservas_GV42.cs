@@ -12,7 +12,8 @@ namespace PROYECTO_ING_DE_SOFTWARE
     //  - Vendedor (Reservas.Consultar): busca entre todas las reservas y ve de quién es cada una.
     //    Solo ve el botón Cancelar si además tiene Reservas.Cancelar.
     //  - Pasajero (Reservas.ConsultarPropia): "Mis reservas", sin buscador; ve y cancela solo las suyas
-    //    (Reservas.CancelarPropia).
+    //    (Reservas.CancelarPropia). También aparecen las reservas donde viaja como acompañante
+    //    (columna "Rol"): de esas ve su boleto y hace su check-in, pero no las cancela ni las paga.
     // "Hacer check-in" (RFN 2) se ve solo con alguna patente de check-in (CheckIn.Realizar o
     // CheckIn.RealizarPropio) y abre FRMCheckIn_GV42 con la reserva seleccionada.
     // El diseño está en FRMConsultarReservas_GV42.Designer.cs (Form Designer).
@@ -75,6 +76,7 @@ namespace PROYECTO_ING_DE_SOFTWARE
             colRuta.HeaderText = IdiomaManager_GV42.T("consulta.colRuta");
             colSalida.HeaderText = IdiomaManager_GV42.T("consulta.colSalida");
             colClase.HeaderText = IdiomaManager_GV42.T("consulta.colClase");
+            colRol.HeaderText = IdiomaManager_GV42.T("consulta.colRol");
             colEstado.HeaderText = IdiomaManager_GV42.T("consulta.colEstado");
             colImporte.HeaderText = IdiomaManager_GV42.T("consulta.colImporte");
 
@@ -93,6 +95,8 @@ namespace PROYECTO_ING_DE_SOFTWARE
             pnlSeparadorArriba.Visible = _esVendedor;
             colDni.Visible = _esVendedor;
             colCliente.Visible = _esVendedor;
+            // "Mis reservas" incluye las que sacó otra persona con el usuario como pasajero.
+            colRol.Visible = !_esVendedor;
             btnCancelar.Visible = _puedeCancelar;
             btnCheckIn.Visible = _puedeHacerCheckIn;
         }
@@ -127,10 +131,13 @@ namespace PROYECTO_ING_DE_SOFTWARE
                 Cliente = r.Cliente.NombreCompleto,
                 DniCliente = r.Cliente.DNI,
                 Vuelo = r.VueloClase.CodigoVuelo,
-                Ruta = r.VueloClase.OrigenDescripcion + " -> " + r.VueloClase.DestinoDescripcion,
+                // Ida y vuelta: se aclara en la ruta (la salida que se muestra es la de la ida).
+                Ruta = r.VueloClase.OrigenDescripcion + (r.TieneVuelta ? " <-> " : " -> ") + r.VueloClase.DestinoDescripcion,
                 Salida = r.VueloClase.FechaHoraSalida,
                 Clase = r.VueloClase.ClaseTexto,
                 Estado = r.EstadoTexto,
+                Rol = _esVendedor ? string.Empty
+                    : IdiomaManager_GV42.T(_bll.EsTitularEnSesion(r) ? "consulta.rolTitular" : "consulta.rolPasajero"),
                 ImporteTotal = r.ImporteTotal,
                 Reserva = r
             }).ToList();
@@ -167,7 +174,9 @@ namespace PROYECTO_ING_DE_SOFTWARE
             btnVerBoletos.Enabled = sel != null && sel.Estado == EstadoReserva_GV42.Confirmada;
             btnCheckIn.Enabled = _puedeHacerCheckIn && sel != null && PuedeHacerCheckIn(sel);
             if (!_puedeCancelar) { btnCancelar.Visible = false; return; }
-            btnCancelar.Enabled = sel != null && sel.Estado != EstadoReserva_GV42.Cancelada &&
+            // El acompañante ve la reserva, su boleto y hace su check-in, pero solo el titular la cancela.
+            btnCancelar.Enabled = sel != null && (_esVendedor || _bll.EsTitularEnSesion(sel)) &&
+                                  sel.Estado != EstadoReserva_GV42.Cancelada &&
                                   sel.VueloClase.FechaHoraSalida > DateTime.Now;
         }
 
@@ -176,7 +185,13 @@ namespace PROYECTO_ING_DE_SOFTWARE
         private static bool PuedeHacerCheckIn(Reserva_GV42 r)
         {
             if (r.Estado != EstadoReserva_GV42.Confirmada) return false;
-            DateTime salida = r.VueloClase.FechaHoraSalida;
+            // En ida y vuelta alcanza con que esté abierta la ventana de alguno de los dos vuelos.
+            return EnVentanaDeCheckIn(r.VueloClase.FechaHoraSalida) ||
+                   (r.TieneVuelta && EnVentanaDeCheckIn(r.VueloClaseVuelta.FechaHoraSalida));
+        }
+
+        private static bool EnVentanaDeCheckIn(DateTime salida)
+        {
             DateTime ahora = DateTime.Now;
             return ahora >= salida.AddHours(-BLLCheckIn_GV42.HORAS_APERTURA_CHECKIN) &&
                    ahora <= salida.AddMinutes(-BLLCheckIn_GV42.MINUTOS_CIERRE_CHECKIN);
@@ -303,6 +318,7 @@ namespace PROYECTO_ING_DE_SOFTWARE
             public DateTime Salida { get; set; }
             public string Clase { get; set; }
             public string Estado { get; set; }
+            public string Rol { get; set; }
             public decimal ImporteTotal { get; set; }
             public Reserva_GV42 Reserva { get; set; }
         }

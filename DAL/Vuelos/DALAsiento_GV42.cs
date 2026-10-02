@@ -111,7 +111,7 @@ namespace DAL
             object r = _acceso.leerEscalar(
                 "SELECT (SELECT COUNT(1) FROM ReservaPasajero RP " +
                 "        WHERE RP.IdAsiento = @Id AND NOT EXISTS (SELECT 1 FROM CheckIn CI " +
-                "              WHERE CI.Id = @IdCheckIn AND CI.IdReserva = RP.IdReserva AND CI.DniPasajero = RP.DniPasajero)) " +
+                "              WHERE CI.Id = @IdCheckIn AND CI.IdReserva = RP.IdReserva AND CI.DniPasajero = RP.DniPasajero AND CI.Tramo = RP.Tramo)) " +
                 "     + (SELECT COUNT(1) FROM CheckIn WHERE IdAsiento = @Id AND Id <> @IdCheckIn)",
                 new[] { new SqlParameter("@Id", idAsiento), new SqlParameter("@IdCheckIn", idCheckIn) });
             return r != null && Convert.ToInt32(r) > 0;
@@ -129,7 +129,7 @@ namespace DAL
                     "UPDATE CheckIn SET IdAsiento = @IdAsiento WHERE Id = @IdCheckIn AND IdEstadoCheckIn = @Pendiente; " +
                     "IF @@ROWCOUNT > 0 " +
                     "    UPDATE RP SET IdAsiento = @IdAsiento FROM ReservaPasajero RP " +
-                    "    INNER JOIN CheckIn CI ON CI.IdReserva = RP.IdReserva AND CI.DniPasajero = RP.DniPasajero " +
+                    "    INNER JOIN CheckIn CI ON CI.IdReserva = RP.IdReserva AND CI.DniPasajero = RP.DniPasajero AND CI.Tramo = RP.Tramo " +
                     "    WHERE CI.Id = @IdCheckIn AND (RP.IdAsiento IS NULL OR RP.IdAsiento <> @IdAsiento);",
                     new[] {
                         new SqlParameter("@IdAsiento", idAsiento),

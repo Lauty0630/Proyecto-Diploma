@@ -52,6 +52,7 @@
             this.colRuta = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.colSalida = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.colClase = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.colRol = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.colEstado = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.colImporte = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.lblAyudaAcciones = new System.Windows.Forms.Label();
@@ -231,6 +232,7 @@
             this.colRuta,
             this.colSalida,
             this.colClase,
+            this.colRol,
             this.colEstado,
             this.colImporte});
             this.dgvReservas.Dock = System.Windows.Forms.DockStyle.Fill;
@@ -308,6 +310,14 @@
             this.colClase.HeaderText = "Clase";
             this.colClase.Name = "colClase";
             this.colClase.ReadOnly = true;
+            // 
+            // colRol
+            // 
+            this.colRol.DataPropertyName = "Rol";
+            this.colRol.FillWeight = 70F;
+            this.colRol.HeaderText = "Rol";
+            this.colRol.Name = "colRol";
+            this.colRol.ReadOnly = true;
             // 
             // colEstado
             // 
@@ -431,6 +441,7 @@
         private System.Windows.Forms.DataGridViewTextBoxColumn colRuta;
         private System.Windows.Forms.DataGridViewTextBoxColumn colSalida;
         private System.Windows.Forms.DataGridViewTextBoxColumn colClase;
+        private System.Windows.Forms.DataGridViewTextBoxColumn colRol;
         private System.Windows.Forms.DataGridViewTextBoxColumn colEstado;
         private System.Windows.Forms.DataGridViewTextBoxColumn colImporte;
         private System.Windows.Forms.Label lblAyudaAcciones;

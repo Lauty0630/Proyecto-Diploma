@@ -25,7 +25,8 @@ namespace DAL
         #region Métodos públicos
 
         // En una sola transacción: registra el pago, pasa la reserva a "Confirmada",
-        // emite un boleto por pasajero y deja creado el check-in (Pendiente) de cada pasajero.
+        // emite un boleto por pasajero y por tramo (ida / vuelta) y deja creado el check-in (Pendiente)
+        // de cada pasajero en cada tramo.
         public Pago_GV42 RegistrarPagoYConfirmar(Pago_GV42 pago)
         {
             try
@@ -62,15 +63,16 @@ namespace DAL
                     SqlParameter[] pReserva = { new SqlParameter("@IdReserva", pago.IdReserva) };
 
                     _acceso.escribir(tx,
-                        "INSERT INTO Boleto (IdReserva, DniPasajero) " +
-                        "SELECT IdReserva, DniPasajero FROM ReservaPasajero WHERE IdReserva = @IdReserva",
+                        "INSERT INTO Boleto (IdReserva, DniPasajero, Tramo) " +
+                        "SELECT IdReserva, DniPasajero, Tramo FROM ReservaPasajero WHERE IdReserva = @IdReserva " +
+                        "ORDER BY Tramo, DniPasajero",
                         pReserva);
 
                     _acceso.escribir(tx,
                         // El check-in arranca con el asiento que el pasajero eligió al reservar
                         // (antes nacía sin asiento y el check-in podía darle uno que ya era de otro).
-                        "INSERT INTO CheckIn (IdReserva, DniPasajero, IdAsiento) " +
-                        "SELECT IdReserva, DniPasajero, IdAsiento FROM ReservaPasajero WHERE IdReserva = @IdReserva",
+                        "INSERT INTO CheckIn (IdReserva, DniPasajero, Tramo, IdAsiento) " +
+                        "SELECT IdReserva, DniPasajero, Tramo, IdAsiento FROM ReservaPasajero WHERE IdReserva = @IdReserva",
                         new[] { new SqlParameter("@IdReserva", pago.IdReserva) });
 
                     DataTable dt = _acceso.leer(tx,

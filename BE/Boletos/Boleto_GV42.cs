@@ -2,7 +2,7 @@
 
 namespace BE
 {
-    // Se emite un boleto por cada pasajero al confirmarse el pago.
+    // Se emite un boleto por cada pasajero y por cada tramo (ida / vuelta) al confirmarse el pago.
     public class Boleto_GV42
     {
         #region Propiedades
@@ -15,6 +15,8 @@ namespace BE
         public string NumeroReserva { get; set; }
         public Pasajero_GV42 Pasajero { get; set; }
         public string CodigoVuelo { get; set; }
+        // 1 = ida, 2 = vuelta.
+        public int Tramo { get; set; } = 1;
         public DateTime FechaEmision { get; set; }
 
         public string PasajeroNombre { get { return Pasajero != null ? Pasajero.NombreCompleto : string.Empty; } }

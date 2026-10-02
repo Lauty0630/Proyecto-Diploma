@@ -31,14 +31,28 @@ namespace PROYECTO_ING_DE_SOFTWARE
         private readonly bool _esVendedor;
 
         // Asistente: tarjetas de cada paso (la última es el resultado), su "chip" del indicador y su clave.
+        // En ida y vuelta se agregan pasos: elegir el vuelo de regreso y, después de completar la ida
+        // (asientos y adicionales), repetir asientos y adicionales para la vuelta. Esos pasos usan las
+        // mismas tarjetas que la ida, mostrando los datos del tramo activo (_tramo).
         private List<Control> _pasos;
-        private List<Label> _chips;
         private List<string> _clavesPaso;
+        private List<Label> _chipDePaso;      // chip del indicador que corresponde a cada paso
+        private List<int> _tramoDePaso;       // tramo (IDA / VUELTA) sobre el que trabaja cada paso
+        private List<Label> _chips;           // chips visibles, en orden
+        private readonly Dictionary<Label, string> _claveChip = new Dictionary<Label, string>();
         private int _pasoActual;
+
+        // Tramos del viaje: la ida siempre; la vuelta solo en ida y vuelta.
+        private const int IDA = 0;
+        private const int VUELTA = 1;
+        private int _tramo = IDA;
+        private bool _idaYVuelta;
 
         // Paso búsqueda
         private List<VueloClase_GV42> _resultados = new List<VueloClase_GV42>();
-        private VueloClase_GV42 _vueloElegido;
+        // Vuelo elegido para cada tramo ([IDA] y [VUELTA]).
+        private readonly VueloClase_GV42[] _vuelos = new VueloClase_GV42[2];
+        private List<VueloClase_GV42> _resultadosVuelta = new List<VueloClase_GV42>();
 
         // Paso cliente (solo vendedor)
         private Pasajero_GV42 _clienteElegido;
@@ -47,12 +61,20 @@ namespace PROYECTO_ING_DE_SOFTWARE
         private readonly List<DatosPasajero> _pasajeros = new List<DatosPasajero>();
 
         // Paso asientos
-        private List<AsientoDisponibilidad_GV42> _mapaAsientos;
-        private readonly Dictionary<int, Asiento_GV42> _asientoPorPasajero = new Dictionary<int, Asiento_GV42>();
+        // Paso asientos: mapa y asiento de cada pasajero, por tramo.
+        private readonly List<AsientoDisponibilidad_GV42>[] _mapas = new List<AsientoDisponibilidad_GV42>[2];
+        private readonly Dictionary<int, Asiento_GV42>[] _asientos =
+            { new Dictionary<int, Asiento_GV42>(), new Dictionary<int, Asiento_GV42>() };
         private int _indicePasajeroActivo;
 
         // Paso adicionales
-        private readonly List<CtrlAdicional_GV42> _filasAdicionales = new List<CtrlAdicional_GV42>();
+        // Paso adicionales: un juego de filas por tramo (se muestran las del tramo activo).
+        private readonly List<CtrlAdicional_GV42>[] _filasAdicionales =
+            { new List<CtrlAdicional_GV42>(), new List<CtrlAdicional_GV42>() };
+        // Equipaje extra: una fila por pasajero y por tramo (la valija queda a nombre de quien la despacha).
+        private readonly List<CtrlEquipajePasajero_GV42>[] _filasEquipaje =
+            { new List<CtrlEquipajePasajero_GV42>(), new List<CtrlEquipajePasajero_GV42>() };
+        private TipoAdicional_GV42 _servicioEquipaje;
 
         // Paso resumen / resultado
         private bool _resumenArmado;
@@ -72,7 +94,7 @@ namespace PROYECTO_ING_DE_SOFTWARE
 
             _esVendedor = _bll.PuedeGenerarParaTerceros();
 
-            ConfigurarPasos();
+            ConfigurarPasos(false);
             ConfigurarControles();
 
             IdiomaManager_GV42.Instancia.Suscribir(this);
@@ -82,30 +104,72 @@ namespace PROYECTO_ING_DE_SOFTWARE
             IrAPaso(0);
         }
 
-        // Arma la lista de pasos según el modo: el paso "Cliente" solo existe para el vendedor.
-        private void ConfigurarPasos()
+        // Arma la lista de pasos según el modo y el tipo de viaje:
+        //  - el paso "Cliente" solo existe para el vendedor;
+        //  - en ida y vuelta se elige el vuelo de regreso y, después de completar la ida (asientos y
+        //    adicionales), se piden los asientos y adicionales de la vuelta. Los pasajeros se cargan una vez.
+        private void ConfigurarPasos(bool idaYVuelta)
         {
-            _pasos = new List<Control> { pnlPasoBusqueda };
-            _chips = new List<Label> { lblChipBusqueda };
-            _clavesPaso = new List<string> { "busqueda" };
-            if (_esVendedor)
-            {
-                _pasos.Add(pnlPasoCliente);
-                _chips.Add(lblChipCliente);
-                _clavesPaso.Add("cliente");
-            }
-            _pasos.AddRange(new Control[] { pnlPasoPasajeros, pnlPasoAsientos, pnlPasoAdicionales, pnlPasoResumen, pnlPasoResultado });
-            _chips.AddRange(new[] { lblChipPasajeros, lblChipAsientos, lblChipAdicionales, lblChipResumen });
-            _clavesPaso.AddRange(new[] { "pasajeros", "asientos", "adicionales", "resumen" });
+            _idaYVuelta = idaYVuelta;
+            _pasos = new List<Control>();
+            _clavesPaso = new List<string>();
+            _chipDePaso = new List<Label>();
+            _tramoDePaso = new List<int>();
+            _claveChip.Clear();
 
+            AgregarPaso(pnlPasoBusqueda, idaYVuelta ? "busquedaIda" : "busqueda", lblChipBusqueda, idaYVuelta ? "busquedaIda" : "busqueda", IDA);
+            if (idaYVuelta) AgregarPaso(pnlPasoVuelta, "vuelta", lblChipVuelta, "vuelta", VUELTA);
+            if (_esVendedor) AgregarPaso(pnlPasoCliente, "cliente", lblChipCliente, "cliente", IDA);
+            AgregarPaso(pnlPasoPasajeros, "pasajeros", lblChipPasajeros, "pasajeros", IDA);
+            if (idaYVuelta)
+            {
+                // Los dos chips del medio pasan a representar cada tramo completo (asientos + adicionales).
+                AgregarPaso(pnlPasoAsientos, "asientosIda", lblChipAsientos, "tramoIda", IDA);
+                AgregarPaso(pnlPasoAdicionales, "adicionalesIda", lblChipAsientos, "tramoIda", IDA);
+                AgregarPaso(pnlPasoAsientos, "asientosVuelta", lblChipAdicionales, "tramoVuelta", VUELTA);
+                AgregarPaso(pnlPasoAdicionales, "adicionalesVuelta", lblChipAdicionales, "tramoVuelta", VUELTA);
+            }
+            else
+            {
+                AgregarPaso(pnlPasoAsientos, "asientos", lblChipAsientos, "asientos", IDA);
+                AgregarPaso(pnlPasoAdicionales, "adicionales", lblChipAdicionales, "adicionales", IDA);
+            }
+            AgregarPaso(pnlPasoResumen, "resumen", lblChipResumen, "resumen", IDA);
+            AgregarPaso(pnlPasoResultado, "resultado", null, null, IDA);
+
+            _chips = _chipDePaso.Where(c => c != null).Distinct().ToList();
             lblChipCliente.Visible = _esVendedor;
-            pnlPasoCliente.Visible = false;
+            lblChipVuelta.Visible = idaYVuelta;
+        }
+
+        private void AgregarPaso(Control tarjeta, string clave, Label chip, string claveChip, int tramo)
+        {
+            _pasos.Add(tarjeta);
+            _clavesPaso.Add(clave);
+            _chipDePaso.Add(chip);
+            _tramoDePaso.Add(tramo);
+            if (chip != null) _claveChip[chip] = claveChip;
+        }
+
+        private string ClavePasoActual => _clavesPaso[_pasoActual];
+
+        // Asientos de cada pasajero en el tramo activo (índice del pasajero -> asiento).
+        private Dictionary<int, Asiento_GV42> AsientosTramo => _asientos[_tramo];
+
+        // "  ·  Ida (AEP -> COR)": aclara de qué tramo es el paso. Vacío si el viaje es solo de ida.
+        private string SufijoTramo()
+        {
+            if (!_idaYVuelta || _vuelos[_tramo] == null) return string.Empty;
+            Vuelo_GV42 v = _vuelos[_tramo].Vuelo;
+            return "   ·   " + IdiomaManager_GV42.T(_tramo == VUELTA ? "tramo.vuelta" : "tramo.ida") +
+                   " (" + v.Origen.CodigoIata + " -> " + v.Destino.CodigoIata + ")";
         }
 
         // Estado inicial que no se puede fijar con literales en el diseñador.
         private void ConfigurarControles()
         {
             dgvVuelos.AutoGenerateColumns = false;
+            dgvVuelosVuelta.AutoGenerateColumns = false;
 
             dtSalida.MinDate = DateTime.Today;
             dtRegreso.MinDate = DateTime.Today;
@@ -157,6 +221,20 @@ namespace PROYECTO_ING_DE_SOFTWARE
                 colDisponibles.HeaderText = IdiomaManager_GV42.T("reservar.col.disponibles");
                 dgvVuelos.Invalidate();   // la columna Clase (ClaseTexto) se vuelve a leer ya traducida
 
+                // Paso vuelo de regreso (ida y vuelta)
+                lblTituloVuelta.Text = IdiomaManager_GV42.T("reservar.vuelta.titulo");
+                lblAyudaVuelta.Text = IdiomaManager_GV42.T("reservar.vuelta.ayuda");
+                colVueltaVuelo.HeaderText = colVuelo.HeaderText;
+                colVueltaAerolinea.HeaderText = colAerolinea.HeaderText;
+                colVueltaOrigen.HeaderText = colOrigen.HeaderText;
+                colVueltaDestino.HeaderText = colDestino.HeaderText;
+                colVueltaSalida.HeaderText = colSalida.HeaderText;
+                colVueltaLlegada.HeaderText = colLlegada.HeaderText;
+                colVueltaClase.HeaderText = colClase.HeaderText;
+                colVueltaPrecio.HeaderText = colPrecio.HeaderText;
+                colVueltaDisponibles.HeaderText = colDisponibles.HeaderText;
+                dgvVuelosVuelta.Invalidate();
+
                 // Paso cliente
                 lblTituloCliente.Text = IdiomaManager_GV42.T("reservar.cliente.titulo");
                 lblAyudaCliente.Text = IdiomaManager_GV42.T("reservar.cliente.ayuda");
@@ -184,9 +262,10 @@ namespace PROYECTO_ING_DE_SOFTWARE
                 ctrlButacas.ActualizarIdioma();
 
                 // Paso adicionales
-                lblTituloAdicionales.Text = IdiomaManager_GV42.T("reservar.adicionales.titulo");
+                lblTituloAdicionales.Text = IdiomaManager_GV42.T("reservar.adicionales.titulo") + SufijoTramo();
                 lblAyudaAdicionales.Text = IdiomaManager_GV42.T(_esVendedor ? "reservar.adicionales.ayudaVendedor" : "reservar.adicionales.ayudaCliente");
-                foreach (CtrlAdicional_GV42 fila in _filasAdicionales) fila.ActualizarIdioma();
+                foreach (CtrlAdicional_GV42 fila in _filasAdicionales.SelectMany(f => f)) fila.ActualizarIdioma();
+                foreach (CtrlEquipajePasajero_GV42 fila in _filasEquipaje.SelectMany(f => f)) fila.ActualizarIdioma();
 
                 // Paso resumen
                 lblTituloResumen.Text = IdiomaManager_GV42.T("reservar.resumen.titulo");
@@ -194,7 +273,7 @@ namespace PROYECTO_ING_DE_SOFTWARE
                 lblSeccionPasajeros.Text = IdiomaManager_GV42.T("reservar.resumen.pasajeros");
                 lblSeccionAdicionales.Text = IdiomaManager_GV42.T("reservar.resumen.adicionales");
                 lblNotaImporte.Text = IdiomaManager_GV42.T("reservar.resumen.nota");
-                if (_resumenArmado && _vueloElegido != null) ArmarResumen();
+                if (_resumenArmado && _vuelos[IDA] != null) ArmarResumen();
 
                 // Resultado
                 lblResultadoTitulo.Text = IdiomaManager_GV42.T("reservar.resultado.titulo");
@@ -242,22 +321,28 @@ namespace PROYECTO_ING_DE_SOFTWARE
         {
             if (indice < 0 || indice >= _pasos.Count) return;
             _pasoActual = indice;
+            _tramo = _tramoDePaso[indice];
             MostrarPasoActual();
 
-            if (EsPasoAsientos(indice)) PrepararPasoAsientos();
+            if (EsPasoAsientos()) PrepararPasoAsientos();
+            else if (EsPasoAdicionales()) MostrarAdicionalesDelTramo();
         }
 
         // Muestra solo la tarjeta del paso actual y actualiza encabezado, indicador y botonera.
         private void MostrarPasoActual()
         {
-            for (int i = 0; i < _pasos.Count; i++)
-                _pasos[i].Visible = i == _pasoActual;
+            // Una misma tarjeta puede servir a dos pasos (asientos y adicionales de ida y de vuelta), y
+            // la del vuelo de regreso no participa en un viaje de ida: se recorren todas las tarjetas.
+            Control actual = _pasos[_pasoActual];
+            foreach (Control tarjeta in new Control[] { pnlPasoBusqueda, pnlPasoVuelta, pnlPasoCliente, pnlPasoPasajeros,
+                                                         pnlPasoAsientos, pnlPasoAdicionales, pnlPasoResumen, pnlPasoResultado })
+                tarjeta.Visible = tarjeta == actual;
 
             bool esResultado = _pasoActual == PasoResultado();
             lblSubtitulo.Text = esResultado
                 ? IdiomaManager_GV42.T("reservar.resultadoSubtitulo")
-                : IdiomaManager_GV42.T("reservar.pasoDe", _pasoActual + 1, _chips.Count,
-                                       IdiomaManager_GV42.T("reservar.paso." + _clavesPaso[_pasoActual]));
+                : IdiomaManager_GV42.T("reservar.pasoDe", _pasoActual + 1, _pasos.Count - 1,
+                                       IdiomaManager_GV42.T("reservar.paso." + ClavePasoActual));
             ActualizarIndicador();
 
             btnAtras.Visible = _pasoActual > 0 && _pasoActual < _pasos.Count - 1;
@@ -269,19 +354,23 @@ namespace PROYECTO_ING_DE_SOFTWARE
         }
 
         // Chips del indicador: hecho (celeste con tilde), actual (azul) y pendiente (gris claro).
+        // Un chip puede abarcar más de un paso (en ida y vuelta, "Ida" y "Vuelta" abarcan asientos y adicionales).
         private void ActualizarIndicador()
         {
+            Label chipActual = _chipDePaso[_pasoActual];
+            int indiceActual = chipActual != null ? _chips.IndexOf(chipActual) : _chips.Count;
+
             for (int i = 0; i < _chips.Count; i++)
             {
                 Label chip = _chips[i];
-                string nombre = IdiomaManager_GV42.T("reservar.chip." + _clavesPaso[i]);
-                if (i < _pasoActual)
+                string nombre = IdiomaManager_GV42.T("reservar.chip." + _claveChip[chip]);
+                if (i < indiceActual)
                 {
                     chip.Text = "✓  " + nombre;
                     chip.BackColor = Tema_GV42.BordeGrilla;
                     chip.ForeColor = Tema_GV42.Acento;
                 }
-                else if (i == _pasoActual)
+                else if (i == indiceActual)
                 {
                     chip.Text = (i + 1) + "  " + nombre;
                     chip.BackColor = Tema_GV42.Primario;
@@ -296,13 +385,9 @@ namespace PROYECTO_ING_DE_SOFTWARE
             }
         }
 
-        private int PasoCliente() => _esVendedor ? 1 : -1;
-        private int PasoPasajeros() => _esVendedor ? 2 : 1;
-        private int PasoAsientos() => PasoPasajeros() + 1;
-        private int PasoAdicionales() => PasoAsientos() + 1;
-        private int PasoResumen() => PasoAdicionales() + 1;
-        private int PasoResultado() => PasoResumen() + 1;
-        private bool EsPasoAsientos(int indice) => indice == PasoAsientos();
+        private int PasoResultado() => _pasos.Count - 1;
+        private bool EsPasoAsientos() => ClavePasoActual.StartsWith("asientos");
+        private bool EsPasoAdicionales() => ClavePasoActual.StartsWith("adicionales");
 
         #endregion
 
@@ -331,7 +416,8 @@ namespace PROYECTO_ING_DE_SOFTWARE
             if (_resultados == null || _resultados.Count == 0) return;
             _resultados = new List<VueloClase_GV42>();
             dgvVuelos.DataSource = null;
-            _vueloElegido = null;
+            _vuelos[IDA] = null;
+            _vuelos[VUELTA] = null;
         }
 
         private void ValidarYAvanzarBusqueda()
@@ -339,8 +425,48 @@ namespace PROYECTO_ING_DE_SOFTWARE
             if (dgvVuelos.SelectedRows.Count == 0)
                 throw new NegocioException_GV42(IdiomaManager_GV42.T("reservar.elegiVuelo"));
 
-            _vueloElegido = (VueloClase_GV42)dgvVuelos.SelectedRows[0].DataBoundItem;
+            var ida = (VueloClase_GV42)dgvVuelos.SelectedRows[0].DataBoundItem;
+            bool idaYVuelta = TipoViajeElegido() == TipoViaje_GV42.IdaYVuelta;
+
+            // Ida y vuelta: se buscan los vuelos de regreso (misma ruta invertida, en la fecha de regreso
+            // y que salgan después de que llegue la ida). Si no hay ninguno no se puede seguir.
+            if (idaYVuelta)
+            {
+                ClaseVuelo_GV42? clase = cmbClaseFiltro.SelectedIndex > 0 ? (ClaseVuelo_GV42?)cmbClaseFiltro.SelectedItem : null;
+                List<VueloClase_GV42> regresos = _bll.BuscarVuelosDeRegreso(ida, dtRegreso.Value.Date, (int)numPasajeros.Value, clase);
+                if (regresos.Count == 0)
+                    throw new NegocioException_GV42(IdiomaManager_GV42.T("reservar.sinVuelosRegreso", dtRegreso.Value.ToString("dd/MM/yyyy")));
+
+                _resultadosVuelta = regresos;
+                dgvVuelosVuelta.DataSource = null;
+                dgvVuelosVuelta.DataSource = _resultadosVuelta;
+                // Igual que en la ida: el vuelo de regreso lo tiene que elegir el usuario.
+                dgvVuelosVuelta.ClearSelection();
+                dgvVuelosVuelta.CurrentCell = null;
+            }
+
+            _vuelos[IDA] = ida;
+            _vuelos[VUELTA] = null;
+            _resumenArmado = false;
+            // Los asientos elegidos antes eran de otros vuelos.
+            _asientos[IDA].Clear();
+            _asientos[VUELTA].Clear();
+
+            ConfigurarPasos(idaYVuelta);
             ReconstruirFilasPasajeros();
+            IrAPaso(_pasoActual + 1);
+        }
+
+        // Paso "Vuelo de regreso" (solo ida y vuelta).
+        private void ValidarYAvanzarVuelta()
+        {
+            if (dgvVuelosVuelta.SelectedRows.Count == 0)
+                throw new NegocioException_GV42(IdiomaManager_GV42.T("reservar.elegiVueloVuelta"));
+
+            var vuelta = (VueloClase_GV42)dgvVuelosVuelta.SelectedRows[0].DataBoundItem;
+            if (_vuelos[VUELTA] == null || _vuelos[VUELTA].Vuelo.Id != vuelta.Vuelo.Id || _vuelos[VUELTA].Clase != vuelta.Clase)
+                _asientos[VUELTA].Clear();
+            _vuelos[VUELTA] = vuelta;
             IrAPaso(_pasoActual + 1);
         }
 
@@ -514,7 +640,8 @@ namespace PROYECTO_ING_DE_SOFTWARE
                 foreach (var p in _pasajeros) AutocompletarPasajero(p);
             _bll.ValidarPasajerosParaReserva(PasajerosEnPantalla());
 
-            _asientoPorPasajero.Clear();
+            _asientos[IDA].Clear();
+            _asientos[VUELTA].Clear();
             _indicePasajeroActivo = 0;
             IrAPaso(_pasoActual + 1);
         }
@@ -525,8 +652,8 @@ namespace PROYECTO_ING_DE_SOFTWARE
 
         private void PrepararPasoAsientos()
         {
-            if (_vueloElegido == null) return;
-            _mapaAsientos = _bll.ObtenerMapaAsientos(_vueloElegido.Vuelo.Id, _vueloElegido.Clase);
+            if (_vuelos[_tramo] == null) return;
+            _mapas[_tramo] = _bll.ObtenerMapaAsientos(_vuelos[_tramo].Vuelo.Id, _vuelos[_tramo].Clase);
             _indicePasajeroActivo = 0;
 
             // Butacas preferenciales: se pueden elegir y suman el recargo del catálogo.
@@ -536,9 +663,9 @@ namespace PROYECTO_ING_DE_SOFTWARE
 
             // Si mientras tanto otra reserva tomó un asiento que ya se había elegido acá, se libera
             // y se avisa (antes se seguía pintando como "tu selección" aunque estuviera ocupado).
-            var ocupados = new HashSet<int>(_mapaAsientos.Where(m => m.Ocupado).Select(m => m.Asiento.Id));
-            var perdidos = _asientoPorPasajero.Where(kv => ocupados.Contains(kv.Value.Id)).ToList();
-            foreach (var kv in perdidos) _asientoPorPasajero.Remove(kv.Key);
+            var ocupados = new HashSet<int>(_mapas[_tramo].Where(m => m.Ocupado).Select(m => m.Asiento.Id));
+            var perdidos = AsientosTramo.Where(kv => ocupados.Contains(kv.Value.Id)).ToList();
+            foreach (var kv in perdidos) AsientosTramo.Remove(kv.Key);
             if (perdidos.Count > 0)
                 MessageBox.Show(IdiomaManager_GV42.T(perdidos.Count == 1 ? "reservar.asientoPerdido" : "reservar.asientosPerdidos",
                                                      string.Join(", ", perdidos.Select(kv => kv.Value.NumeroAsiento))),
@@ -548,23 +675,24 @@ namespace PROYECTO_ING_DE_SOFTWARE
 
         private void RefrescarButacas()
         {
-            if (_mapaAsientos == null) return;
+            if (_mapas[_tramo] == null) return;
 
             ActualizarEtiquetaPasajeroActivo();
             btnPasajeroAnterior.Enabled = _indicePasajeroActivo > 0;
             btnPasajeroSiguiente.Enabled = _indicePasajeroActivo < _pasajeros.Count - 1;
 
             var ocupadosLocalmente = new HashSet<int>(
-                _asientoPorPasajero.Where(kv => kv.Key != _indicePasajeroActivo).Select(kv => kv.Value.Id));
-            int? miAsiento = _asientoPorPasajero.TryGetValue(_indicePasajeroActivo, out Asiento_GV42 a) ? a.Id : (int?)null;
+                AsientosTramo.Where(kv => kv.Key != _indicePasajeroActivo).Select(kv => kv.Value.Id));
+            int? miAsiento = AsientosTramo.TryGetValue(_indicePasajeroActivo, out Asiento_GV42 a) ? a.Id : (int?)null;
 
-            ctrlButacas.CargarMapa(_mapaAsientos, ocupadosLocalmente, miAsiento);
+            ctrlButacas.CargarMapa(_mapas[_tramo], ocupadosLocalmente, miAsiento);
         }
 
         private void ActualizarEtiquetaPasajeroActivo()
         {
-            lblPasajeroActual.Text = IdiomaManager_GV42.T("reservar.asientoPara", _indicePasajeroActivo + 1, Math.Max(1, _pasajeros.Count));
-            if (_asientoPorPasajero.TryGetValue(_indicePasajeroActivo, out Asiento_GV42 elegido) && elegido.EsPreferencial && _servicioPreferencial != null)
+            lblPasajeroActual.Text = IdiomaManager_GV42.T("reservar.asientoPara", _indicePasajeroActivo + 1, Math.Max(1, _pasajeros.Count))
+                                     + SufijoTramo();
+            if (AsientosTramo.TryGetValue(_indicePasajeroActivo, out Asiento_GV42 elegido) && elegido.EsPreferencial && _servicioPreferencial != null)
                 lblPasajeroActual.Text += "   ·   " + IdiomaManager_GV42.T("reservar.elegidoPreferencial",
                     elegido.NumeroAsiento, _servicioPreferencial.PrecioUnitario.ToString("C2"));
         }
@@ -579,8 +707,9 @@ namespace PROYECTO_ING_DE_SOFTWARE
 
         private void ValidarYAvanzarAsientos()
         {
-            if (_asientoPorPasajero.Count != _pasajeros.Count)
+            if (AsientosTramo.Count != _pasajeros.Count)
                 throw new NegocioException_GV42(IdiomaManager_GV42.T("reservar.elegiAsientos"));
+            CrearFilasEquipaje(_tramo);
             IrAPaso(_pasoActual + 1);
         }
 
@@ -590,47 +719,98 @@ namespace PROYECTO_ING_DE_SOFTWARE
 
         private void CargarAdicionales()
         {
+            _servicioEquipaje = _bll.ObtenerServicioEquipajeExtra();
             CrearFilasAdicionales(_bll.ListarTiposAdicional());
         }
 
-        // Una fila por tipo de servicio activo (depende de la base, por eso se crea en código).
+        // Equipaje extra por pasajero: una fila por cada uno, arriba de los demás servicios. Se rearma
+        // al entrar al paso (pueden haber cambiado los pasajeros) conservando lo ya elegido en ese tramo.
+        private void CrearFilasEquipaje(int tramo)
+        {
+            List<CtrlEquipajePasajero_GV42> filas = _filasEquipaje[tramo];
+            var elegidas = filas.Select(f => f.Cantidad).ToList();
+            foreach (CtrlEquipajePasajero_GV42 vieja in filas)
+            {
+                pnlListaAdicionales.Controls.Remove(vieja);
+                vieja.Dispose();
+            }
+            filas.Clear();
+            if (_servicioEquipaje == null || _servicioEquipaje.PrecioUnitario <= 0) return;
+
+            pnlListaAdicionales.SuspendLayout();
+            for (int i = 0; i < _pasajeros.Count; i++)
+            {
+                var fila = new CtrlEquipajePasajero_GV42();
+                fila.Configurar((_pasajeros[i].Nombre.Text.Trim() + " " + _pasajeros[i].Apellido.Text.Trim()).Trim(),
+                                _servicioEquipaje.MaxPorPasajero, _servicioEquipaje.PrecioUnitario, false);
+                if (i < elegidas.Count) fila.Cantidad = elegidas[i];
+                fila.Dock = DockStyle.Top;
+                pnlListaAdicionales.Controls.Add(fila);
+                filas.Add(fila);
+            }
+            // Con Dock Top, el control que está más al fondo queda más arriba: se mandan al fondo de
+            // atrás para adelante, así el primer pasajero queda primero.
+            for (int i = filas.Count - 1; i >= 0; i--) filas[i].SendToBack();
+            pnlListaAdicionales.ResumeLayout(true);
+        }
+
+        // Una fila por tipo de servicio activo y por tramo (depende de la base, por eso se crea en código).
         private void CrearFilasAdicionales(List<TipoAdicional_GV42> tipos)
         {
-            foreach (CtrlAdicional_GV42 vieja in _filasAdicionales) vieja.Dispose();
-            _filasAdicionales.Clear();
+            foreach (CtrlAdicional_GV42 vieja in _filasAdicionales.SelectMany(f => f)) vieja.Dispose();
+            foreach (CtrlEquipajePasajero_GV42 vieja in _filasEquipaje.SelectMany(f => f)) vieja.Dispose();
             pnlListaAdicionales.Controls.Clear();
 
             pnlListaAdicionales.SuspendLayout();
-            foreach (var tipo in tipos)
+            for (int tramo = IDA; tramo <= VUELTA; tramo++)
             {
-                var fila = new CtrlAdicional_GV42();
-                // El cliente autogestionado no elige el precio (la BLL igual lo fuerza al de lista).
-                fila.Configurar(tipo, _esVendedor);
-                fila.Dock = DockStyle.Top;
-                pnlListaAdicionales.Controls.Add(fila);
-                fila.BringToFront();
-                _filasAdicionales.Add(fila);
+                _filasAdicionales[tramo].Clear();
+                _filasEquipaje[tramo].Clear();
+                foreach (var tipo in tipos)
+                {
+                    var fila = new CtrlAdicional_GV42();
+                    // El cliente autogestionado no elige el precio (la BLL igual lo fuerza al de lista).
+                    fila.Configurar(tipo, _esVendedor);
+                    fila.Dock = DockStyle.Top;
+                    fila.Visible = tramo == _tramo;
+                    pnlListaAdicionales.Controls.Add(fila);
+                    fila.BringToFront();
+                    _filasAdicionales[tramo].Add(fila);
+                }
             }
             pnlListaAdicionales.ResumeLayout(true);
 
             ActualizarTopesAdicionales(false);
         }
 
-        // Tope de cada servicio según la cantidad de pasajeros y el tipo de viaje (lo calcula la BLL:
-        // MaxPorPasajero x pasajeros x tramos). Antes se podían pedir 20 comidas especiales para 1 pasajero.
+        // Deja a la vista solo los servicios y el equipaje del tramo activo (ida o vuelta).
+        private void MostrarAdicionalesDelTramo()
+        {
+            pnlListaAdicionales.SuspendLayout();
+            for (int tramo = IDA; tramo <= VUELTA; tramo++)
+            {
+                foreach (CtrlAdicional_GV42 fila in _filasAdicionales[tramo]) fila.Visible = tramo == _tramo;
+                foreach (CtrlEquipajePasajero_GV42 fila in _filasEquipaje[tramo]) fila.Visible = tramo == _tramo;
+            }
+            pnlListaAdicionales.ResumeLayout(true);
+            pnlListaAdicionales.AutoScrollPosition = new System.Drawing.Point(0, 0);
+            lblTituloAdicionales.Text = IdiomaManager_GV42.T("reservar.adicionales.titulo") + SufijoTramo();
+        }
+
+        // Tope de cada servicio en un tramo según la cantidad de pasajeros (lo calcula la BLL:
+        // MaxPorPasajero x pasajeros). Antes se podían pedir 20 comidas especiales para 1 pasajero.
         // Si una cantidad ya elegida supera el nuevo tope, el control la baja y se avisa.
         private void ActualizarTopesAdicionales(bool avisar)
         {
-            if (_refrescandoIdioma || _filasAdicionales.Count == 0) return;
+            if (_refrescandoIdioma || _filasAdicionales[IDA].Count == 0) return;
 
             int cantidadPasajeros = (int)numPasajeros.Value;
-            TipoViaje_GV42 tipoViaje = TipoViajeElegido();
             var ajustados = new List<string>();
 
-            foreach (CtrlAdicional_GV42 fila in _filasAdicionales)
+            foreach (CtrlAdicional_GV42 fila in _filasAdicionales.SelectMany(f => f))
             {
-                int maximo = _bll.MaximoAdicional(fila.Tipo, cantidadPasajeros, tipoViaje);
-                if (fila.AplicarTope(maximo, tipoViaje == TipoViaje_GV42.IdaYVuelta))
+                int maximo = _bll.MaximoAdicional(fila.Tipo, cantidadPasajeros);
+                if (fila.AplicarTope(maximo, false))
                     ajustados.Add(IdiomaManager_GV42.T("reservar.topeAjustadoItem", fila.NombreTraducido, fila.Cantidad));
             }
 
@@ -652,40 +832,62 @@ namespace PROYECTO_ING_DE_SOFTWARE
 
         private void ArmarResumen()
         {
+            int tramos = _idaYVuelta ? 2 : 1;
+
+            // Vuelos: el de ida y, si corresponde, el de regreso.
             var vuelo = new StringBuilder();
-            vuelo.AppendLine(IdiomaManager_GV42.T("reservar.resumen.lineaVuelo", _vueloElegido.CodigoVuelo, _vueloElegido.AerolineaNombre));
-            vuelo.AppendLine(_vueloElegido.OrigenDescripcion + " -> " + _vueloElegido.DestinoDescripcion);
-            vuelo.AppendLine();
-            vuelo.AppendLine(IdiomaManager_GV42.T("reservar.resumen.salida", _vueloElegido.FechaHoraSalida.ToString("dd/MM/yyyy HH:mm")));
-            vuelo.AppendLine(IdiomaManager_GV42.T("reservar.resumen.clase", _vueloElegido.ClaseTexto));
             vuelo.AppendLine(IdiomaManager_GV42.T("reservar.resumen.tipoViaje", TipoViajeElegido().Texto()));
-            if (TipoViajeElegido() == TipoViaje_GV42.IdaYVuelta)
-                vuelo.AppendLine(IdiomaManager_GV42.T("reservar.resumen.regreso", dtRegreso.Value.ToString("dd/MM/yyyy")));
+            for (int t = 0; t < tramos; t++)
+            {
+                VueloClase_GV42 vc = _vuelos[t];
+                vuelo.AppendLine();
+                if (_idaYVuelta)
+                    vuelo.AppendLine(IdiomaManager_GV42.T(t == VUELTA ? "tramo.vuelta" : "tramo.ida").ToUpper());
+                vuelo.AppendLine(IdiomaManager_GV42.T("reservar.resumen.lineaVuelo", vc.CodigoVuelo, vc.AerolineaNombre));
+                vuelo.AppendLine(vc.OrigenDescripcion + " -> " + vc.DestinoDescripcion);
+                vuelo.AppendLine(IdiomaManager_GV42.T("reservar.resumen.salida", vc.FechaHoraSalida.ToString("dd/MM/yyyy HH:mm")));
+                vuelo.AppendLine(IdiomaManager_GV42.T("reservar.resumen.clase", vc.ClaseTexto));
+            }
             lblResumenVuelo.Text = vuelo.ToString();
 
+            // Pasajeros con su asiento en cada tramo.
             var pasajeros = new StringBuilder();
             for (int i = 0; i < _pasajeros.Count; i++)
             {
-                string asiento = _asientoPorPasajero.TryGetValue(i, out Asiento_GV42 a) ? a.NumeroAsiento : "-";
+                string asiento = _asientos[IDA].TryGetValue(i, out Asiento_GV42 a) ? a.NumeroAsiento : "-";
+                if (_idaYVuelta)
+                    asiento = IdiomaManager_GV42.T("reservar.resumen.asientosIdaVuelta", asiento,
+                        _asientos[VUELTA].TryGetValue(i, out Asiento_GV42 v) ? v.NumeroAsiento : "-");
                 pasajeros.AppendLine(IdiomaManager_GV42.T("reservar.resumen.lineaPasajero",
                     _pasajeros[i].Nombre.Text, _pasajeros[i].Apellido.Text, asiento));
             }
             lblResumenPasajeros.Text = pasajeros.ToString();
 
-            var seleccionados = _filasAdicionales.Where(f => f.Seleccionado).ToList();
+            // Adicionales de cada tramo: servicios elegidos, recargo por butacas preferenciales (lo vuelve
+            // a calcular la BLL al confirmar) y equipaje extra por pasajero.
             var adicionales = new StringBuilder();
-            if (seleccionados.Count == 0)
-                adicionales.AppendLine(IdiomaManager_GV42.T("reservar.resumen.sinAdicionales"));
-            foreach (var f in seleccionados)
-                adicionales.AppendLine(IdiomaManager_GV42.T("reservar.resumen.lineaAdicional", f.NombreTraducido, f.Cantidad));
-
-            // Recargo automático por butacas preferenciales (lo vuelve a calcular la BLL al confirmar).
-            int preferenciales = _asientoPorPasajero.Values.Count(x => x != null && x.EsPreferencial);
-            if (preferenciales > 0 && _servicioPreferencial != null)
+            for (int t = 0; t < tramos; t++)
             {
-                if (seleccionados.Count == 0) adicionales.Clear();
-                adicionales.AppendLine(IdiomaManager_GV42.T("reservar.resumen.lineaPreferencial", preferenciales,
-                    (_servicioPreferencial.PrecioUnitario * preferenciales).ToString("C2")));
+                var lineas = new List<string>();
+                foreach (CtrlAdicional_GV42 f in _filasAdicionales[t].Where(f => f.Seleccionado))
+                    lineas.Add(IdiomaManager_GV42.T("reservar.resumen.lineaAdicional", f.NombreTraducido, f.Cantidad));
+
+                int preferenciales = _asientos[t].Values.Count(x => x != null && x.EsPreferencial);
+                if (preferenciales > 0 && _servicioPreferencial != null)
+                    lineas.Add(IdiomaManager_GV42.T("reservar.resumen.lineaPreferencial", preferenciales,
+                        (_servicioPreferencial.PrecioUnitario * preferenciales).ToString("C2")));
+
+                foreach (CtrlEquipajePasajero_GV42 f in _filasEquipaje[t].Where(f => f.Cantidad > 0))
+                    lineas.Add(IdiomaManager_GV42.T("reservar.resumen.lineaEquipaje", f.Pasajero, f.Cantidad,
+                        (_servicioEquipaje.PrecioUnitario * f.Cantidad).ToString("C2")));
+
+                if (_idaYVuelta)
+                {
+                    if (t > 0) adicionales.AppendLine();
+                    adicionales.AppendLine(IdiomaManager_GV42.T(t == VUELTA ? "tramo.vuelta" : "tramo.ida").ToUpper());
+                }
+                if (lineas.Count == 0) adicionales.AppendLine(IdiomaManager_GV42.T("reservar.resumen.sinAdicionales"));
+                foreach (string linea in lineas) adicionales.AppendLine(linea);
             }
             lblResumenAdicionales.Text = adicionales.ToString();
 
@@ -697,24 +899,37 @@ namespace PROYECTO_ING_DE_SOFTWARE
             var borrador = new Reserva_GV42
             {
                 Cliente = _clienteElegido,
-                VueloClase = _vueloElegido,
-                TipoViaje = TipoViajeElegido(),
-                FechaRegreso = cmbTipoViaje.SelectedIndex == 1 ? (DateTime?)dtRegreso.Value.Date : null
+                VueloClase = _vuelos[IDA],
+                VueloClaseVuelta = _idaYVuelta ? _vuelos[VUELTA] : null,
+                TipoViaje = _idaYVuelta ? TipoViaje_GV42.IdaYVuelta : TipoViaje_GV42.Ida
             };
 
             borrador.Pasajeros.AddRange(PasajerosEnPantalla());
 
-            for (int i = 0; i < _pasajeros.Count; i++)
-                borrador.AsientosPorPasajero.Add(new AsientoPasajero_GV42(_pasajeros[i].Dni.Text.Trim(), _asientoPorPasajero[i]));
-
-            foreach (var f in _filasAdicionales.Where(f => f.Seleccionado))
+            // Por cada tramo: el asiento y las valijas extra de cada pasajero, y los servicios elegidos.
+            int tramos = _idaYVuelta ? 2 : 1;
+            for (int t = 0; t < tramos; t++)
             {
-                borrador.Adicionales.Add(new AdicionalReserva_GV42
+                int numeroTramo = t == VUELTA ? Reserva_GV42.TRAMO_VUELTA : Reserva_GV42.TRAMO_IDA;
+
+                for (int i = 0; i < _pasajeros.Count; i++)
                 {
-                    TipoAdicional = f.Tipo,
-                    Cantidad = f.Cantidad,
-                    CostoUnitario = f.CostoUnitario
-                });
+                    var asientoPasajero = new AsientoPasajero_GV42(_pasajeros[i].Dni.Text.Trim(), _asientos[t][i]) { Tramo = numeroTramo };
+                    // Valijas extra a nombre de este pasajero: son las que va a poder despachar en el check-in de ese tramo.
+                    if (i < _filasEquipaje[t].Count) asientoPasajero.EquipajeExtra = _filasEquipaje[t][i].Cantidad;
+                    borrador.AsientosPorPasajero.Add(asientoPasajero);
+                }
+
+                foreach (var f in _filasAdicionales[t].Where(f => f.Seleccionado))
+                {
+                    borrador.Adicionales.Add(new AdicionalReserva_GV42
+                    {
+                        TipoAdicional = f.Tipo,
+                        Tramo = numeroTramo,
+                        Cantidad = f.Cantidad,
+                        CostoUnitario = f.CostoUnitario
+                    });
+                }
             }
 
             _reservaGenerada = _bll.GenerarReserva(borrador);
@@ -763,12 +978,20 @@ namespace PROYECTO_ING_DE_SOFTWARE
         {
             try
             {
+                string clave = ClavePasoActual;
                 if (_pasoActual == 0) ValidarYAvanzarBusqueda();
-                else if (_pasoActual == PasoCliente()) ValidarYAvanzarCliente();
-                else if (_pasoActual == PasoPasajeros()) ValidarYAvanzarPasajeros();
-                else if (_pasoActual == PasoAsientos()) ValidarYAvanzarAsientos();
-                else if (_pasoActual == PasoAdicionales()) { ArmarResumen(); IrAPaso(_pasoActual + 1); }
-                else if (_pasoActual == PasoResumen()) ConfirmarReserva();
+                else if (clave == "vuelta") ValidarYAvanzarVuelta();
+                else if (clave == "cliente") ValidarYAvanzarCliente();
+                else if (clave == "pasajeros") ValidarYAvanzarPasajeros();
+                else if (EsPasoAsientos()) ValidarYAvanzarAsientos();
+                else if (EsPasoAdicionales())
+                {
+                    // Después de los adicionales de la ida vienen los asientos de la vuelta; después del
+                    // último tramo, el resumen.
+                    if (_clavesPaso[_pasoActual + 1] == "resumen") ArmarResumen();
+                    IrAPaso(_pasoActual + 1);
+                }
+                else if (clave == "resumen") ConfirmarReserva();
             }
             catch (NegocioException_GV42 ex)
             {
@@ -800,7 +1023,12 @@ namespace PROYECTO_ING_DE_SOFTWARE
         {
             dtRegreso.Enabled = cmbTipoViaje.SelectedIndex == 1;
             InvalidarBusqueda();
-            ActualizarTopesAdicionales(true);   // ida y vuelta = 2 tramos
+            // Ida y vuelta tiene más pasos (vuelo de regreso, asientos y adicionales de la vuelta).
+            if (!_refrescandoIdioma && _pasos != null && _pasoActual == 0)
+            {
+                ConfigurarPasos(TipoViajeElegido() == TipoViaje_GV42.IdaYVuelta);
+                MostrarPasoActual();
+            }
         }
 
         private void numPasajeros_ValueChanged(object sender, EventArgs e)
@@ -963,7 +1191,7 @@ namespace PROYECTO_ING_DE_SOFTWARE
 
         private void ctrlButacas_AsientoClickeado(object sender, Asiento_GV42 asiento)
         {
-            _asientoPorPasajero[_indicePasajeroActivo] = asiento;
+            AsientosTramo[_indicePasajeroActivo] = asiento;
             RefrescarButacas();
         }
 

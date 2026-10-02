@@ -41,20 +41,39 @@ namespace BLL
                 throw new NegocioException_GV42(IdiomaManager_GV42.T("neg.boleto.noPaga"));
 
             List<Boleto_GV42> boletos = _dalBoleto.ListarPorReserva(reserva.NumeroReserva);
+            // Un acompañante (no titular) solo ve su propio boleto.
+            string soloDni = _bllReserva.DniSiEsSoloPasajero(reserva);
+            if (soloDni != null)
+                boletos = boletos.Where(b => string.Equals(b.PasajeroDni, soloDni, StringComparison.OrdinalIgnoreCase)).ToList();
             if (boletos.Count == 0)
                 throw new NegocioException_GV42(IdiomaManager_GV42.T("neg.boleto.sinBoletos"));
 
-            Vuelo_GV42 v = reserva.Vuelo;
             int cantidad = Math.Max(1, reserva.CantidadPasajeros);
-            string servicios = TextoServicios(reserva.Adicionales);
+            // Tarifa de la reserva repartida entre los tramos según el precio de cada vuelo.
+            decimal precioIda = reserva.VueloClase.PrecioBase;
+            decimal precioVuelta = reserva.TieneVuelta ? reserva.VueloClaseVuelta.PrecioBase : 0m;
 
             var lista = new List<BoletoElectronico_GV42>();
-            int n = 0;
+            var numeroEnTramo = new Dictionary<int, int>();
             foreach (Boleto_GV42 b in boletos)
             {
-                n++;
+                // Un boleto por pasajero y por tramo: cada uno con el vuelo, asiento y servicios de su tramo.
+                int tramo = b.Tramo == Reserva_GV42.TRAMO_VUELTA && reserva.TieneVuelta ? Reserva_GV42.TRAMO_VUELTA : Reserva_GV42.TRAMO_IDA;
+                VueloClase_GV42 vc = reserva.VueloClaseDeTramo(tramo);
+                Vuelo_GV42 v = vc.Vuelo;
+                numeroEnTramo.TryGetValue(tramo, out int n);
+                numeroEnTramo[tramo] = ++n;
+
                 Asiento_GV42 asiento = reserva.AsientosPorPasajero?
-                    .FirstOrDefault(a => a.DniPasajero == b.PasajeroDni)?.Asiento;
+                    .FirstOrDefault(a => a.DniPasajero == b.PasajeroDni && a.Tramo == tramo)?.Asiento;
+                List<AdicionalReserva_GV42> adicionalesTramo = (reserva.Adicionales ?? new List<AdicionalReserva_GV42>())
+                    .Where(a => a.Tramo == tramo).ToList();
+                string servicios = TextoServicios(adicionalesTramo);
+
+                decimal proporcion = (precioIda + precioVuelta) > 0
+                    ? (tramo == Reserva_GV42.TRAMO_VUELTA ? precioVuelta : precioIda) / (precioIda + precioVuelta)
+                    : 1m;
+                decimal tarifa = Math.Round(reserva.ImporteBase / cantidad * proporcion, 2);
 
                 lista.Add(new BoletoElectronico_GV42
                 {
@@ -62,7 +81,9 @@ namespace BLL
                     NumeroReserva = reserva.NumeroReserva,
                     FechaEmision = b.FechaEmision,
                     NumeroPasajero = n,
-                    TotalPasajeros = boletos.Count,
+                    TotalPasajeros = boletos.Count(x => (x.Tramo == Reserva_GV42.TRAMO_VUELTA && reserva.TieneVuelta ? 2 : 1) == tramo),
+                    Tramo = tramo,
+                    EsIdaYVuelta = reserva.TieneVuelta,
                     PasajeroNombre = b.Pasajero?.Nombre,
                     PasajeroApellido = b.Pasajero?.Apellido,
                     PasajeroDni = b.PasajeroDni,
@@ -79,14 +100,14 @@ namespace BLL
                     HoraEmbarque = v.FechaHoraSalida.AddMinutes(-MINUTOS_INICIO_EMBARQUE),
                     CierreEmbarque = v.FechaHoraSalida.AddMinutes(-MINUTOS_CIERRE_EMBARQUE),
                     PuertaEmbarque = v.PuertaEmbarque,
-                    Clase = reserva.VueloClase.ClaseTexto,
+                    Clase = vc.ClaseTexto,
                     Asiento = asiento?.NumeroAsiento,
                     UbicacionAsiento = asiento?.Ubicacion,
-                    FranquiciaEquipajeKg = reserva.VueloClase.FranquiciaEquipajeKg,
+                    FranquiciaEquipajeKg = vc.FranquiciaEquipajeKg,
                     TipoViaje = reserva.TipoViaje.Texto(),
-                    TarifaPasajero = Math.Round(reserva.ImporteBase / cantidad, 2),
+                    TarifaPasajero = tarifa,
                     // Impuesto de la tarifa del pasajero (los adicionales y su impuesto se ven en el total de la reserva).
-                    ImpuestosPasajero = Math.Round(Math.Round(reserva.ImporteBase / cantidad, 2) * BLLReserva_GV42.TASA_IMPUESTOS, 2),
+                    ImpuestosPasajero = Math.Round(tarifa * BLLReserva_GV42.TASA_IMPUESTOS, 2),
                     TotalReserva = reserva.ImporteTotal,
                     ServiciosAdicionales = servicios,
                     FormaPago = reserva.Pago != null ? reserva.Pago.MedioPagoTexto : "-",
@@ -94,11 +115,11 @@ namespace BLL
                     CodigoBarras = CodigoDeBarras(b.NumeroBoleto, v.CodigoVuelo, asiento?.NumeroAsiento),
 
                     // Valores sin traducir: el diseño los vuelve a traducir al dibujar (cambio de idioma en caliente).
-                    ClaseValor = reserva.VueloClase.Clase,
+                    ClaseValor = vc.Clase,
                     TipoViajeValor = reserva.TipoViaje,
                     MedioPagoValor = reserva.Pago != null ? reserva.Pago.MedioPago : (MedioPago_GV42?)null,
                     EstadoValor = reserva.Estado,
-                    Adicionales = reserva.Adicionales
+                    Adicionales = adicionalesTramo
                 });
             }
             return lista;

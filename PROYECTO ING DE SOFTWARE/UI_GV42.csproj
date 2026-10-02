@@ -146,6 +146,12 @@
     <Compile Include="CheckIn\CtrlEtiquetaEquipaje_GV42.cs">
       <SubType>Component</SubType>
     </Compile>
+    <Compile Include="CheckIn\CtrlPesoValija_GV42.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="CheckIn\CtrlPesoValija_GV42.Designer.cs">
+      <DependentUpon>CtrlPesoValija_GV42.cs</DependentUpon>
+    </Compile>
     <Compile Include="CheckIn\FRMCheckIn_GV42.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -194,6 +200,12 @@
     </Compile>
     <Compile Include="Reservas\CtrlAdicional_GV42.Designer.cs">
       <DependentUpon>CtrlAdicional_GV42.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Reservas\CtrlEquipajePasajero_GV42.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Reservas\CtrlEquipajePasajero_GV42.Designer.cs">
+      <DependentUpon>CtrlEquipajePasajero_GV42.cs</DependentUpon>
     </Compile>
     <Compile Include="Reservas\CtrlVistaTarjeta_GV42.cs">
       <SubType>Component</SubType>

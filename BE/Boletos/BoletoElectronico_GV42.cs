@@ -39,6 +39,9 @@ namespace BE
         public string UbicacionAsiento { get; set; }
         public decimal FranquiciaEquipajeKg { get; set; }
         public string TipoViaje { get; set; }
+        // Tramo del viaje: 1 = ida, 2 = vuelta. EsIdaYVuelta indica si el boleto debe aclararlo.
+        public int Tramo { get; set; } = 1;
+        public bool EsIdaYVuelta { get; set; }
 
         // Importes del pasajero (la reserva se reparte en partes iguales entre sus pasajeros).
         public decimal TarifaPasajero { get; set; }

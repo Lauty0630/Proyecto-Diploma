@@ -727,3 +727,155 @@ BEGIN
     VALUES (4, N'Check-in: butacas preferenciales, equipaje extra en la franquicia y check-in online');
 END
 GO
+
+/* =====================================================================================
+   VERSIÓN 5 - Equipaje por valija
+   ===================================================================================== */
+
+/* ---------- 16) Peso de cada valija despachada ----------
+   Cada etiqueta corresponde a una valija y guarda su peso. Ninguna valija puede superar los 32 kg.
+   VueloClase.FranquiciaEquipajeKg pasa a ser el peso permitido por cada valija incluida en la clase. */
+IF COL_LENGTH('dbo.EtiquetaEquipaje', 'PesoKg') IS NULL
+    ALTER TABLE dbo.EtiquetaEquipaje ADD PesoKg DECIMAL(5,2) NULL
+        CONSTRAINT CK_EtiquetaEquipaje_PesoKg CHECK (PesoKg IS NULL OR (PesoKg > 0 AND PesoKg <= 32));
+GO
+
+IF NOT EXISTS (SELECT 1 FROM dbo.VersionBD_GV42 WHERE Version = 5)
+    INSERT INTO dbo.VersionBD_GV42 (Version, Descripcion)
+    VALUES (5, N'Equipaje por valija: peso de cada valija y tope de valijas según clase y equipaje extra');
+GO
+
+/* =====================================================================================
+   VERSIÓN 6 - Equipaje extra asignado a cada pasajero
+   ===================================================================================== */
+
+/* ---------- 17) ReservaPasajero.EquipajeExtra ----------
+   Cada valija extra se compra a nombre de un pasajero (antes era de toda la reserva y la usaba
+   el primero que despachaba). En el check-in cada pasajero despacha solo las suyas.
+   "Equipaje extra" deja de elegirse como cantidad suelta: el sistema arma el adicional de la
+   reserva sumando lo elegido para cada pasajero. */
+IF COL_LENGTH('dbo.ReservaPasajero', 'EquipajeExtra') IS NULL
+    ALTER TABLE dbo.ReservaPasajero ADD EquipajeExtra INT NOT NULL
+        CONSTRAINT DF_ReservaPasajero_EquipajeExtra DEFAULT (0)
+        CONSTRAINT CK_ReservaPasajero_EquipajeExtra CHECK (EquipajeExtra >= 0);
+GO
+
+IF NOT EXISTS (SELECT 1 FROM dbo.VersionBD_GV42 WHERE Version = 6)
+BEGIN
+    UPDATE dbo.TipoAdicional SET SeleccionManual = 0 WHERE Codigo = N'EQUIPAJE_EXTRA';
+
+    -- Reservas anteriores: el equipaje extra ya comprado (por tramo) se le asigna al titular si viaja
+    -- o, si no, al primer pasajero de la reserva.
+    ;WITH Compra AS (
+        SELECT RA.IdReserva,
+               CAST(CEILING(SUM(RA.Cantidad) / CASE WHEN R.IdTipoViaje = 2 THEN 2.0 ELSE 1.0 END) AS INT) AS Unidades
+        FROM dbo.ReservaAdicional RA
+        INNER JOIN dbo.TipoAdicional T ON T.Id = RA.IdTipoAdicional AND T.Codigo = N'EQUIPAJE_EXTRA'
+        INNER JOIN dbo.Reserva R ON R.Id = RA.IdReserva
+        GROUP BY RA.IdReserva, R.IdTipoViaje
+    ), Destino AS (
+        SELECT RP.IdReserva, RP.DniPasajero,
+               ROW_NUMBER() OVER (PARTITION BY RP.IdReserva
+                                  ORDER BY CASE WHEN RP.DniPasajero = R.DniCliente THEN 0 ELSE 1 END, RP.DniPasajero) AS Orden
+        FROM dbo.ReservaPasajero RP INNER JOIN dbo.Reserva R ON R.Id = RP.IdReserva
+    )
+    UPDATE RP SET EquipajeExtra = C.Unidades
+    FROM dbo.ReservaPasajero RP
+    INNER JOIN Destino D ON D.IdReserva = RP.IdReserva AND D.DniPasajero = RP.DniPasajero AND D.Orden = 1
+    INNER JOIN Compra C ON C.IdReserva = RP.IdReserva
+    WHERE RP.EquipajeExtra = 0;
+
+    INSERT INTO dbo.VersionBD_GV42 (Version, Descripcion)
+    VALUES (6, N'Equipaje extra asignado a cada pasajero de la reserva');
+END
+GO
+
+
+/* =====================================================================================
+   VERSIÓN 7 - Ida y vuelta con vuelo de regreso (una reserva, dos tramos)
+   ===================================================================================== */
+
+/* ---------- 18) Reserva: vuelo y clase de la vuelta ----------
+   Antes la vuelta era solo una fecha (no había vuelo de regreso, ni asiento, ni se cobraba).
+   Ahora la reserva de ida y vuelta guarda el vuelo de regreso: tramo 1 = ida (IdVuelo / IdClase),
+   tramo 2 = vuelta (IdVueloVuelta / IdClaseVuelta). Un solo número de reserva y un solo pago. */
+IF COL_LENGTH('dbo.Reserva', 'IdVueloVuelta') IS NULL
+    ALTER TABLE dbo.Reserva ADD IdVueloVuelta INT NULL, IdClaseVuelta INT NULL;
+GO
+
+IF OBJECT_ID('dbo.FK_Reserva_VueloClaseVuelta', 'F') IS NULL
+    ALTER TABLE dbo.Reserva ADD CONSTRAINT FK_Reserva_VueloClaseVuelta
+        FOREIGN KEY (IdVueloVuelta, IdClaseVuelta) REFERENCES dbo.VueloClase (IdVuelo, IdClase);
+IF OBJECT_ID('dbo.CK_Reserva_Vuelta', 'C') IS NULL
+    ALTER TABLE dbo.Reserva ADD CONSTRAINT CK_Reserva_Vuelta CHECK (
+        (IdVueloVuelta IS NULL AND IdClaseVuelta IS NULL)
+        OR (IdVueloVuelta IS NOT NULL AND IdClaseVuelta IS NOT NULL AND IdTipoViaje = 2 AND IdVueloVuelta <> IdVuelo));
+GO
+
+/* ---------- 19) Tramo en pasajeros, adicionales, boletos y check-in ----------
+   Cada pasajero tiene, por tramo, su asiento y su equipaje extra (ReservaPasajero), su boleto y su
+   check-in. Los servicios adicionales también se contratan por tramo. Lo existente queda como
+   tramo 1 (ida). El índice único UX_ReservaPasajero_Asiento sigue garantizando que una butaca
+   no se venda dos veces, sea para la ida de una reserva o para la vuelta de otra. */
+IF COL_LENGTH('dbo.ReservaPasajero', 'Tramo') IS NULL
+    ALTER TABLE dbo.ReservaPasajero ADD Tramo TINYINT NOT NULL
+        CONSTRAINT DF_ReservaPasajero_Tramo DEFAULT (1)
+        CONSTRAINT CK_ReservaPasajero_Tramo CHECK (Tramo IN (1, 2));
+IF COL_LENGTH('dbo.ReservaAdicional', 'Tramo') IS NULL
+    ALTER TABLE dbo.ReservaAdicional ADD Tramo TINYINT NOT NULL
+        CONSTRAINT DF_ReservaAdicional_Tramo DEFAULT (1)
+        CONSTRAINT CK_ReservaAdicional_Tramo CHECK (Tramo IN (1, 2));
+IF COL_LENGTH('dbo.Boleto', 'Tramo') IS NULL
+    ALTER TABLE dbo.Boleto ADD Tramo TINYINT NOT NULL
+        CONSTRAINT DF_Boleto_Tramo DEFAULT (1)
+        CONSTRAINT CK_Boleto_Tramo CHECK (Tramo IN (1, 2));
+IF COL_LENGTH('dbo.CheckIn', 'Tramo') IS NULL
+    ALTER TABLE dbo.CheckIn ADD Tramo TINYINT NOT NULL
+        CONSTRAINT DF_CheckIn_Tramo DEFAULT (1)
+        CONSTRAINT CK_CheckIn_Tramo CHECK (Tramo IN (1, 2));
+GO
+
+/* ---------- 20) Claves con el tramo ----------
+   La clave de ReservaPasajero pasa a ser (IdReserva, DniPasajero, Tramo). Para cambiarla hay que
+   soltar primero las claves foráneas y los únicos de Boleto y CheckIn que apuntaban a la clave vieja;
+   después se vuelven a crear incluyendo el tramo. */
+IF NOT EXISTS (SELECT 1
+               FROM sys.indexes i
+               INNER JOIN sys.index_columns ic ON ic.object_id = i.object_id AND ic.index_id = i.index_id
+               INNER JOIN sys.columns c ON c.object_id = ic.object_id AND c.column_id = ic.column_id
+               WHERE i.object_id = OBJECT_ID('dbo.ReservaPasajero') AND i.is_primary_key = 1 AND c.name = 'Tramo')
+BEGIN
+    IF OBJECT_ID('dbo.FK_Boleto_ReservaPasajero', 'F') IS NOT NULL
+        ALTER TABLE dbo.Boleto DROP CONSTRAINT FK_Boleto_ReservaPasajero;
+    IF OBJECT_ID('dbo.FK_CheckIn_ReservaPasajero', 'F') IS NOT NULL
+        ALTER TABLE dbo.CheckIn DROP CONSTRAINT FK_CheckIn_ReservaPasajero;
+    IF OBJECT_ID('dbo.UQ_Boleto_Pasajero', 'UQ') IS NOT NULL
+        ALTER TABLE dbo.Boleto DROP CONSTRAINT UQ_Boleto_Pasajero;
+    IF OBJECT_ID('dbo.UQ_CheckIn_Pasajero', 'UQ') IS NOT NULL
+        ALTER TABLE dbo.CheckIn DROP CONSTRAINT UQ_CheckIn_Pasajero;
+
+    IF OBJECT_ID('dbo.PK_ReservaPasajero', 'PK') IS NOT NULL
+        ALTER TABLE dbo.ReservaPasajero DROP CONSTRAINT PK_ReservaPasajero;
+    ALTER TABLE dbo.ReservaPasajero ADD CONSTRAINT PK_ReservaPasajero
+        PRIMARY KEY CLUSTERED (IdReserva, DniPasajero, Tramo);
+END
+GO
+
+IF OBJECT_ID('dbo.UQ_Boleto_Pasajero', 'UQ') IS NULL
+    ALTER TABLE dbo.Boleto ADD CONSTRAINT UQ_Boleto_Pasajero UNIQUE (IdReserva, DniPasajero, Tramo);
+IF OBJECT_ID('dbo.UQ_CheckIn_Pasajero', 'UQ') IS NULL
+    ALTER TABLE dbo.CheckIn ADD CONSTRAINT UQ_CheckIn_Pasajero UNIQUE (IdReserva, DniPasajero, Tramo);
+GO
+
+IF OBJECT_ID('dbo.FK_Boleto_ReservaPasajero', 'F') IS NULL
+    ALTER TABLE dbo.Boleto ADD CONSTRAINT FK_Boleto_ReservaPasajero
+        FOREIGN KEY (IdReserva, DniPasajero, Tramo) REFERENCES dbo.ReservaPasajero (IdReserva, DniPasajero, Tramo);
+IF OBJECT_ID('dbo.FK_CheckIn_ReservaPasajero', 'F') IS NULL
+    ALTER TABLE dbo.CheckIn ADD CONSTRAINT FK_CheckIn_ReservaPasajero
+        FOREIGN KEY (IdReserva, DniPasajero, Tramo) REFERENCES dbo.ReservaPasajero (IdReserva, DniPasajero, Tramo);
+GO
+
+IF NOT EXISTS (SELECT 1 FROM dbo.VersionBD_GV42 WHERE Version = 7)
+    INSERT INTO dbo.VersionBD_GV42 (Version, Descripcion)
+    VALUES (7, N'Ida y vuelta con vuelo de regreso: tramos en pasajeros, adicionales, boletos y check-in');
+GO

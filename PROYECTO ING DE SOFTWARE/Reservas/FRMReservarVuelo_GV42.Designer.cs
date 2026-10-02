@@ -32,6 +32,10 @@
             System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle2 = new System.Windows.Forms.DataGridViewCellStyle();
             System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle3 = new System.Windows.Forms.DataGridViewCellStyle();
             System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle4 = new System.Windows.Forms.DataGridViewCellStyle();
+            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle5 = new System.Windows.Forms.DataGridViewCellStyle();
+            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle6 = new System.Windows.Forms.DataGridViewCellStyle();
+            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle7 = new System.Windows.Forms.DataGridViewCellStyle();
+            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle8 = new System.Windows.Forms.DataGridViewCellStyle();
             this.pnlEncabezado = new PROYECTO_ING_DE_SOFTWARE.PanelEncabezado_GV42();
             this.lblTitulo = new System.Windows.Forms.Label();
             this.lblSubtitulo = new System.Windows.Forms.Label();
@@ -137,11 +141,28 @@
             this.btnIrAPagar = new PROYECTO_ING_DE_SOFTWARE.BotonModerno_GV42();
             this.btnCerrar = new PROYECTO_ING_DE_SOFTWARE.BotonModerno_GV42();
             this.pnlEncabezado.SuspendLayout();
+            this.lblChipVuelta = new System.Windows.Forms.Label();
+            this.pnlPasoVuelta = new PROYECTO_ING_DE_SOFTWARE.PanelTarjeta_GV42();
+            this.pnlTituloVuelta = new System.Windows.Forms.Panel();
+            this.lblTituloVuelta = new System.Windows.Forms.Label();
+            this.lblAyudaVuelta = new System.Windows.Forms.Label();
+            this.dgvVuelosVuelta = new PROYECTO_ING_DE_SOFTWARE.GrillaModerna_GV42();
+            this.colVueltaVuelo = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.colVueltaAerolinea = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.colVueltaOrigen = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.colVueltaDestino = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.colVueltaSalida = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.colVueltaLlegada = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.colVueltaClase = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.colVueltaPrecio = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.colVueltaDisponibles = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.pnlIndicador.SuspendLayout();
             this.flpPasos.SuspendLayout();
             this.pnlNavegacion.SuspendLayout();
             this.pnlContenido.SuspendLayout();
             this.pnlPasoBusqueda.SuspendLayout();
+            this.pnlPasoVuelta.SuspendLayout();
+            this.pnlTituloVuelta.SuspendLayout();
             this.tlpFiltros.SuspendLayout();
             this.pnlTituloVuelos.SuspendLayout();
             this.pnlPasoCliente.SuspendLayout();
@@ -158,6 +179,7 @@
             this.tlpResultado.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.numPasajeros)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.dgvVuelos)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.dgvVuelosVuelta)).BeginInit();
             this.SuspendLayout();
             // 
             // pnlEncabezado
@@ -208,6 +230,7 @@
             // flpPasos
             // 
             this.flpPasos.Controls.Add(this.lblChipBusqueda);
+            this.flpPasos.Controls.Add(this.lblChipVuelta);
             this.flpPasos.Controls.Add(this.lblChipCliente);
             this.flpPasos.Controls.Add(this.lblChipPasajeros);
             this.flpPasos.Controls.Add(this.lblChipAsientos);
@@ -228,10 +251,24 @@
             this.lblChipBusqueda.Location = new System.Drawing.Point(0, 0);
             this.lblChipBusqueda.Margin = new System.Windows.Forms.Padding(0, 0, 8, 0);
             this.lblChipBusqueda.Name = "lblChipBusqueda";
-            this.lblChipBusqueda.Size = new System.Drawing.Size(136, 32);
+            this.lblChipBusqueda.Size = new System.Drawing.Size(132, 32);
             this.lblChipBusqueda.TabIndex = 0;
             this.lblChipBusqueda.Text = "1  Vuelo";
             this.lblChipBusqueda.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
+            // 
+            // lblChipVuelta
+            // 
+            this.lblChipVuelta.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(240)))), ((int)(((byte)(247)))), ((int)(((byte)(255)))));
+            this.lblChipVuelta.Font = new System.Drawing.Font("Segoe UI Semibold", 9.75F, System.Drawing.FontStyle.Bold);
+            this.lblChipVuelta.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(96)))), ((int)(((byte)(125)))), ((int)(((byte)(139)))));
+            this.lblChipVuelta.Location = new System.Drawing.Point(144, 0);
+            this.lblChipVuelta.Margin = new System.Windows.Forms.Padding(0, 0, 8, 0);
+            this.lblChipVuelta.Name = "lblChipVuelta";
+            this.lblChipVuelta.Size = new System.Drawing.Size(132, 32);
+            this.lblChipVuelta.TabIndex = 6;
+            this.lblChipVuelta.Text = "2  Vuelo vuelta";
+            this.lblChipVuelta.Visible = false;
+            this.lblChipVuelta.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
             // 
             // lblChipCliente
             // 
@@ -241,7 +278,7 @@
             this.lblChipCliente.Location = new System.Drawing.Point(144, 0);
             this.lblChipCliente.Margin = new System.Windows.Forms.Padding(0, 0, 8, 0);
             this.lblChipCliente.Name = "lblChipCliente";
-            this.lblChipCliente.Size = new System.Drawing.Size(136, 32);
+            this.lblChipCliente.Size = new System.Drawing.Size(132, 32);
             this.lblChipCliente.TabIndex = 1;
             this.lblChipCliente.Text = "2  Cliente";
             this.lblChipCliente.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
@@ -254,7 +291,7 @@
             this.lblChipPasajeros.Location = new System.Drawing.Point(288, 0);
             this.lblChipPasajeros.Margin = new System.Windows.Forms.Padding(0, 0, 8, 0);
             this.lblChipPasajeros.Name = "lblChipPasajeros";
-            this.lblChipPasajeros.Size = new System.Drawing.Size(136, 32);
+            this.lblChipPasajeros.Size = new System.Drawing.Size(132, 32);
             this.lblChipPasajeros.TabIndex = 2;
             this.lblChipPasajeros.Text = "3  Pasajeros";
             this.lblChipPasajeros.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
@@ -267,7 +304,7 @@
             this.lblChipAsientos.Location = new System.Drawing.Point(432, 0);
             this.lblChipAsientos.Margin = new System.Windows.Forms.Padding(0, 0, 8, 0);
             this.lblChipAsientos.Name = "lblChipAsientos";
-            this.lblChipAsientos.Size = new System.Drawing.Size(136, 32);
+            this.lblChipAsientos.Size = new System.Drawing.Size(132, 32);
             this.lblChipAsientos.TabIndex = 3;
             this.lblChipAsientos.Text = "4  Asientos";
             this.lblChipAsientos.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
@@ -280,7 +317,7 @@
             this.lblChipAdicionales.Location = new System.Drawing.Point(576, 0);
             this.lblChipAdicionales.Margin = new System.Windows.Forms.Padding(0, 0, 8, 0);
             this.lblChipAdicionales.Name = "lblChipAdicionales";
-            this.lblChipAdicionales.Size = new System.Drawing.Size(136, 32);
+            this.lblChipAdicionales.Size = new System.Drawing.Size(132, 32);
             this.lblChipAdicionales.TabIndex = 4;
             this.lblChipAdicionales.Text = "5  Adicionales";
             this.lblChipAdicionales.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
@@ -293,7 +330,7 @@
             this.lblChipResumen.Location = new System.Drawing.Point(720, 0);
             this.lblChipResumen.Margin = new System.Windows.Forms.Padding(0, 0, 8, 0);
             this.lblChipResumen.Name = "lblChipResumen";
-            this.lblChipResumen.Size = new System.Drawing.Size(136, 32);
+            this.lblChipResumen.Size = new System.Drawing.Size(132, 32);
             this.lblChipResumen.TabIndex = 5;
             this.lblChipResumen.Text = "6  Confirmar";
             this.lblChipResumen.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
@@ -346,6 +383,7 @@
             this.pnlContenido.Controls.Add(this.pnlPasoAsientos);
             this.pnlContenido.Controls.Add(this.pnlPasoPasajeros);
             this.pnlContenido.Controls.Add(this.pnlPasoCliente);
+            this.pnlContenido.Controls.Add(this.pnlPasoVuelta);
             this.pnlContenido.Controls.Add(this.pnlPasoBusqueda);
             this.pnlContenido.Dock = System.Windows.Forms.DockStyle.Fill;
             this.pnlContenido.Location = new System.Drawing.Point(0, 132);
@@ -755,6 +793,160 @@
             this.colDisponibles.MinimumWidth = 45;
             this.colDisponibles.Name = "colDisponibles";
             this.colDisponibles.ReadOnly = true;
+            // 
+            // pnlPasoVuelta
+            // 
+            this.pnlPasoVuelta.Controls.Add(this.dgvVuelosVuelta);
+            this.pnlPasoVuelta.Controls.Add(this.pnlTituloVuelta);
+            this.pnlPasoVuelta.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.pnlPasoVuelta.Location = new System.Drawing.Point(24, 16);
+            this.pnlPasoVuelta.Name = "pnlPasoVuelta";
+            this.pnlPasoVuelta.Padding = new System.Windows.Forms.Padding(24, 18, 24, 18);
+            this.pnlPasoVuelta.Size = new System.Drawing.Size(992, 420);
+            this.pnlPasoVuelta.TabIndex = 7;
+            this.pnlPasoVuelta.Visible = false;
+            // 
+            // pnlTituloVuelta
+            // 
+            this.pnlTituloVuelta.Controls.Add(this.lblAyudaVuelta);
+            this.pnlTituloVuelta.Controls.Add(this.lblTituloVuelta);
+            this.pnlTituloVuelta.Dock = System.Windows.Forms.DockStyle.Top;
+            this.pnlTituloVuelta.Location = new System.Drawing.Point(24, 18);
+            this.pnlTituloVuelta.Name = "pnlTituloVuelta";
+            this.pnlTituloVuelta.Size = new System.Drawing.Size(944, 44);
+            this.pnlTituloVuelta.TabIndex = 0;
+            // 
+            // lblTituloVuelta
+            // 
+            this.lblTituloVuelta.AutoSize = true;
+            this.lblTituloVuelta.Font = new System.Drawing.Font("Segoe UI Semibold", 11.25F, System.Drawing.FontStyle.Bold);
+            this.lblTituloVuelta.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(13)))), ((int)(((byte)(71)))), ((int)(((byte)(161)))));
+            this.lblTituloVuelta.Location = new System.Drawing.Point(0, 10);
+            this.lblTituloVuelta.Name = "lblTituloVuelta";
+            this.lblTituloVuelta.Size = new System.Drawing.Size(146, 20);
+            this.lblTituloVuelta.TabIndex = 0;
+            this.lblTituloVuelta.Text = "Vuelos de regreso disponibles";
+            // 
+            // lblAyudaVuelta
+            // 
+            this.lblAyudaVuelta.Anchor = ((System.Windows.Forms.AnchorStyles)(System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right));
+            this.lblAyudaVuelta.Font = new System.Drawing.Font("Segoe UI", 8.75F, System.Drawing.FontStyle.Italic);
+            this.lblAyudaVuelta.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(96)))), ((int)(((byte)(125)))), ((int)(((byte)(139)))));
+            this.lblAyudaVuelta.Location = new System.Drawing.Point(424, 12);
+            this.lblAyudaVuelta.Name = "lblAyudaVuelta";
+            this.lblAyudaVuelta.Size = new System.Drawing.Size(520, 20);
+            this.lblAyudaVuelta.TabIndex = 1;
+            this.lblAyudaVuelta.Text = "Elegí el vuelo de regreso y tocá Siguiente.";
+            this.lblAyudaVuelta.TextAlign = System.Drawing.ContentAlignment.MiddleRight;
+            // 
+            // dgvVuelosVuelta
+            // 
+            this.dgvVuelosVuelta.Columns.AddRange(new System.Windows.Forms.DataGridViewColumn[] {
+            this.colVueltaVuelo,
+            this.colVueltaAerolinea,
+            this.colVueltaOrigen,
+            this.colVueltaDestino,
+            this.colVueltaSalida,
+            this.colVueltaLlegada,
+            this.colVueltaClase,
+            this.colVueltaPrecio,
+            this.colVueltaDisponibles});
+            this.dgvVuelosVuelta.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.dgvVuelosVuelta.Location = new System.Drawing.Point(24, 62);
+            this.dgvVuelosVuelta.Name = "dgvVuelosVuelta";
+            this.dgvVuelosVuelta.ScrollBars = System.Windows.Forms.ScrollBars.Both;
+            this.dgvVuelosVuelta.Size = new System.Drawing.Size(944, 340);
+            this.dgvVuelosVuelta.TabIndex = 1;
+            // 
+            // colVueltaVuelo
+            // 
+            this.colVueltaVuelo.AutoSizeMode = System.Windows.Forms.DataGridViewAutoSizeColumnMode.AllCells;
+            this.colVueltaVuelo.DataPropertyName = "CodigoVuelo";
+            this.colVueltaVuelo.HeaderText = "Vuelo";
+            this.colVueltaVuelo.MinimumWidth = 45;
+            this.colVueltaVuelo.Name = "colVueltaVuelo";
+            this.colVueltaVuelo.ReadOnly = true;
+            // 
+            // colVueltaAerolinea
+            // 
+            this.colVueltaAerolinea.AutoSizeMode = System.Windows.Forms.DataGridViewAutoSizeColumnMode.AllCells;
+            this.colVueltaAerolinea.DataPropertyName = "AerolineaNombre";
+            this.colVueltaAerolinea.HeaderText = "Aerolínea";
+            this.colVueltaAerolinea.MinimumWidth = 45;
+            this.colVueltaAerolinea.Name = "colVueltaAerolinea";
+            this.colVueltaAerolinea.ReadOnly = true;
+            // 
+            // colVueltaOrigen
+            // 
+            this.colVueltaOrigen.AutoSizeMode = System.Windows.Forms.DataGridViewAutoSizeColumnMode.Fill;
+            this.colVueltaOrigen.DataPropertyName = "OrigenDescripcion";
+            this.colVueltaOrigen.HeaderText = "Origen";
+            this.colVueltaOrigen.MinimumWidth = 120;
+            this.colVueltaOrigen.Name = "colVueltaOrigen";
+            this.colVueltaOrigen.ReadOnly = true;
+            // 
+            // colVueltaDestino
+            // 
+            this.colVueltaDestino.AutoSizeMode = System.Windows.Forms.DataGridViewAutoSizeColumnMode.Fill;
+            this.colVueltaDestino.DataPropertyName = "DestinoDescripcion";
+            this.colVueltaDestino.HeaderText = "Destino";
+            this.colVueltaDestino.MinimumWidth = 120;
+            this.colVueltaDestino.Name = "colVueltaDestino";
+            this.colVueltaDestino.ReadOnly = true;
+            // 
+            // colVueltaSalida
+            // 
+            dataGridViewCellStyle5.Format = "dd/MM HH:mm";
+            this.colVueltaSalida.AutoSizeMode = System.Windows.Forms.DataGridViewAutoSizeColumnMode.AllCells;
+            this.colVueltaSalida.DataPropertyName = "FechaHoraSalida";
+            this.colVueltaSalida.DefaultCellStyle = dataGridViewCellStyle5;
+            this.colVueltaSalida.HeaderText = "Salida";
+            this.colVueltaSalida.MinimumWidth = 45;
+            this.colVueltaSalida.Name = "colVueltaSalida";
+            this.colVueltaSalida.ReadOnly = true;
+            // 
+            // colVueltaLlegada
+            // 
+            dataGridViewCellStyle6.Format = "HH:mm";
+            this.colVueltaLlegada.AutoSizeMode = System.Windows.Forms.DataGridViewAutoSizeColumnMode.AllCells;
+            this.colVueltaLlegada.DataPropertyName = "FechaHoraLlegada";
+            this.colVueltaLlegada.DefaultCellStyle = dataGridViewCellStyle6;
+            this.colVueltaLlegada.HeaderText = "Llegada";
+            this.colVueltaLlegada.MinimumWidth = 45;
+            this.colVueltaLlegada.Name = "colVueltaLlegada";
+            this.colVueltaLlegada.ReadOnly = true;
+            // 
+            // colVueltaClase
+            // 
+            this.colVueltaClase.AutoSizeMode = System.Windows.Forms.DataGridViewAutoSizeColumnMode.AllCells;
+            this.colVueltaClase.DataPropertyName = "ClaseTexto";
+            this.colVueltaClase.HeaderText = "Clase";
+            this.colVueltaClase.MinimumWidth = 45;
+            this.colVueltaClase.Name = "colVueltaClase";
+            this.colVueltaClase.ReadOnly = true;
+            // 
+            // colVueltaPrecio
+            // 
+            dataGridViewCellStyle7.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleRight;
+            dataGridViewCellStyle7.Format = "C2";
+            this.colVueltaPrecio.AutoSizeMode = System.Windows.Forms.DataGridViewAutoSizeColumnMode.AllCells;
+            this.colVueltaPrecio.DataPropertyName = "PrecioBase";
+            this.colVueltaPrecio.DefaultCellStyle = dataGridViewCellStyle7;
+            this.colVueltaPrecio.HeaderText = "Precio";
+            this.colVueltaPrecio.MinimumWidth = 110;
+            this.colVueltaPrecio.Name = "colVueltaPrecio";
+            this.colVueltaPrecio.ReadOnly = true;
+            // 
+            // colVueltaDisponibles
+            // 
+            dataGridViewCellStyle8.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleCenter;
+            this.colVueltaDisponibles.AutoSizeMode = System.Windows.Forms.DataGridViewAutoSizeColumnMode.AllCells;
+            this.colVueltaDisponibles.DataPropertyName = "AsientosDisponibles";
+            this.colVueltaDisponibles.DefaultCellStyle = dataGridViewCellStyle8;
+            this.colVueltaDisponibles.HeaderText = "Disp.";
+            this.colVueltaDisponibles.MinimumWidth = 45;
+            this.colVueltaDisponibles.Name = "colVueltaDisponibles";
+            this.colVueltaDisponibles.ReadOnly = true;
             // 
             // pnlPasoCliente
             // 
@@ -1585,6 +1777,10 @@
             this.tlpFiltros.PerformLayout();
             this.pnlPasoBusqueda.ResumeLayout(false);
             this.pnlPasoBusqueda.PerformLayout();
+            this.pnlTituloVuelta.ResumeLayout(false);
+            this.pnlTituloVuelta.PerformLayout();
+            this.pnlPasoVuelta.ResumeLayout(false);
+            this.pnlPasoVuelta.PerformLayout();
             this.pnlContenido.ResumeLayout(false);
             this.pnlContenido.PerformLayout();
             this.pnlNavegacion.ResumeLayout(false);
@@ -1597,6 +1793,7 @@
             this.pnlEncabezado.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)(this.numPasajeros)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.dgvVuelos)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.dgvVuelosVuelta)).EndInit();
             this.ResumeLayout(false);
 
         }
@@ -1609,6 +1806,21 @@
         private System.Windows.Forms.Panel pnlIndicador;
         private System.Windows.Forms.FlowLayoutPanel flpPasos;
         private System.Windows.Forms.Label lblChipBusqueda;
+        private System.Windows.Forms.Label lblChipVuelta;
+        private PROYECTO_ING_DE_SOFTWARE.PanelTarjeta_GV42 pnlPasoVuelta;
+        private System.Windows.Forms.Panel pnlTituloVuelta;
+        private System.Windows.Forms.Label lblTituloVuelta;
+        private System.Windows.Forms.Label lblAyudaVuelta;
+        private PROYECTO_ING_DE_SOFTWARE.GrillaModerna_GV42 dgvVuelosVuelta;
+        private System.Windows.Forms.DataGridViewTextBoxColumn colVueltaVuelo;
+        private System.Windows.Forms.DataGridViewTextBoxColumn colVueltaAerolinea;
+        private System.Windows.Forms.DataGridViewTextBoxColumn colVueltaOrigen;
+        private System.Windows.Forms.DataGridViewTextBoxColumn colVueltaDestino;
+        private System.Windows.Forms.DataGridViewTextBoxColumn colVueltaSalida;
+        private System.Windows.Forms.DataGridViewTextBoxColumn colVueltaLlegada;
+        private System.Windows.Forms.DataGridViewTextBoxColumn colVueltaClase;
+        private System.Windows.Forms.DataGridViewTextBoxColumn colVueltaPrecio;
+        private System.Windows.Forms.DataGridViewTextBoxColumn colVueltaDisponibles;
         private System.Windows.Forms.Label lblChipCliente;
         private System.Windows.Forms.Label lblChipPasajeros;
         private System.Windows.Forms.Label lblChipAsientos;

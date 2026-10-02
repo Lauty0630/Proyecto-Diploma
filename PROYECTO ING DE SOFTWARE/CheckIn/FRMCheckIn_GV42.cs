@@ -113,8 +113,8 @@ namespace PROYECTO_ING_DE_SOFTWARE
         {
             dgvPasajeros.AutoGenerateColumns = false;
 
-            numBultos.Maximum = BLLCheckIn_GV42.MAX_BULTOS;
-            numPeso.Maximum = BLLCheckIn_GV42.MAX_PESO_KG;
+            // El máximo real (valijas permitidas) se fija al conocer la franquicia del pasajero.
+            numBultos.Maximum = 0;
 
             txtNumeroOperacion.MaxLength = Validaciones_GV42.MAX_NUMERO_TRANSACCION;
             // Dígitos más un espacio cada 4 (el número se muestra agrupado: "4509 9535 6623 3704").
@@ -151,6 +151,7 @@ namespace PROYECTO_ING_DE_SOFTWARE
                 btnVerTarjeta.Text = IdiomaManager_GV42.T("checkin.verTarjeta");
                 colDni.HeaderText = IdiomaManager_GV42.T("checkin.col.dni");
                 colPasajero.HeaderText = IdiomaManager_GV42.T("checkin.col.pasajero");
+                colTramo.HeaderText = IdiomaManager_GV42.T("checkin.col.tramo");
                 colAsiento.HeaderText = IdiomaManager_GV42.T("checkin.col.asiento");
                 colEstado.HeaderText = IdiomaManager_GV42.T("checkin.col.estado");
                 colCanal.HeaderText = IdiomaManager_GV42.T("checkin.col.canal");
@@ -183,6 +184,7 @@ namespace PROYECTO_ING_DE_SOFTWARE
                 lblAyudaEquipaje.Text = IdiomaManager_GV42.T(_esMostrador ? "checkin.equipaje.ayuda" : "checkin.equipaje.ayudaOnline");
                 lblBultos.Text = IdiomaManager_GV42.T("checkin.bultos");
                 lblPeso.Text = IdiomaManager_GV42.T("checkin.peso");
+                TraducirValijas();
                 lblSecFranquicia.Text = IdiomaManager_GV42.T("checkin.sec.franquicia");
                 lblFranqClase.Text = IdiomaManager_GV42.T("checkin.franqClase");
                 lblFranqExtra.Text = IdiomaManager_GV42.T("checkin.franqExtra");
@@ -345,7 +347,7 @@ namespace PROYECTO_ING_DE_SOFTWARE
             try
             {
                 numBultos.Value = 0;
-                numPeso.Value = 0;
+                flpPesos.Controls.Clear();
                 cmbMedioCobro.SelectedIndex = -1;
             }
             finally { _refrescando = false; }
@@ -408,9 +410,11 @@ namespace PROYECTO_ING_DE_SOFTWARE
             dgvPasajeros.DataSource = null;
             dgvPasajeros.DataSource = _filas;
             dgvPasajeros.ClearSelection();
+            // Ida y vuelta: cada pasajero aparece una vez por tramo (cada vuelo tiene su check-in).
+            colTramo.Visible = _filas.Any(f => f.CheckIn.ReservaConVuelta);
 
             // Que el usuario elija al pasajero (salvo que hubiera uno elegido antes o haya uno solo).
-            if (anterior != null) SeleccionarPorDni(anterior.Pasajero.DNI);
+            if (anterior != null) SeleccionarPorDni(anterior.Pasajero.DNI, anterior.Tramo);
             else if (_filas.Count == 1) dgvPasajeros.Rows[0].Selected = true;
             ActualizarBotonesPasajero();
         }
@@ -421,6 +425,8 @@ namespace PROYECTO_ING_DE_SOFTWARE
             {
                 Dni = ci.Pasajero != null ? ci.Pasajero.DNI : string.Empty,
                 Pasajero = ci.Pasajero != null ? ci.Pasajero.NombreCompleto : string.Empty,
+                Tramo = IdiomaManager_GV42.T(ci.Tramo == Reserva_GV42.TRAMO_VUELTA ? "tramo.vuelta" : "tramo.ida")
+                        + (ci.Vuelo != null ? " · " + ci.Vuelo.CodigoVuelo : string.Empty),
                 Asiento = ci.Asiento != null ? ci.Asiento.NumeroAsiento : "—",
                 Estado = ci.EstadoTexto,
                 Canal = ci.Estado == EstadoCheckIn_GV42.Realizado ? ci.CanalTexto : "—",
@@ -443,11 +449,21 @@ namespace PROYECTO_ING_DE_SOFTWARE
             return fila;
         }
 
-        private bool SeleccionarPorDni(string dni)
+        // tramo 0 = cualquiera: en ida y vuelta se prefiere el tramo que tiene el check-in disponible.
+        private bool SeleccionarPorDni(string dni, int tramo = 0)
         {
+            if (tramo == 0)
+            {
+                FilaPasajero preferida = _filas.FirstOrDefault(f => f.Dni == dni && f.Tipo == TipoSituacion.Disponible)
+                                         ?? _filas.FirstOrDefault(f => f.Dni == dni);
+                if (preferida == null) return false;
+                tramo = preferida.CheckIn.Tramo;
+            }
+
             foreach (DataGridViewRow r in dgvPasajeros.Rows)
             {
-                if (((FilaPasajero)r.DataBoundItem).Dni == dni)
+                var fila = (FilaPasajero)r.DataBoundItem;
+                if (fila.Dni == dni && fila.CheckIn.Tramo == tramo)
                 {
                     r.Selected = true;
                     dgvPasajeros.CurrentCell = r.Cells[0];
@@ -486,7 +502,7 @@ namespace PROYECTO_ING_DE_SOFTWARE
                 throw new NegocioException_GV42(IdiomaManager_GV42.T(_pasajeros == null ? "checkin.buscarPrimero" : "checkin.elegiPasajero"));
 
             // La BLL valida permisos, estado de la reserva, check-in ya hecho y ventana horaria.
-            CheckIn_GV42 ci = _bll.IniciarCheckIn(sel.NumeroReserva, sel.Pasajero.DNI);
+            CheckIn_GV42 ci = _bll.IniciarCheckIn(sel.NumeroReserva, sel.Pasajero.DNI, sel.Tramo);
             _ci = ci;
             _despachoPosterior = false;
             ReiniciarPasajero();
@@ -517,7 +533,9 @@ namespace PROYECTO_ING_DE_SOFTWARE
             lblEstadoReservaValor.Text = _ci.EstadoReservaTexto;
             lblEstadoReservaValor.ForeColor = _ci.EstadoReserva == EstadoReserva_GV42.Confirmada ? Tema_GV42.Exito : Tema_GV42.Error;
             lblEstadoCheckInValor.Text = _ci.EstadoTexto;
-            lblTipoViajeValor.Text = _ci.TipoViaje.Texto();
+            lblTipoViajeValor.Text = _ci.TipoViaje.Texto() + (_ci.ReservaConVuelta
+                ? " · " + IdiomaManager_GV42.T(_ci.Tramo == Reserva_GV42.TRAMO_VUELTA ? "tramo.vuelta" : "tramo.ida")
+                : string.Empty);
 
             lblVueloValor.Text = v.CodigoVuelo + (v.Aerolinea != null ? " · " + v.Aerolinea.Nombre : string.Empty);
             lblRutaValor.Text = _ci.VueloClase.OrigenDescripcion + " -> " + _ci.VueloClase.DestinoDescripcion;
@@ -572,6 +590,17 @@ namespace PROYECTO_ING_DE_SOFTWARE
                 }
             }
 
+            // No se pueden despachar más valijas que las incluidas en la clase más el equipaje extra comprado.
+            _refrescando = true;
+            try
+            {
+                int permitidas = _franquicia != null ? _franquicia.BultosPermitidos : 0;
+                if (numBultos.Value > permitidas) numBultos.Value = permitidas;
+                numBultos.Maximum = permitidas;
+                SincronizarValijas();
+            }
+            finally { _refrescando = false; }
+
             MostrarAvisoMostrador();
             MostrarFranquicia();
             if (_esMostrador) Recalcular();
@@ -587,7 +616,8 @@ namespace PROYECTO_ING_DE_SOFTWARE
             string texto = IdiomaManager_GV42.T("checkin.avisoMostrador", BLLCheckIn_GV42.MINUTOS_CIERRE_CHECKIN);
             if (_franquicia != null)
                 texto += Environment.NewLine + Environment.NewLine + IdiomaManager_GV42.T("checkin.avisoFranquicia",
-                    Kg(_franquicia.FranquiciaClaseKg), _franquicia.UnidadesExtraAplicables, Kg(_franquicia.FranquiciaMaximaKg));
+                    _franquicia.BultosPermitidos, _franquicia.BultosIncluidos, Kg(_franquicia.KgPorBultoIncluido),
+                    _franquicia.UnidadesExtraAplicables, Kg(_franquicia.KgPorUnidadExtra), Kg(_franquicia.PesoMaximoPorBulto));
             lblAvisoMostrador.Text = texto;
         }
 
@@ -598,11 +628,13 @@ namespace PROYECTO_ING_DE_SOFTWARE
             if (f == null)
             {
                 lblFranqClaseValor.Text = lblFranqExtraValor.Text = lblFranqMaximaValor.Text = "—";
+                lblBultosPermitidos.Text = string.Empty;
                 return;
             }
-            lblFranqClaseValor.Text = Kg(f.FranquiciaClaseKg);
+            lblFranqClaseValor.Text = IdiomaManager_GV42.T("checkin.unidadesExtra", f.BultosIncluidos, Kg(f.KgPorBultoIncluido));
             lblFranqExtraValor.Text = IdiomaManager_GV42.T("checkin.unidadesExtra", f.UnidadesExtraAplicables, Kg(f.KgPorUnidadExtra));
-            lblFranqMaximaValor.Text = Kg(f.FranquiciaMaximaKg);
+            lblFranqMaximaValor.Text = IdiomaManager_GV42.T("checkin.valijasPermitidasValor", f.BultosPermitidos, Kg(f.PesoMaximoPorBulto));
+            lblBultosPermitidos.Text = IdiomaManager_GV42.T("checkin.dePermitidas", f.BultosPermitidos);
         }
 
         // Cálculo del exceso en vivo (la BLL no guarda nada hasta despachar).
@@ -613,11 +645,12 @@ namespace PROYECTO_ING_DE_SOFTWARE
 
             _cargo = null;
             _errorCalculo = null;
-            if (numPeso.Value > 0)
+            List<decimal> pesos = PesosIngresados();
+            if (pesos.Count > 0 && pesos.All(p => p > 0))
             {
                 try
                 {
-                    _cargo = _bll.CalcularCargoExceso(_ci.Id, numPeso.Value);
+                    _cargo = _bll.CalcularCargoExceso(_ci.Id, pesos);
                 }
                 catch (NegocioException_GV42 ex)
                 {
@@ -641,7 +674,7 @@ namespace PROYECTO_ING_DE_SOFTWARE
             Equipaje_GV42 registrado = _ci != null ? _ci.Equipaje : null;
             bool hayRegistro = registrado != null;
             numBultos.Enabled = !hayRegistro;
-            numPeso.Enabled = !hayRegistro;
+            flpPesos.Enabled = !hayRegistro;
             lblEquipajeRegistrado.Visible = hayRegistro;
             lblSeccionCobro.Text = IdiomaManager_GV42.T(hayRegistro ? "checkin.sec.despachado" : "checkin.sec.cobro");
 
@@ -729,8 +762,9 @@ namespace PROYECTO_ING_DE_SOFTWARE
             if (!_esMostrador || _ci.Equipaje != null) return true;
 
             int bultos = (int)numBultos.Value;
-            decimal peso = numPeso.Value;
-            if (bultos == 0 && peso == 0)
+            List<decimal> pesos = PesosIngresados();
+            decimal peso = pesos.Sum();
+            if (bultos == 0)
             {
                 if (_despachoPosterior)
                 {
@@ -739,13 +773,27 @@ namespace PROYECTO_ING_DE_SOFTWARE
                 }
                 return true;   // el pasajero no despacha equipaje
             }
-            if (bultos == 0) { Tema_GV42.MostrarError(numBultos, IdiomaManager_GV42.T("checkin.errBultos")); return false; }
-            if (peso <= 0) { Tema_GV42.MostrarError(numPeso, IdiomaManager_GV42.T("checkin.errPeso")); return false; }
+            // Cada valija con su peso y ninguna por encima del máximo (la BLL lo vuelve a controlar).
+            var valijas = flpPesos.Controls.OfType<CtrlPesoValija_GV42>().ToList();
+            for (int i = 0; i < valijas.Count; i++)
+            {
+                if (valijas[i].Peso <= 0)
+                {
+                    Tema_GV42.MostrarError(valijas[i].CampoPeso, IdiomaManager_GV42.T("checkin.errPeso", i + 1));
+                    return false;
+                }
+                if (_franquicia != null && valijas[i].Peso > _franquicia.PesoMaximoPorBulto)
+                {
+                    Tema_GV42.MostrarError(valijas[i].CampoPeso, IdiomaManager_GV42.T("neg.checkin.pesoBultoMaximo",
+                        i + 1, valijas[i].Peso.ToString("0.##"), _franquicia.PesoMaximoPorBulto.ToString("0.##")));
+                    return false;
+                }
+            }
 
             CargoExcesoEquipaje_GV42 cargo;
             try
             {
-                cargo = _bll.CalcularCargoExceso(_ci.Id, peso);
+                cargo = _bll.CalcularCargoExceso(_ci.Id, pesos);
             }
             catch (NegocioException_GV42 ex)
             {
@@ -793,7 +841,7 @@ namespace PROYECTO_ING_DE_SOFTWARE
             Equipaje_GV42 registrado;
             try
             {
-                registrado = _bll.RegistrarEquipaje(_ci.Id, bultos, peso, medio, numeroOperacion, tarjeta);
+                registrado = _bll.RegistrarEquipaje(_ci.Id, pesos, medio, numeroOperacion, tarjeta);
             }
             catch (NegocioException_GV42 ex)
             {
@@ -812,6 +860,37 @@ namespace PROYECTO_ING_DE_SOFTWARE
             LimpiarDatosDePago();
             MostrarCargo();
             return true;
+        }
+
+        // Una caja de peso por valija: la cantidad sigue al valor de "Valijas a despachar".
+        private void SincronizarValijas()
+        {
+            int cantidad = (int)numBultos.Value;
+            while (flpPesos.Controls.Count > cantidad)
+            {
+                Control ultimo = flpPesos.Controls[flpPesos.Controls.Count - 1];
+                flpPesos.Controls.Remove(ultimo);
+                ultimo.Dispose();
+            }
+            while (flpPesos.Controls.Count < cantidad)
+            {
+                var valija = new CtrlPesoValija_GV42();
+                valija.PesoCambiado += (s, e) => Recalcular();
+                flpPesos.Controls.Add(valija);
+            }
+            TraducirValijas();
+        }
+
+        private void TraducirValijas()
+        {
+            int n = 1;
+            foreach (CtrlPesoValija_GV42 v in flpPesos.Controls.OfType<CtrlPesoValija_GV42>())
+                v.Titulo = IdiomaManager_GV42.T("checkin.valijaN", n++);
+        }
+
+        private List<decimal> PesosIngresados()
+        {
+            return flpPesos.Controls.OfType<CtrlPesoValija_GV42>().Select(v => v.Peso).ToList();
         }
 
         // Despacho posterior terminado: se muestran las etiquetas y se vuelve a la lista de pasajeros.
@@ -1275,7 +1354,7 @@ namespace PROYECTO_ING_DE_SOFTWARE
             if (sel == null) return;
             try
             {
-                CheckIn_GV42 realizado = _bll.BuscarRealizado(sel.NumeroReserva, sel.Pasajero.DNI);
+                CheckIn_GV42 realizado = _bll.BuscarRealizado(sel.NumeroReserva, sel.Pasajero.DNI, sel.Tramo);
                 FRMTarjetaEmbarque_GV42.Mostrar(this, realizado);
             }
             catch (NegocioException_GV42 ex)
@@ -1316,6 +1395,7 @@ namespace PROYECTO_ING_DE_SOFTWARE
 
         private void datosEquipaje_ValueChanged(object sender, EventArgs e)
         {
+            if (sender == numBultos && !_refrescando) SincronizarValijas();
             Recalcular();
         }
 
@@ -1401,6 +1481,7 @@ namespace PROYECTO_ING_DE_SOFTWARE
         {
             public string Dni { get; set; }
             public string Pasajero { get; set; }
+            public string Tramo { get; set; }
             public string Asiento { get; set; }
             public string Estado { get; set; }
             public string Canal { get; set; }

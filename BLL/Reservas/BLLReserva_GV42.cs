@@ -83,6 +83,13 @@ namespace BLL
             return _dalTipoAdicional.ListarActivos().Where(t => t.SeleccionManual).ToList();
         }
 
+        // Servicio "Equipaje extra" del catálogo (precio y tope de valijas por pasajero). Se elige por
+        // pasajero: cada valija extra queda a nombre de quien la va a despachar. Null si no está configurado.
+        public TipoAdicional_GV42 ObtenerServicioEquipajeExtra()
+        {
+            return _dalTipoAdicional.ListarActivos().FirstOrDefault(t => t.EsEquipajeExtra);
+        }
+
         // Servicio "Asiento preferencial" del catálogo (precio del recargo). Null si no está configurado.
         public TipoAdicional_GV42 ObtenerServicioAsientoPreferencial()
         {
@@ -99,6 +106,32 @@ namespace BLL
         {
             ValidarCriterio(criterio);
             return _dalVuelo.BuscarDisponibles(criterio);
+        }
+
+        // Ida y vuelta: vuelos de regreso para el vuelo de ida elegido. Es la misma ruta invertida, en la
+        // fecha de regreso, y tiene que salir después de que llegue la ida. La clase puede ser otra
+        // (como en los sitios de venta de pasajes, cada tramo tiene su propia tarifa).
+        public List<VueloClase_GV42> BuscarVuelosDeRegreso(VueloClase_GV42 ida, DateTime fechaRegreso,
+                                                           int cantidadPasajeros, ClaseVuelo_GV42? clase)
+        {
+            if (ida == null || ida.Vuelo == null || ida.Vuelo.Origen == null || ida.Vuelo.Destino == null)
+                throw new NegocioException_GV42(IdiomaManager_GV42.T("neg.reserva.seleccioneVueloClase"));
+            if (fechaRegreso.Date < ida.Vuelo.FechaHoraLlegada.Date)
+                throw new NegocioException_GV42(IdiomaManager_GV42.T("neg.reserva.regresoAnterior"));
+
+            var criterio = new CriterioBusquedaVuelo_GV42
+            {
+                IdOrigen = ida.Vuelo.Destino.Id,
+                IdDestino = ida.Vuelo.Origen.Id,
+                FechaSalida = fechaRegreso.Date,
+                CantidadPasajeros = cantidadPasajeros,
+                TipoViaje = TipoViaje_GV42.Ida,
+                Clase = clase
+            };
+            ValidarCriterio(criterio);
+            return _dalVuelo.BuscarDisponibles(criterio)
+                            .Where(v => v.Vuelo.FechaHoraSalida > ida.Vuelo.FechaHoraLlegada)
+                            .ToList();
         }
 
         private void ValidarCriterio(CriterioBusquedaVuelo_GV42 c)
@@ -291,6 +324,27 @@ namespace BLL
                    string.Equals((r.Cliente.DNI ?? string.Empty).Trim(), DniSesion(), StringComparison.OrdinalIgnoreCase);
         }
 
+        private static bool EsPasajeroDeLaSesion(Reserva_GV42 r)
+        {
+            string dni = DniSesion();
+            return r != null && r.Pasajeros != null && dni.Length > 0 &&
+                   r.Pasajeros.Any(p => p != null && string.Equals((p.DNI ?? string.Empty).Trim(), dni, StringComparison.OrdinalIgnoreCase));
+        }
+
+        // true si el usuario logueado es el titular (quien sacó la reserva). Un acompañante la ve en
+        // "Mis reservas", puede ver su boleto y hacer su check-in, pero no pagarla ni cancelarla.
+        public bool EsTitularEnSesion(Reserva_GV42 r) { return EsDeLaSesion(r); }
+
+        // DNI del usuario si en esta reserva es solo un pasajero (no el titular ni un empleado que ve
+        // todas las reservas): en ese caso solo se le muestra SU boleto. Null en los demás casos.
+        public string DniSiEsSoloPasajero(Reserva_GV42 r)
+        {
+            var p = PatentesActuales();
+            bool veAjenas = p.Contains("Reservas.Consultar") || p.Contains("Pagos.Registrar") || p.Contains("Reservas.Cancelar");
+            if (veAjenas || EsDeLaSesion(r) || !EsPasajeroDeLaSesion(r)) return null;
+            return DniSesion();
+        }
+
         // Reservar para terceros: la pantalla incluye buscar/registrar al cliente (vendedor).
         public bool PuedeGenerarParaTerceros() { return PatentesActuales().Contains("Reservas.Generar"); }
 
@@ -318,8 +372,9 @@ namespace BLL
 
         // ---- Pasos 8 a 10: generar la reserva en estado "Pendiente de Pago" ----
 
-        // 'borrador' debe traer: Cliente, VueloClase (con Vuelo.Id y Clase), TipoViaje, FechaRegreso (si es
-        // ida y vuelta), Pasajeros y Adicionales (opcional). Importes, estado y vendedor los completa esta clase.
+        // 'borrador' debe traer: Cliente, VueloClase (con Vuelo.Id y Clase), TipoViaje, VueloClaseVuelta (si es
+        // ida y vuelta), Pasajeros, AsientosPorPasajero (uno por pasajero y por tramo) y Adicionales (opcional,
+        // con su tramo). Importes, fecha de regreso, estado y vendedor los completa esta clase.
         // Asientos libres de una clase de un vuelo, para pintar la grilla de selección estilo cine.
         public List<AsientoDisponibilidad_GV42> ObtenerMapaAsientos(int idVuelo, ClaseVuelo_GV42 clase)
         {
@@ -383,6 +438,25 @@ namespace BLL
             }
 
             ValidarPasajerosParaReserva(borrador.Pasajeros);
+
+            // Tramos del viaje: 1 = ida; 2 = vuelta (solo en ida y vuelta, con su propio vuelo).
+            bool idaYVuelta = borrador.TipoViaje == TipoViaje_GV42.IdaYVuelta;
+            if (idaYVuelta && (borrador.VueloClaseVuelta == null || borrador.VueloClaseVuelta.Vuelo == null || borrador.VueloClaseVuelta.Vuelo.Id <= 0))
+                throw new NegocioException_GV42(IdiomaManager_GV42.T("neg.reserva.faltaVueloVuelta"));
+            if (!idaYVuelta) borrador.VueloClaseVuelta = null;
+            int tramos = idaYVuelta ? 2 : 1;
+
+            if (borrador.AsientosPorPasajero == null) borrador.AsientosPorPasajero = new List<AsientoPasajero_GV42>();
+            if (borrador.Adicionales == null) borrador.Adicionales = new List<AdicionalReserva_GV42>();
+            borrador.AsientosPorPasajero.RemoveAll(a => a == null);
+            foreach (AsientoPasajero_GV42 a in borrador.AsientosPorPasajero)
+                a.Tramo = a.Tramo == Reserva_GV42.TRAMO_VUELTA ? Reserva_GV42.TRAMO_VUELTA : Reserva_GV42.TRAMO_IDA;
+            foreach (AdicionalReserva_GV42 a in borrador.Adicionales.Where(a => a != null))
+                a.Tramo = a.Tramo == Reserva_GV42.TRAMO_VUELTA ? Reserva_GV42.TRAMO_VUELTA : Reserva_GV42.TRAMO_IDA;
+            if (!idaYVuelta && (borrador.AsientosPorPasajero.Any(a => a.Tramo != Reserva_GV42.TRAMO_IDA)
+                             || borrador.Adicionales.Any(a => a != null && a.Tramo != Reserva_GV42.TRAMO_IDA)))
+                throw new NegocioException_GV42(IdiomaManager_GV42.T("neg.reserva.tramoSinVuelta"));
+
             // Los servicios automáticos (recargo por butaca preferencial) los calcula el sistema: se
             // descarta lo que haya mandado la pantalla para ese tipo.
             if (borrador.Adicionales != null)
@@ -390,7 +464,8 @@ namespace BLL
                 var automaticos = new HashSet<int>(_dalTipoAdicional.ListarActivos().Where(t => !t.SeleccionManual).Select(t => t.Id));
                 borrador.Adicionales.RemoveAll(a => a == null || (a.TipoAdicional != null && automaticos.Contains(a.TipoAdicional.Id)));
             }
-            ValidarAdicionales(borrador.Adicionales, canal, borrador.CantidadPasajeros, borrador.TipoViaje);
+            for (int tramo = 1; tramo <= tramos; tramo++)
+                ValidarAdicionales(borrador.Adicionales.Where(a => a.Tramo == tramo).ToList(), canal, borrador.CantidadPasajeros);
 
             // El precio y la disponibilidad se toman siempre de la base, no de lo que traiga la pantalla.
             VueloClase_GV42 vc = _dalVuelo.BuscarVueloClase(borrador.VueloClase.Vuelo.Id, borrador.VueloClase.Clase);
@@ -401,26 +476,44 @@ namespace BLL
             if (vc.AsientosDisponibles < borrador.CantidadPasajeros)
                 throw new NegocioException_GV42(IdiomaManager_GV42.T("neg.reserva.quedanAsientos", vc.AsientosDisponibles));
 
-            ValidarAsientos(borrador, vc);
-            AgregarRecargoPreferencial(borrador);
-
-            if (borrador.TipoViaje == TipoViaje_GV42.IdaYVuelta)
+            // Vuelo de regreso: también se toma de la base. Tiene que ser la misma ruta invertida y salir
+            // después de que llegue la ida.
+            VueloClase_GV42 vcVuelta = null;
+            if (idaYVuelta)
             {
-                if (!borrador.FechaRegreso.HasValue)
-                    throw new NegocioException_GV42(IdiomaManager_GV42.T("neg.reserva.faltaRegreso"));
-                if (borrador.FechaRegreso.Value.Date < vc.Vuelo.FechaHoraSalida.Date)
-                    throw new NegocioException_GV42(IdiomaManager_GV42.T("neg.reserva.regresoAnterior"));
+                vcVuelta = _dalVuelo.BuscarVueloClase(borrador.VueloClaseVuelta.Vuelo.Id, borrador.VueloClaseVuelta.Clase);
+                if (vcVuelta == null)
+                    throw new NegocioException_GV42(IdiomaManager_GV42.T("neg.reserva.claseNoOfrecida"));
+                if (vcVuelta.Vuelo.Id == vc.Vuelo.Id
+                    || vcVuelta.Vuelo.Origen.Id != vc.Vuelo.Destino.Id || vcVuelta.Vuelo.Destino.Id != vc.Vuelo.Origen.Id)
+                    throw new NegocioException_GV42(IdiomaManager_GV42.T("neg.reserva.vueltaRutaInvalida"));
+                if (vcVuelta.Vuelo.FechaHoraSalida <= vc.Vuelo.FechaHoraLlegada)
+                    throw new NegocioException_GV42(IdiomaManager_GV42.T("neg.reserva.vueltaAntesDeLlegar"));
+                if (vcVuelta.AsientosDisponibles < borrador.CantidadPasajeros)
+                    throw new NegocioException_GV42(IdiomaManager_GV42.T("neg.reserva.vueltaSinCupo", vcVuelta.AsientosDisponibles));
+                borrador.FechaRegreso = vcVuelta.Vuelo.FechaHoraSalida.Date;
             }
             else
             {
                 borrador.FechaRegreso = null;
+            }
+            borrador.VueloClaseVuelta = vcVuelta;
+
+            // Asientos, recargo por butaca preferencial y equipaje extra: por tramo (son vuelos distintos).
+            for (int tramo = 1; tramo <= tramos; tramo++)
+            {
+                ValidarAsientos(borrador, tramo == Reserva_GV42.TRAMO_VUELTA ? vcVuelta : vc, tramo);
+                AgregarRecargoPreferencial(borrador, tramo);
+                AgregarEquipajeExtra(borrador, tramo);
             }
 
             borrador.VueloClase = vc;
             borrador.LoginVendedor = login;
             borrador.Estado = EstadoReserva_GV42.PendienteDePago;
 
-            borrador.ImporteBase = Math.Round(vc.PrecioBase * borrador.CantidadPasajeros, 2);
+            // Tarifa: la de la ida más la de la vuelta (cada tramo con el precio de su vuelo y clase).
+            decimal tarifaPorPasajero = vc.PrecioBase + (vcVuelta != null ? vcVuelta.PrecioBase : 0m);
+            borrador.ImporteBase = Math.Round(tarifaPorPasajero * borrador.CantidadPasajeros, 2);
             borrador.SubtotalAdicionales = Math.Round(borrador.Adicionales.Sum(a => a.Subtotal), 2);
             borrador.Impuestos = Math.Round((borrador.ImporteBase + borrador.SubtotalAdicionales) * TASA_IMPUESTOS, 2);
             borrador.ImporteTotal = borrador.ImporteBase + borrador.SubtotalAdicionales + borrador.Impuestos;
@@ -430,7 +523,8 @@ namespace BLL
 
             string asientosTexto = string.Join(", ", creada.AsientosPorPasajero.Select(a => a.Asiento.NumeroAsiento));
             BLLNegocioUtil_GV42.Auditar(BLLNegocioUtil_GV42.MODULO_RESERVAS, "Reserva generada",
-                creada.NumeroReserva + " - vuelo " + vc.CodigoVuelo + " - canal " + canal.ToString() +
+                creada.NumeroReserva + " - vuelo " + vc.CodigoVuelo +
+                (vcVuelta != null ? " - regreso " + vcVuelta.CodigoVuelo : "") + " - canal " + canal.ToString() +
                 " - total " + BLLNegocioUtil_GV42.Dinero(creada.ImporteTotal), "Media");
 
             if (asientosTexto.Length > 0)
@@ -443,9 +537,10 @@ namespace BLL
         // Selección de asiento estilo cine: obligatoria, un asiento por pasajero, de la clase reservada,
         // sin repetir entre sí. La disponibilidad final la garantiza el índice único de la base
         // (dos personas no pueden quedarse con el mismo asiento aunque reserven al mismo tiempo).
-        private void ValidarAsientos(Reserva_GV42 borrador, VueloClase_GV42 vc)
+        // Se valida por tramo: los asientos de la ida contra el vuelo de ida y los de la vuelta contra el de regreso.
+        private void ValidarAsientos(Reserva_GV42 borrador, VueloClase_GV42 vc, int tramo)
         {
-            List<AsientoPasajero_GV42> asientos = borrador.AsientosPorPasajero ?? new List<AsientoPasajero_GV42>();
+            List<AsientoPasajero_GV42> asientos = borrador.AsientosPorPasajero.Where(a => a.Tramo == tramo).ToList();
 
             if (asientos.Count != borrador.Pasajeros.Count)
                 throw new NegocioException_GV42(IdiomaManager_GV42.T("neg.reserva.asientoPorPasajero"));
@@ -480,10 +575,10 @@ namespace BLL
 
         // Una unidad del servicio "Asiento preferencial" por cada butaca preferencial elegida, con el
         // precio del catálogo (igual para vendedor y cliente). Si no hay butacas preferenciales, nada.
-        private void AgregarRecargoPreferencial(Reserva_GV42 borrador)
+        private void AgregarRecargoPreferencial(Reserva_GV42 borrador, int tramo)
         {
-            int cantidad = (borrador.AsientosPorPasajero ?? new List<AsientoPasajero_GV42>())
-                .Count(a => a.Asiento != null && a.Asiento.EsPreferencial);
+            int cantidad = borrador.AsientosPorPasajero
+                .Count(a => a.Tramo == tramo && a.Asiento != null && a.Asiento.EsPreferencial);
             if (cantidad == 0) return;
 
             TipoAdicional_GV42 servicio = ObtenerServicioAsientoPreferencial();
@@ -494,7 +589,37 @@ namespace BLL
             borrador.Adicionales.Add(new AdicionalReserva_GV42
             {
                 TipoAdicional = servicio,
+                Tramo = tramo,
                 Cantidad = cantidad,
+                CostoUnitario = Math.Round(servicio.PrecioUnitario, 2)
+            });
+        }
+
+        // Equipaje extra: cada pasajero tiene sus valijas en cada tramo (AsientoPasajero.EquipajeExtra). El
+        // adicional del tramo es la suma de las valijas de sus pasajeros, al precio del catálogo.
+        private void AgregarEquipajeExtra(Reserva_GV42 borrador, int tramo)
+        {
+            List<AsientoPasajero_GV42> porPasajero = borrador.AsientosPorPasajero.Where(a => a.Tramo == tramo).ToList();
+            if (porPasajero.Any(a => a.EquipajeExtra < 0))
+                throw new NegocioException_GV42(IdiomaManager_GV42.T("neg.reserva.equipajeNegativo"));
+
+            int total = porPasajero.Sum(a => a.EquipajeExtra);
+            if (total == 0) return;
+
+            TipoAdicional_GV42 servicio = ObtenerServicioEquipajeExtra();
+            if (servicio == null || servicio.PrecioUnitario <= 0)
+                throw new NegocioException_GV42(IdiomaManager_GV42.T("neg.reserva.equipajeSinPrecio"));
+
+            int maximo = Math.Max(1, servicio.MaxPorPasajero);
+            AsientoPasajero_GV42 excedido = porPasajero.FirstOrDefault(a => a.EquipajeExtra > maximo);
+            if (excedido != null)
+                throw new NegocioException_GV42(IdiomaManager_GV42.T("neg.reserva.equipajeMaximo", excedido.DniPasajero, maximo));
+
+            borrador.Adicionales.Add(new AdicionalReserva_GV42
+            {
+                TipoAdicional = servicio,
+                Tramo = tramo,
+                Cantidad = total,
                 CostoUnitario = Math.Round(servicio.PrecioUnitario, 2)
             });
         }
@@ -531,19 +656,20 @@ namespace BLL
         // El tipo tiene que existir y estar activo, sin repetir. El precio sale del catálogo
         // (TipoAdicional.PrecioUnitario): el cliente autogestionado no puede cambiarlo (antes podía
         // cargar cualquier costo, incluso $0); el vendedor puede ajustarlo, pero debe ser mayor a 0.
-        // Tope de un servicio adicional para la reserva: lo que permite cada pasajero por tramo
-        // (TipoAdicional.MaxPorPasajero) x cantidad de pasajeros x tramos (ida = 1, ida y vuelta = 2).
-        // Ej.: 1 pasajero de ida -> como máximo 1 comida especial (antes se podían pedir 20).
-        public int MaximoAdicional(TipoAdicional_GV42 tipo, int cantidadPasajeros, TipoViaje_GV42 tipoViaje)
+        // Tope de un servicio adicional EN UN TRAMO: lo que permite cada pasajero
+        // (TipoAdicional.MaxPorPasajero) x cantidad de pasajeros. En ida y vuelta los servicios se eligen
+        // por separado para la ida y para la vuelta, cada tramo con este mismo tope.
+        // Ej.: 1 pasajero -> como máximo 1 comida especial por tramo (antes se podían pedir 20).
+        public int MaximoAdicional(TipoAdicional_GV42 tipo, int cantidadPasajeros)
         {
             if (tipo == null || cantidadPasajeros <= 0) return 0;
-            int tramos = tipoViaje == TipoViaje_GV42.IdaYVuelta ? 2 : 1;
             int porPasajero = Math.Max(1, tipo.MaxPorPasajero);
-            return Math.Min(MAX_CANTIDAD_ADICIONAL, porPasajero * cantidadPasajeros * tramos);
+            return Math.Min(MAX_CANTIDAD_ADICIONAL, porPasajero * cantidadPasajeros);
         }
 
+        // Valida los servicios de UN tramo.
         private void ValidarAdicionales(List<AdicionalReserva_GV42> adicionales, CanalVenta_GV42 canal,
-                                        int cantidadPasajeros, TipoViaje_GV42 tipoViaje)
+                                        int cantidadPasajeros)
         {
             if (adicionales == null) return;
 
@@ -561,10 +687,9 @@ namespace BLL
                 string nombre = BLLNegocioUtil_GV42.NombreAdicional(tipo.Nombre);
                 if (a.Cantidad < 1)
                     throw new NegocioException_GV42(IdiomaManager_GV42.T("neg.adicional.cantidadMinima", nombre));
-                int maximo = MaximoAdicional(tipo, cantidadPasajeros, tipoViaje);
+                int maximo = MaximoAdicional(tipo, cantidadPasajeros);
                 if (a.Cantidad > maximo)
-                    throw new NegocioException_GV42(IdiomaManager_GV42.T(
-                        tipoViaje == TipoViaje_GV42.IdaYVuelta ? "neg.adicional.maximoIdaVuelta" : "neg.adicional.maximo",
+                    throw new NegocioException_GV42(IdiomaManager_GV42.T("neg.adicional.maximo",
                         cantidadPasajeros, maximo, nombre, Math.Max(1, tipo.MaxPorPasajero)));
 
                 if (canal == CanalVenta_GV42.Autogestion)
@@ -598,7 +723,8 @@ namespace BLL
             // Quien solo tiene permisos "propios" no puede ver reservas de otras personas.
             var p = PatentesActuales();
             bool veAjenas = p.Contains("Reservas.Consultar") || p.Contains("Pagos.Registrar") || p.Contains("Reservas.Cancelar");
-            if (reserva != null && !veAjenas && !EsDeLaSesion(reserva))
+            // El titular o cualquiera de sus pasajeros puede verla (pagar y cancelar, solo el titular).
+            if (reserva != null && !veAjenas && !EsDeLaSesion(reserva) && !EsPasajeroDeLaSesion(reserva))
                 throw new NegocioException_GV42(IdiomaManager_GV42.T("neg.reserva.noEsTuya"));
             return reserva;
         }
@@ -608,7 +734,8 @@ namespace BLL
         {
             if (!PatentesActuales().Contains("Reservas.ConsultarPropia"))
                 throw new NegocioException_GV42(IdiomaManager_GV42.T("neg.consulta.sinPermisoPropias"));
-            return _dalReserva.ListarPorCliente(DniSesion());
+            // Incluye las reservas en las que la persona viaja como pasajero aunque las haya sacado otro.
+            return _dalReserva.ListarPorPersona(DniSesion());
         }
 
         // Consulta del vendedor: sin texto trae las últimas reservas; con texto filtra por
@@ -630,7 +757,11 @@ namespace BLL
             if (reserva.Estado != EstadoReserva_GV42.Confirmada)
                 throw new NegocioException_GV42(IdiomaManager_GV42.T("neg.boletos.noConfirmada"));
 
-            return _dalBoleto.ListarPorReserva(reserva.NumeroReserva);
+            List<Boleto_GV42> boletos = _dalBoleto.ListarPorReserva(reserva.NumeroReserva);
+            string soloDni = DniSiEsSoloPasajero(reserva);
+            if (soloDni != null)
+                boletos = boletos.Where(b => string.Equals(b.PasajeroDni, soloDni, StringComparison.OrdinalIgnoreCase)).ToList();
+            return boletos;
         }
 
         #endregion

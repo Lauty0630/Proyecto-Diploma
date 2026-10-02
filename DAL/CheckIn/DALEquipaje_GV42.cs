@@ -26,22 +26,10 @@ namespace DAL
 
         // Guarda el equipaje, sus etiquetas y (si corresponde) el cargo por exceso con su cobro,
         // todo en una sola transacción.
-        // 'idReserva' y 'unidadesExtraCompradas' controlan, dentro de la misma transacción, que entre todos
-        // los pasajeros de la reserva no se usen más unidades de equipaje extra que las compradas.
-        public Equipaje_GV42 Registrar(Equipaje_GV42 e, int idReserva, int unidadesExtraCompradas)
+        public Equipaje_GV42 Registrar(Equipaje_GV42 e)
         {
             return _acceso.EjecutarEnTransaccion(tx =>
             {
-                if (e.UnidadesExtra > 0)
-                {
-                    object usadasObj = _acceso.leerEscalar(tx,
-                        "SELECT ISNULL(SUM(E.UnidadesExtra), 0) FROM Equipaje E WITH (UPDLOCK, HOLDLOCK) " +
-                        "INNER JOIN CheckIn CI ON CI.Id = E.IdCheckIn WHERE CI.IdReserva = @IdReserva",
-                        new[] { new SqlParameter("@IdReserva", idReserva) });
-                    if (Convert.ToInt32(usadasObj) + e.UnidadesExtra > unidadesExtraCompradas)
-                        throw new NegocioException_GV42(Servicios.IdiomaManager_GV42.T("neg.checkin.extraYaUsado"));
-                }
-
                 object idObj = _acceso.leerEscalar(tx,
                     "INSERT INTO Equipaje (IdCheckIn, CantidadBultos, PesoTotalKg, FranquiciaKg, UnidadesExtra) " +
                     "VALUES (@IdCheckIn, @Bultos, @Peso, @Franquicia, @Extra); " +
@@ -55,13 +43,15 @@ namespace DAL
                     });
                 e.Id = Convert.ToInt32(idObj);
 
-                foreach (string codigo in e.Etiquetas)
+                for (int i = 0; i < e.Etiquetas.Count; i++)
                 {
+                    object peso = i < e.PesosKg.Count && e.PesosKg[i] > 0 ? (object)e.PesosKg[i] : DBNull.Value;
                     _acceso.escribir(tx,
-                        "INSERT INTO EtiquetaEquipaje (IdEquipaje, CodigoEquipaje) VALUES (@IdEquipaje, @Codigo)",
+                        "INSERT INTO EtiquetaEquipaje (IdEquipaje, CodigoEquipaje, PesoKg) VALUES (@IdEquipaje, @Codigo, @Peso)",
                         new[] {
                             new SqlParameter("@IdEquipaje", e.Id),
-                            new SqlParameter("@Codigo",     codigo)
+                            new SqlParameter("@Codigo",     e.Etiquetas[i]),
+                            new SqlParameter("@Peso",       peso)
                         });
                 }
 
@@ -90,16 +80,6 @@ namespace DAL
             });
         }
 
-        // Unidades de equipaje extra que ya usaron los otros pasajeros de la reserva.
-        public int UnidadesExtraUsadas(int idReserva, int idCheckInExcluido)
-        {
-            object r = _acceso.leerEscalar(
-                "SELECT ISNULL(SUM(E.UnidadesExtra), 0) FROM Equipaje E " +
-                "INNER JOIN CheckIn CI ON CI.Id = E.IdCheckIn WHERE CI.IdReserva = @IdReserva AND CI.Id <> @IdCheckIn",
-                new[] { new SqlParameter("@IdReserva", idReserva), new SqlParameter("@IdCheckIn", idCheckInExcluido) });
-            return r == null || r == DBNull.Value ? 0 : Convert.ToInt32(r);
-        }
-
         // Devuelve null si el pasajero no despachó equipaje.
         public Equipaje_GV42 BuscarPorCheckIn(int idCheckIn)
         {
@@ -120,10 +100,13 @@ namespace DAL
             };
 
             DataTable etiquetas = _acceso.leer(
-                "SELECT CodigoEquipaje FROM EtiquetaEquipaje WHERE IdEquipaje = @Id ORDER BY Id",
+                "SELECT CodigoEquipaje, PesoKg FROM EtiquetaEquipaje WHERE IdEquipaje = @Id ORDER BY Id",
                 new[] { new SqlParameter("@Id", e.Id) });
             foreach (DataRow er in etiquetas.Rows)
+            {
                 e.Etiquetas.Add(DALUtil_GV42.Str(er, "CodigoEquipaje"));
+                e.PesosKg.Add(er["PesoKg"] == DBNull.Value ? 0m : Convert.ToDecimal(er["PesoKg"]));
+            }
 
             DataTable cargo = _acceso.leer(
                 "SELECT KilosExceso, CostoPorKilo, ImporteCargo, IdMedioPago, NumeroTransaccion, FechaHoraCobro " +

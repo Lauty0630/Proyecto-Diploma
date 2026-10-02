@@ -14,7 +14,12 @@ namespace BE
 
         // Quien contrata la reserva. Es una fila de Pasajero (misma tabla que los que viajan).
         public Pasajero_GV42 Cliente { get; set; }
+        // Vuelo y clase de la ida (tramo 1).
         public VueloClase_GV42 VueloClase { get; set; }
+
+        // Vuelo y clase de la vuelta (tramo 2). Null si el viaje es solo de ida (o en reservas de ida y
+        // vuelta anteriores a esta versión, que solo guardaban la fecha de regreso).
+        public VueloClase_GV42 VueloClaseVuelta { get; set; }
         public TipoViaje_GV42 TipoViaje { get; set; }
         public DateTime? FechaRegreso { get; set; }
 
@@ -44,6 +49,18 @@ namespace BE
         public ClaseVuelo_GV42 Clase { get { return VueloClase != null ? VueloClase.Clase : ClaseVuelo_GV42.Economica; } }
         public int CantidadPasajeros { get { return Pasajeros != null ? Pasajeros.Count : 0; } }
         public string EstadoTexto { get { return Estado.Texto(); } }
+
+        public const int TRAMO_IDA = 1;
+        public const int TRAMO_VUELTA = 2;
+
+        public bool TieneVuelta { get { return VueloClaseVuelta != null && VueloClaseVuelta.Vuelo != null; } }
+        public int CantidadTramos { get { return TieneVuelta ? 2 : 1; } }
+
+        // Vuelo y clase del tramo indicado (1 = ida, 2 = vuelta). Null si la reserva no tiene ese tramo.
+        public VueloClase_GV42 VueloClaseDeTramo(int tramo)
+        {
+            return tramo == TRAMO_VUELTA ? VueloClaseVuelta : VueloClase;
+        }
 
         #endregion
     }

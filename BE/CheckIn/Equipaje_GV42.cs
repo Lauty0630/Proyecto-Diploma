@@ -20,6 +20,9 @@ namespace BE
         // Un código por bulto despachado.
         public List<string> Etiquetas { get; set; } = new List<string>();
 
+        // Peso de cada valija, en el mismo orden que las etiquetas (0 en despachos anteriores a la v5).
+        public List<decimal> PesosKg { get; set; } = new List<decimal>();
+
         // Null cuando el peso no supera la franquicia.
         public CargoExcesoEquipaje_GV42 CargoExceso { get; set; }
 

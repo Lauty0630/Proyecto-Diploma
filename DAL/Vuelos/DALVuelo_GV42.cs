@@ -85,6 +85,17 @@ namespace DAL
             return dt.Rows.Count == 0 ? null : DALUtil_GV42.MapearVueloClase(dt.Rows[0]);
         }
 
+        // Igual que BuscarVueloClase pero sin excluir vuelos dados de baja: se usa para mostrar el vuelo
+        // de regreso de una reserva ya hecha.
+        public VueloClase_GV42 BuscarVueloClaseSinFiltro(int idVuelo, ClaseVuelo_GV42 clase)
+        {
+            DataTable dt = _acceso.leer(SELECT_BASE + " WHERE V.Id = @IdVuelo AND VC.IdClase = @IdClase", new[] {
+                new SqlParameter("@IdVuelo", idVuelo),
+                new SqlParameter("@IdClase", (int)clase)
+            });
+            return dt.Rows.Count == 0 ? null : DALUtil_GV42.MapearVueloClase(dt.Rows[0]);
+        }
+
         // Todos los vuelos, incluidos los dados de baja (para la pantalla de gestión).
         public List<Vuelo_GV42> ListarTodos()
         {
@@ -143,7 +154,7 @@ namespace DAL
         // Reservas del vuelo que todavía no están canceladas.
         public int ContarReservasVigentes(int idVuelo)
         {
-            object r = _acceso.leerEscalar("SELECT COUNT(1) FROM Reserva WHERE IdVuelo = @Id AND IdEstadoReserva <> @Cancelada",
+            object r = _acceso.leerEscalar("SELECT COUNT(1) FROM Reserva WHERE (IdVuelo = @Id OR IdVueloVuelta = @Id) AND IdEstadoReserva <> @Cancelada",
                 new[] { new SqlParameter("@Id", idVuelo), new SqlParameter("@Cancelada", (int)EstadoReserva_GV42.Cancelada) });
             return r == null ? 0 : Convert.ToInt32(r);
         }

@@ -13,7 +13,7 @@ namespace DAL
         private readonly Acceso _acceso;
 
         private const string SELECT_LISTADO =
-            "SELECT R.Id AS IdReserva, R.NumeroReserva, R.IdTipoViaje, R.FechaRegreso, " +
+            "SELECT R.Id AS IdReserva, R.NumeroReserva, R.IdTipoViaje, R.FechaRegreso, R.IdVueloVuelta, R.IdClaseVuelta, " +
             "       R.ImporteBase, R.SubtotalAdicionales, R.Impuestos, R.ImporteTotal, " +
             "       R.IdEstadoReserva, R.FechaRealizacion, R.LoginVendedor, " +
             "       R.FechaCancelacion, R.MontoPenalidadCancelacion, " +
@@ -66,17 +66,37 @@ namespace DAL
                         throw new NegocioException_GV42("No se pudo reservar: no hay asientos suficientes en esa clase, " +
                                                         "o el vuelo ya salió o fue dado de baja.");
 
+                    // 1.b) Ida y vuelta: se reserva también el cupo del vuelo de regreso.
+                    if (r.TieneVuelta)
+                    {
+                        filas = _acceso.escribir(tx,
+                            "UPDATE VueloClase SET AsientosReservados = AsientosReservados + @Cant " +
+                            "WHERE IdVuelo = @IdVuelo AND IdClase = @IdClase " +
+                            "AND (CapacidadAsientos - AsientosReservados) >= @Cant " +
+                            "AND EXISTS (SELECT 1 FROM Vuelo V WHERE V.Id = @IdVuelo AND V.BorradoLogico = 0 AND V.FechaHoraSalida > GETDATE())",
+                            new[] {
+                            new SqlParameter("@Cant",    r.CantidadPasajeros),
+                            new SqlParameter("@IdVuelo", r.VueloClaseVuelta.Vuelo.Id),
+                            new SqlParameter("@IdClase", (int)r.VueloClaseVuelta.Clase)
+                            });
+                        if (filas == 0)
+                            throw new NegocioException_GV42("No se pudo reservar: el vuelo de regreso no tiene asientos suficientes " +
+                                                            "en esa clase, ya salió o fue dado de baja.");
+                    }
+
                     // 2) Cabecera de la reserva.
                     object idObj = _acceso.leerEscalar(tx,
-                        "INSERT INTO Reserva (DniCliente, IdVuelo, IdClase, IdTipoViaje, FechaRegreso, CantidadPasajeros, " +
+                        "INSERT INTO Reserva (DniCliente, IdVuelo, IdClase, IdVueloVuelta, IdClaseVuelta, IdTipoViaje, FechaRegreso, CantidadPasajeros, " +
                         "                     ImporteBase, SubtotalAdicionales, Impuestos, ImporteTotal, IdEstadoReserva, LoginVendedor, IdCanalVenta) " +
-                        "VALUES (@DniCliente, @IdVuelo, @IdClase, @IdTipoViaje, @FechaRegreso, @Cantidad, " +
+                        "VALUES (@DniCliente, @IdVuelo, @IdClase, @IdVueloVuelta, @IdClaseVuelta, @IdTipoViaje, @FechaRegreso, @Cantidad, " +
                         "        @ImporteBase, @Subtotal, @Impuestos, @Total, @IdEstado, @Login, @IdCanal); " +
                         "SELECT CAST(SCOPE_IDENTITY() AS INT);",
                         new[] {
                         new SqlParameter("@DniCliente",  r.Cliente.DNI),
                         new SqlParameter("@IdVuelo",     r.Vuelo.Id),
                         new SqlParameter("@IdClase",     (int)r.Clase),
+                        new SqlParameter("@IdVueloVuelta", r.TieneVuelta ? (object)r.VueloClaseVuelta.Vuelo.Id : DBNull.Value),
+                        new SqlParameter("@IdClaseVuelta", r.TieneVuelta ? (object)(int)r.VueloClaseVuelta.Clase : DBNull.Value),
                         new SqlParameter("@IdTipoViaje", (int)r.TipoViaje),
                         new SqlParameter("@FechaRegreso", DALUtil_GV42.ADb(r.FechaRegreso)),
                         new SqlParameter("@Cantidad",    r.CantidadPasajeros),
@@ -91,7 +111,8 @@ namespace DAL
                         });
                     int idReserva = Convert.ToInt32(idObj);
 
-                    // 3) Pasajeros: se registran si no existen y se vinculan a la reserva.
+                    // 3) Pasajeros: se registran si no existen. Se vinculan a la reserva en el paso 3.5, con
+                    //    una fila por tramo (ida / vuelta) que lleva el asiento y el equipaje extra de ese tramo.
                     //    Si el DNI ya estaba registrado NO se modifican sus datos: antes se hacía un UPDATE y una
                     //    reserva podía pisar el nombre, email y teléfono de otra persona con solo tipear su DNI.
                     //    (La BLL ya verificó que el nombre y apellido coincidan con los registrados.)
@@ -107,22 +128,16 @@ namespace DAL
                             new SqlParameter("@Email",    DALUtil_GV42.Cifrar(p.Email)),
                             new SqlParameter("@Telefono", p.Telefono)
                             });
-
-                        _acceso.escribir(tx,
-                            "INSERT INTO ReservaPasajero (IdReserva, DniPasajero) VALUES (@IdReserva, @DNI)",
-                            new[] {
-                            new SqlParameter("@IdReserva", idReserva),
-                            new SqlParameter("@DNI",       p.DNI)
-                            });
                     }
 
                     // 4) Servicios adicionales.
                     foreach (AdicionalReserva_GV42 a in r.Adicionales)
                     {
                         _acceso.escribir(tx,
-                            "INSERT INTO ReservaAdicional (IdReserva, IdTipoAdicional, Cantidad, CostoUnitario) " +
-                            "VALUES (@IdReserva, @IdTipo, @Cantidad, @Costo)",
+                            "INSERT INTO ReservaAdicional (IdReserva, IdTipoAdicional, Cantidad, CostoUnitario, Tramo) " +
+                            "VALUES (@IdReserva, @IdTipo, @Cantidad, @Costo, @Tramo)",
                             new[] {
+                            new SqlParameter("@Tramo",     a.Tramo == 2 ? 2 : 1),
                             new SqlParameter("@IdReserva", idReserva),
                             new SqlParameter("@IdTipo",    a.TipoAdicional.Id),
                             new SqlParameter("@Cantidad",  a.Cantidad),
@@ -136,9 +151,11 @@ namespace DAL
                     foreach (AsientoPasajero_GV42 ap in r.AsientosPorPasajero)
                     {
                         _acceso.escribir(tx,
-                            "UPDATE ReservaPasajero SET IdAsiento = @IdAsiento " +
-                            "WHERE IdReserva = @IdReserva AND DniPasajero = @DNI",
+                            "INSERT INTO ReservaPasajero (IdReserva, DniPasajero, Tramo, IdAsiento, EquipajeExtra) " +
+                            "VALUES (@IdReserva, @DNI, @Tramo, @IdAsiento, @Extra)",
                             new[] {
+                            new SqlParameter("@Tramo",     ap.Tramo == 2 ? 2 : 1),
+                            new SqlParameter("@Extra",     Math.Max(0, ap.EquipajeExtra)),
                             new SqlParameter("@IdAsiento", ap.Asiento.Id),
                             new SqlParameter("@IdReserva", idReserva),
                             new SqlParameter("@DNI",       ap.DniPasajero)
@@ -171,7 +188,7 @@ namespace DAL
         public Reserva_GV42 BuscarPorNumero(string numeroReserva)
         {
             string query =
-                "SELECT R.Id AS IdReserva, R.NumeroReserva, R.IdTipoViaje, R.FechaRegreso, " +
+                "SELECT R.Id AS IdReserva, R.NumeroReserva, R.IdTipoViaje, R.FechaRegreso, R.IdVueloVuelta, R.IdClaseVuelta, " +
                 "       R.ImporteBase, R.SubtotalAdicionales, R.Impuestos, R.ImporteTotal, " +
                 "       R.IdEstadoReserva, R.FechaRealizacion, R.LoginVendedor, " +
                 "       C.DNI AS CliDNI, C.Nombre AS CliNombre, C.Apellido AS CliApellido, " +
@@ -197,6 +214,7 @@ namespace DAL
                 NumeroReserva = DALUtil_GV42.Str(row, "NumeroReserva"),
                 Cliente = cliente,
                 VueloClase = DALUtil_GV42.MapearVueloClase(row),
+                VueloClaseVuelta = BuscarVueloClaseVuelta(row),
                 TipoViaje = (TipoViaje_GV42)DALUtil_GV42.Int(row, "IdTipoViaje"),
                 FechaRegreso = DALUtil_GV42.FechaNull(row, "FechaRegreso"),
                 ImporteBase = DALUtil_GV42.Dec(row, "ImporteBase"),
@@ -216,9 +234,14 @@ namespace DAL
         }
 
         // "Mis reservas" del cliente autogestionado.
-        public List<Reserva_GV42> ListarPorCliente(string dni)
+        // Reservas de una persona: las que sacó (titular) y aquellas en las que viaja como pasajero
+        // (antes el acompañante no veía en su cuenta la reserva que le había sacado otro).
+        public List<Reserva_GV42> ListarPorPersona(string dni)
         {
-            string query = SELECT_LISTADO + " WHERE R.DniCliente = @DNI ORDER BY R.FechaRealizacion DESC";
+            string query = SELECT_LISTADO +
+                " WHERE R.DniCliente = @DNI" +
+                "    OR EXISTS (SELECT 1 FROM ReservaPasajero RP WHERE RP.IdReserva = R.Id AND RP.DniPasajero = @DNI)" +
+                " ORDER BY R.FechaRealizacion DESC";
             DataTable dt = _acceso.leer(query, new[] { new SqlParameter("@DNI", dni) });
             var lista = new List<Reserva_GV42>();
             foreach (DataRow r in dt.Rows) lista.Add(MapearListado(r));
@@ -252,7 +275,7 @@ namespace DAL
             return _acceso.EjecutarEnTransaccion(tx =>
             {
                 DataTable dtRes = _acceso.leer(tx,
-                    "SELECT IdVuelo, IdClase, CantidadPasajeros, IdEstadoReserva FROM Reserva WHERE Id = @Id",
+                    "SELECT IdVuelo, IdClase, IdVueloVuelta, IdClaseVuelta, CantidadPasajeros, IdEstadoReserva FROM Reserva WHERE Id = @Id",
                     new[] { new SqlParameter("@Id", idReserva) });
                 if (dtRes.Rows.Count == 0)
                     throw new NegocioException_GV42("La reserva no existe.");
@@ -295,6 +318,18 @@ namespace DAL
                         new SqlParameter("@IdClase", idClase)
                     });
 
+                // Ida y vuelta: también se devuelve el cupo del vuelo de regreso.
+                if (dtRes.Rows[0]["IdVueloVuelta"] != DBNull.Value)
+                    _acceso.escribir(tx,
+                        "UPDATE VueloClase SET AsientosReservados = CASE WHEN AsientosReservados >= @Cant " +
+                        "       THEN AsientosReservados - @Cant ELSE 0 END " +
+                        "WHERE IdVuelo = @IdVuelo AND IdClase = @IdClase",
+                        new[] {
+                            new SqlParameter("@Cant",    cantidad),
+                            new SqlParameter("@IdVuelo", DALUtil_GV42.Int(dtRes.Rows[0], "IdVueloVuelta")),
+                            new SqlParameter("@IdClase", DALUtil_GV42.Int(dtRes.Rows[0], "IdClaseVuelta"))
+                        });
+
                 DataTable dt = _acceso.leer(tx, SELECT_LISTADO + " WHERE R.Id = @Id", new[] { new SqlParameter("@Id", idReserva) });
                 return MapearListado(dt.Rows[0]);
             });
@@ -314,7 +349,8 @@ namespace DAL
             string query =
                 "SELECT P.DNI, P.Nombre, P.Apellido, P.Email, P.Telefono " +
                 "FROM ReservaPasajero RP INNER JOIN Pasajero P ON P.DNI = RP.DniPasajero " +
-                "WHERE RP.IdReserva = @Id ORDER BY P.Apellido, P.Nombre";
+                // Cada pasajero tiene una fila por tramo: se listan una sola vez (todos están en la ida).
+                "WHERE RP.IdReserva = @Id AND RP.Tramo = 1 ORDER BY P.Apellido, P.Nombre";
 
             DataTable dt = _acceso.leer(query, new[] { new SqlParameter("@Id", idReserva) });
             var lista = new List<Pasajero_GV42>();
@@ -330,9 +366,9 @@ namespace DAL
         public List<AsientoPasajero_GV42> ListarAsientosPorPasajero(int idReserva)
         {
             string query =
-                "SELECT RP.DniPasajero, A.Id, A.IdVuelo, A.Fila, A.Letra, A.NumeroAsiento, A.IdClase, A.Ubicacion " +
+                "SELECT RP.DniPasajero, RP.Tramo, RP.EquipajeExtra, A.Id, A.IdVuelo, A.Fila, A.Letra, A.NumeroAsiento, A.IdClase, A.Ubicacion, A.EsPreferencial " +
                 "FROM ReservaPasajero RP INNER JOIN Asiento A ON A.Id = RP.IdAsiento " +
-                "WHERE RP.IdReserva = @Id";
+                "WHERE RP.IdReserva = @Id ORDER BY RP.Tramo, RP.DniPasajero";
 
             DataTable dt = _acceso.leer(query, new[] { new SqlParameter("@Id", idReserva) });
             var lista = new List<AsientoPasajero_GV42>();
@@ -344,9 +380,14 @@ namespace DAL
                     IdVuelo = DALUtil_GV42.Int(r, "IdVuelo"),
                     NumeroAsiento = DALUtil_GV42.Str(r, "NumeroAsiento"),
                     Clase = (ClaseVuelo_GV42)DALUtil_GV42.Int(r, "IdClase"),
-                    Ubicacion = DALUtil_GV42.Str(r, "Ubicacion")
+                    Ubicacion = DALUtil_GV42.Str(r, "Ubicacion"),
+                    EsPreferencial = Convert.ToBoolean(r["EsPreferencial"])
                 };
-                lista.Add(new AsientoPasajero_GV42(DALUtil_GV42.Str(r, "DniPasajero"), asiento));
+                lista.Add(new AsientoPasajero_GV42(DALUtil_GV42.Str(r, "DniPasajero"), asiento)
+                {
+                    EquipajeExtra = DALUtil_GV42.Int(r, "EquipajeExtra"),
+                    Tramo = DALUtil_GV42.Int(r, "Tramo")
+                });
             }
             return lista;
         }
@@ -354,9 +395,9 @@ namespace DAL
         public List<AdicionalReserva_GV42> ListarAdicionales(int idReserva)
         {
             string query =
-                "SELECT RA.Id, RA.Cantidad, RA.CostoUnitario, TA.Id AS IdTipo, TA.Nombre AS TipoNombre " +
+                "SELECT RA.Id, RA.Cantidad, RA.CostoUnitario, RA.Tramo, TA.Id AS IdTipo, TA.Nombre AS TipoNombre, TA.Codigo AS TipoCodigo " +
                 "FROM ReservaAdicional RA INNER JOIN TipoAdicional TA ON TA.Id = RA.IdTipoAdicional " +
-                "WHERE RA.IdReserva = @Id ORDER BY RA.Id";
+                "WHERE RA.IdReserva = @Id ORDER BY RA.Tramo, RA.Id";
 
             DataTable dt = _acceso.leer(query, new[] { new SqlParameter("@Id", idReserva) });
             var lista = new List<AdicionalReserva_GV42>();
@@ -367,10 +408,12 @@ namespace DAL
                     Id = DALUtil_GV42.Int(r, "Id"),
                     Cantidad = DALUtil_GV42.Int(r, "Cantidad"),
                     CostoUnitario = DALUtil_GV42.Dec(r, "CostoUnitario"),
+                    Tramo = DALUtil_GV42.Int(r, "Tramo"),
                     TipoAdicional = new TipoAdicional_GV42
                     {
                         Id = DALUtil_GV42.Int(r, "IdTipo"),
-                        Nombre = DALUtil_GV42.Str(r, "TipoNombre")
+                        Nombre = DALUtil_GV42.Str(r, "TipoNombre"),
+                        Codigo = r["TipoCodigo"] == DBNull.Value ? null : DALUtil_GV42.Str(r, "TipoCodigo")
                     }
                 });
             }
@@ -380,6 +423,14 @@ namespace DAL
         #endregion
 
         #region Métodos privados
+
+        // Vuelo y clase de la vuelta (tramo 2) de la fila de reserva; null si es solo ida.
+        private static VueloClase_GV42 BuscarVueloClaseVuelta(DataRow row)
+        {
+            if (row["IdVueloVuelta"] == DBNull.Value || row["IdClaseVuelta"] == DBNull.Value) return null;
+            return new DALVuelo_GV42().BuscarVueloClaseSinFiltro(
+                DALUtil_GV42.Int(row, "IdVueloVuelta"), (ClaseVuelo_GV42)DALUtil_GV42.Int(row, "IdClaseVuelta"));
+        }
 
         private Reserva_GV42 MapearListado(DataRow row)
         {
@@ -392,6 +443,7 @@ namespace DAL
                 NumeroReserva = DALUtil_GV42.Str(row, "NumeroReserva"),
                 Cliente = cliente,
                 VueloClase = DALUtil_GV42.MapearVueloClase(row),
+                VueloClaseVuelta = BuscarVueloClaseVuelta(row),
                 TipoViaje = (TipoViaje_GV42)DALUtil_GV42.Int(row, "IdTipoViaje"),
                 FechaRegreso = DALUtil_GV42.FechaNull(row, "FechaRegreso"),
                 ImporteBase = DALUtil_GV42.Dec(row, "ImporteBase"),

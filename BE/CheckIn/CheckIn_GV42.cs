@@ -12,6 +12,10 @@ namespace BE
         public int Id { get; set; }
         public int IdReserva { get; set; }
         public string NumeroReserva { get; set; }
+        // Tramo del viaje: 1 = ida, 2 = vuelta. Cada tramo tiene su propio check-in (son vuelos distintos).
+        public int Tramo { get; set; } = 1;
+        // La reserva tiene vuelo de regreso (para aclarar el tramo en pantalla y en la tarjeta).
+        public bool ReservaConVuelta { get; set; }
         public Pasajero_GV42 Pasajero { get; set; }
         public VueloClase_GV42 VueloClase { get; set; }
         public EstadoReserva_GV42 EstadoReserva { get; set; }
@@ -27,6 +31,9 @@ namespace BE
 
         // Tipo de viaje de la reserva (el equipaje extra comprado se reparte entre los tramos).
         public TipoViaje_GV42 TipoViaje { get; set; }
+
+        // Valijas de equipaje extra compradas para ESTE pasajero al reservar.
+        public int EquipajeExtraComprado { get; set; }
 
         public bool EsOnline { get { return Canal == CanalVenta_GV42.Autogestion; } }
         public string CanalTexto { get { return Canal.HasValue ? Canal.Value.Texto() : string.Empty; } }

@@ -75,8 +75,11 @@ namespace BLL
 
             // ---- Bulto N de M ----
             l.Rectangulo(x, y0 + 202, anchoUtil, 16, CELESTE, CELESTE_BORDE, 0.6f);
-            TextoCentrado(l, centro, y0 + 213.5f, IdiomaManager_GV42.T("etiqueta.bulto", indice + 1, total), 8, true, AZUL_OSCURO,
-                          anchoUtil - 8);
+            // Con el peso de la valija si está registrado ("BULTO 1 DE 2 · 18,5 KG").
+            string textoBulto = IdiomaManager_GV42.T("etiqueta.bulto", indice + 1, total);
+            decimal peso = ci.Equipaje.PesosKg != null && indice < ci.Equipaje.PesosKg.Count ? ci.Equipaje.PesosKg[indice] : 0m;
+            if (peso > 0) textoBulto += "  ·  " + peso.ToString("0.#", Cultura) + " KG";
+            TextoCentrado(l, centro, y0 + 213.5f, textoBulto, 8, true, AZUL_OSCURO, anchoUtil - 8);
 
             // ---- Código de barras y código del bulto ----
             if (codigo.Length > 0)

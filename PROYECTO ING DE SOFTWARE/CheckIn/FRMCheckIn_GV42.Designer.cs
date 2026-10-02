@@ -92,7 +92,8 @@
             this.lblBultos = new System.Windows.Forms.Label();
             this.numBultos = new System.Windows.Forms.NumericUpDown();
             this.lblPeso = new System.Windows.Forms.Label();
-            this.numPeso = new System.Windows.Forms.NumericUpDown();
+            this.flpPesos = new System.Windows.Forms.FlowLayoutPanel();
+            this.lblBultosPermitidos = new System.Windows.Forms.Label();
             this.pnlFranquicia = new System.Windows.Forms.Panel();
             this.tlpFranquicia = new System.Windows.Forms.TableLayoutPanel();
             this.lblSecFranquicia = new System.Windows.Forms.Label();
@@ -188,6 +189,7 @@
             this.dgvPasajeros = new PROYECTO_ING_DE_SOFTWARE.GrillaModerna_GV42();
             this.colDni = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.colPasajero = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.colTramo = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.colAsiento = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.colEstado = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.colCanal = new System.Windows.Forms.DataGridViewTextBoxColumn();
@@ -242,7 +244,6 @@
             this.tlpAccionesPasajero.SuspendLayout();
             this.tlpBusqueda.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.numBultos)).BeginInit();
-            ((System.ComponentModel.ISupportInitialize)(this.numPeso)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.dgvPasajeros)).BeginInit();
             this.SuspendLayout();
             // 
@@ -1061,7 +1062,8 @@
             this.pnlDatosEquipaje.Controls.Add(this.lblBultos);
             this.pnlDatosEquipaje.Controls.Add(this.numBultos);
             this.pnlDatosEquipaje.Controls.Add(this.lblPeso);
-            this.pnlDatosEquipaje.Controls.Add(this.numPeso);
+            this.pnlDatosEquipaje.Controls.Add(this.flpPesos);
+            this.pnlDatosEquipaje.Controls.Add(this.lblBultosPermitidos);
             this.pnlDatosEquipaje.Controls.Add(this.pnlFranquicia);
             this.pnlDatosEquipaje.Controls.Add(this.pnlCalculo);
             this.pnlDatosEquipaje.Dock = System.Windows.Forms.DockStyle.Fill;
@@ -1080,14 +1082,14 @@
             this.lblBultos.Name = "lblBultos";
             this.lblBultos.Size = new System.Drawing.Size(126, 17);
             this.lblBultos.TabIndex = 5;
-            this.lblBultos.Text = "Cantidad de bultos";
+            this.lblBultos.Text = "Valijas a despachar";
             // 
             // numBultos
             // 
             this.numBultos.Font = new System.Drawing.Font("Segoe UI", 10F);
             this.numBultos.Location = new System.Drawing.Point(0, 22);
             this.numBultos.Name = "numBultos";
-            this.numBultos.Size = new System.Drawing.Size(120, 25);
+            this.numBultos.Size = new System.Drawing.Size(110, 25);
             this.numBultos.TabIndex = 4;
             this.numBultos.ValueChanged += new System.EventHandler(this.datosEquipaje_ValueChanged);
             // 
@@ -1096,33 +1098,38 @@
             this.lblPeso.AutoSize = true;
             this.lblPeso.Font = new System.Drawing.Font("Segoe UI Semibold", 9.75F, System.Drawing.FontStyle.Bold);
             this.lblPeso.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(13)))), ((int)(((byte)(71)))), ((int)(((byte)(161)))));
-            this.lblPeso.Location = new System.Drawing.Point(170, 0);
+            this.lblPeso.Location = new System.Drawing.Point(150, 0);
             this.lblPeso.Name = "lblPeso";
             this.lblPeso.Size = new System.Drawing.Size(104, 17);
             this.lblPeso.TabIndex = 3;
-            this.lblPeso.Text = "Peso total (kg)";
+            this.lblPeso.Text = "Peso de cada valija (kg)";
             // 
-            // numPeso
+            // flpPesos
             // 
-            this.numPeso.DecimalPlaces = 1;
-            this.numPeso.Font = new System.Drawing.Font("Segoe UI", 10F);
-            this.numPeso.Increment = new decimal(new int[] {
-            5,
-            0,
-            0,
-            65536});
-            this.numPeso.Location = new System.Drawing.Point(170, 22);
-            this.numPeso.Name = "numPeso";
-            this.numPeso.Size = new System.Drawing.Size(130, 25);
-            this.numPeso.TabIndex = 2;
-            this.numPeso.ValueChanged += new System.EventHandler(this.datosEquipaje_ValueChanged);
+            this.flpPesos.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left | System.Windows.Forms.AnchorStyles.Right)));
+            this.flpPesos.AutoScroll = true;
+            this.flpPesos.Location = new System.Drawing.Point(150, 20);
+            this.flpPesos.Name = "flpPesos";
+            this.flpPesos.Size = new System.Drawing.Size(254, 54);
+            this.flpPesos.TabIndex = 2;
+            // 
+            // lblBultosPermitidos
+            // 
+            this.lblBultosPermitidos.AutoSize = true;
+            this.lblBultosPermitidos.Font = new System.Drawing.Font("Segoe UI", 8.75F, System.Drawing.FontStyle.Italic);
+            this.lblBultosPermitidos.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(96)))), ((int)(((byte)(125)))), ((int)(((byte)(139)))));
+            this.lblBultosPermitidos.Location = new System.Drawing.Point(0, 54);
+            this.lblBultosPermitidos.Name = "lblBultosPermitidos";
+            this.lblBultosPermitidos.Size = new System.Drawing.Size(110, 15);
+            this.lblBultosPermitidos.TabIndex = 6;
+            this.lblBultosPermitidos.Text = "de 2 permitidas";
             // 
             // pnlFranquicia
             // 
             this.pnlFranquicia.Controls.Add(this.tlpFranquicia);
             this.pnlFranquicia.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left | System.Windows.Forms.AnchorStyles.Right)));
             this.pnlFranquicia.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(240)))), ((int)(((byte)(247)))), ((int)(((byte)(255)))));
-            this.pnlFranquicia.Location = new System.Drawing.Point(0, 56);
+            this.pnlFranquicia.Location = new System.Drawing.Point(0, 84);
             this.pnlFranquicia.Name = "pnlFranquicia";
             this.pnlFranquicia.Padding = new System.Windows.Forms.Padding(12, 6, 12, 6);
             this.pnlFranquicia.Size = new System.Drawing.Size(404, 102);
@@ -1175,7 +1182,7 @@
             this.lblFranqClase.Name = "lblFranqClase";
             this.lblFranqClase.Size = new System.Drawing.Size(210, 22);
             this.lblFranqClase.TabIndex = 1;
-            this.lblFranqClase.Text = "Franquicia de la clase";
+            this.lblFranqClase.Text = "Valijas incluidas en la clase";
             this.lblFranqClase.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
             // 
             // lblFranqClaseValor
@@ -1202,7 +1209,7 @@
             this.lblFranqExtra.Name = "lblFranqExtra";
             this.lblFranqExtra.Size = new System.Drawing.Size(210, 22);
             this.lblFranqExtra.TabIndex = 3;
-            this.lblFranqExtra.Text = "Equipaje extra disponible";
+            this.lblFranqExtra.Text = "Equipaje extra comprado";
             this.lblFranqExtra.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
             // 
             // lblFranqExtraValor
@@ -1229,7 +1236,7 @@
             this.lblFranqMaxima.Name = "lblFranqMaxima";
             this.lblFranqMaxima.Size = new System.Drawing.Size(210, 22);
             this.lblFranqMaxima.TabIndex = 5;
-            this.lblFranqMaxima.Text = "Franquicia máxima";
+            this.lblFranqMaxima.Text = "Valijas permitidas";
             this.lblFranqMaxima.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
             // 
             // lblFranqMaximaValor
@@ -1251,7 +1258,7 @@
             this.pnlCalculo.Controls.Add(this.tlpCalculo);
             this.pnlCalculo.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left | System.Windows.Forms.AnchorStyles.Right)));
             this.pnlCalculo.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(240)))), ((int)(((byte)(247)))), ((int)(((byte)(255)))));
-            this.pnlCalculo.Location = new System.Drawing.Point(0, 166);
+            this.pnlCalculo.Location = new System.Drawing.Point(0, 194);
             this.pnlCalculo.Name = "pnlCalculo";
             this.pnlCalculo.Padding = new System.Windows.Forms.Padding(12, 6, 12, 6);
             this.pnlCalculo.Size = new System.Drawing.Size(404, 146);
@@ -2399,6 +2406,7 @@
             this.dgvPasajeros.Columns.AddRange(new System.Windows.Forms.DataGridViewColumn[] {
             this.colDni,
             this.colPasajero,
+            this.colTramo,
             this.colAsiento,
             this.colEstado,
             this.colCanal,
@@ -2432,6 +2440,15 @@
             this.colPasajero.HeaderText = "Pasajero";
             this.colPasajero.Name = "colPasajero";
             this.colPasajero.ReadOnly = true;
+            // 
+            // colTramo
+            // 
+            this.colTramo.DataPropertyName = "Tramo";
+            this.colTramo.FillWeight = 100F;
+            this.colTramo.HeaderText = "Vuelo";
+            this.colTramo.Name = "colTramo";
+            this.colTramo.ReadOnly = true;
+            this.colTramo.Visible = false;
             // 
             // colAsiento
             // 
@@ -2741,7 +2758,6 @@
             this.pnlEncabezado.ResumeLayout(false);
             this.pnlEncabezado.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)(this.numBultos)).EndInit();
-            ((System.ComponentModel.ISupportInitialize)(this.numPeso)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.dgvPasajeros)).EndInit();
             this.ResumeLayout(false);
 
@@ -2813,7 +2829,8 @@
         private System.Windows.Forms.Label lblBultos;
         private System.Windows.Forms.NumericUpDown numBultos;
         private System.Windows.Forms.Label lblPeso;
-        private System.Windows.Forms.NumericUpDown numPeso;
+        private System.Windows.Forms.FlowLayoutPanel flpPesos;
+        private System.Windows.Forms.Label lblBultosPermitidos;
         private System.Windows.Forms.Panel pnlFranquicia;
         private System.Windows.Forms.TableLayoutPanel tlpFranquicia;
         private System.Windows.Forms.Label lblSecFranquicia;
@@ -2909,6 +2926,7 @@
         private PROYECTO_ING_DE_SOFTWARE.GrillaModerna_GV42 dgvPasajeros;
         private System.Windows.Forms.DataGridViewTextBoxColumn colDni;
         private System.Windows.Forms.DataGridViewTextBoxColumn colPasajero;
+        private System.Windows.Forms.DataGridViewTextBoxColumn colTramo;
         private System.Windows.Forms.DataGridViewTextBoxColumn colAsiento;
         private System.Windows.Forms.DataGridViewTextBoxColumn colEstado;
         private System.Windows.Forms.DataGridViewTextBoxColumn colCanal;

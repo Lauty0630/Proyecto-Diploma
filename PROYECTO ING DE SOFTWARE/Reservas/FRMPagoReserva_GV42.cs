@@ -171,6 +171,17 @@ namespace PROYECTO_ING_DE_SOFTWARE
             lblRutaValor.Text = _reserva.VueloClase.OrigenDescripcion + " -> " + _reserva.VueloClase.DestinoDescripcion;
             lblSalidaValor.Text = _reserva.VueloClase.FechaHoraSalida.ToString("dd/MM/yyyy HH:mm");
             lblClaseValor.Text = _reserva.VueloClase.ClaseTexto;
+            // Ida y vuelta: se paga la reserva completa (los dos vuelos).
+            if (_reserva.TieneVuelta)
+            {
+                VueloClase_GV42 vuelta = _reserva.VueloClaseVuelta;
+                lblVueloValor.Text += " / " + vuelta.CodigoVuelo;
+                lblRutaValor.Text = _reserva.VueloClase.Vuelo.Origen.CodigoIata + " -> " + _reserva.VueloClase.Vuelo.Destino.CodigoIata
+                                  + " -> " + vuelta.Vuelo.Destino.CodigoIata + "  (" + _reserva.TipoViaje.Texto() + ")";
+                lblSalidaValor.Text = _reserva.VueloClase.FechaHoraSalida.ToString("dd/MM HH:mm") + "  ·  "
+                                    + IdiomaManager_GV42.T("pago.regreso", vuelta.FechaHoraSalida.ToString("dd/MM HH:mm"));
+                if (vuelta.Clase != _reserva.VueloClase.Clase) lblClaseValor.Text += " / " + vuelta.ClaseTexto;
+            }
             lblPasajerosValor.Text = _reserva.CantidadPasajeros.ToString();
             lblEstadoValor.Text = _reserva.EstadoTexto;
             lblEstadoValor.ForeColor = _reserva.Estado == EstadoReserva_GV42.Confirmada ? Tema_GV42.Exito

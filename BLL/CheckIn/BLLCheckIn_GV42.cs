@@ -1,4 +1,4 @@
-using BE;
+﻿using BE;
 using DAL;
 using Servicios;
 using System;
@@ -28,12 +28,19 @@ namespace BLL
         // Hora límite de embarque impresa en la tarjeta: 30 minutos antes de la salida.
         public const int MINUTOS_LIMITE_EMBARQUE = 30;
 
-        // Topes razonables del equipaje (y dentro de las columnas decimal(7,2) de la base).
-        public const int MAX_BULTOS = 10;
-        public const decimal MAX_PESO_KG = 500m;
-
-        // Kilos que suma a la franquicia cada unidad de "Equipaje extra" comprada en la reserva.
+        // Equipaje por valija (como en las aerolíneas):
+        //  - cada clase incluye valijas de hasta VueloClase.FranquiciaEquipajeKg cada una:
+        //    Económica 1, Ejecutiva 2 y Primera 2;
+        //  - cada "Equipaje extra" comprado en la reserva agrega una valija de hasta 23 kg;
+        //  - ninguna valija se acepta por encima de 32 kg (hay que redistribuir el contenido);
+        //  - entre la franquicia de la valija y los 32 kg se cobra el exceso por kilo.
         public const decimal KG_POR_EQUIPAJE_EXTRA = 23m;
+        public const decimal MAX_PESO_POR_BULTO = 32m;
+
+        public static int BultosIncluidos(ClaseVuelo_GV42 clase)
+        {
+            return clase == ClaseVuelo_GV42.Economica ? 1 : 2;
+        }
 
         public const string PATENTE_MOSTRADOR = "CheckIn.Realizar";
         public const string PATENTE_ONLINE = "CheckIn.RealizarPropio";
@@ -46,7 +53,6 @@ namespace BLL
         private readonly DALAsiento_GV42 _dalAsiento;
         private readonly DALEquipaje_GV42 _dalEquipaje;
         private readonly DALTarjetaEmbarque_GV42 _dalTarjeta;
-        private readonly DALTipoAdicional_GV42 _dalTipoAdicional;
 
         #endregion
 
@@ -58,7 +64,6 @@ namespace BLL
             _dalAsiento = new DALAsiento_GV42();
             _dalEquipaje = new DALEquipaje_GV42();
             _dalTarjeta = new DALTarjetaEmbarque_GV42();
-            _dalTipoAdicional = new DALTipoAdicional_GV42();
         }
 
         #endregion
@@ -102,6 +107,8 @@ namespace BLL
         #region Buscar y verificar (pasos 1 a 4)
 
         // Todos los pasajeros de la reserva con el estado de su check-in (para elegir a quién atender).
+        // En ida y vuelta devuelve un check-in por pasajero y por tramo (primero la ida, después la
+        // vuelta): cada vuelo tiene su propia ventana de check-in y su tarjeta de embarque.
         // No valida la ventana ni el estado: la pantalla los muestra y decide qué se puede hacer.
         public List<CheckIn_GV42> ListarPasajeros(string numeroReserva)
         {
@@ -112,12 +119,27 @@ namespace BLL
             var lista = new List<CheckIn_GV42>();
             foreach (string dni in _dalCheckIn.ListarDnisPasajeros(numeroReserva))
             {
-                CheckIn_GV42 ci = _dalCheckIn.BuscarPorReservaYDni(numeroReserva, dni);
-                if (ci != null) lista.Add(ci);
+                CheckIn_GV42 ci = _dalCheckIn.BuscarPorReservaYDni(numeroReserva, dni, Reserva_GV42.TRAMO_IDA);
+                if (ci == null) continue;
+                lista.Add(ci);
+                if (!ci.ReservaConVuelta) continue;
+                CheckIn_GV42 vuelta = _dalCheckIn.BuscarPorReservaYDni(numeroReserva, dni, Reserva_GV42.TRAMO_VUELTA);
+                if (vuelta != null) lista.Add(vuelta);
             }
+            lista = lista.OrderBy(c => c.Tramo).ToList();
             if (lista.Count == 0)
                 throw new NegocioException_GV42(IdiomaManager_GV42.T("neg.checkin.reservaNoExiste"));
 
+            if (PuedeAtenderMostrador()) return lista;
+
+            // Cliente online: el titular de la reserva hace el check-in de todos sus pasajeros; un
+            // acompañante solo ve y hace el suyo.
+            BLLNegocioUtil_GV42.LoginActual();
+            string dniSesion = DniSesion();
+            if (!string.Equals(lista[0].DniTitular ?? "", dniSesion, StringComparison.OrdinalIgnoreCase))
+                lista = lista.Where(c => c.Pasajero != null && string.Equals(c.Pasajero.DNI ?? "", dniSesion, StringComparison.OrdinalIgnoreCase)).ToList();
+            if (lista.Count == 0)
+                throw new NegocioException_GV42(IdiomaManager_GV42.T("neg.checkin.reservaAjena"));
             ExigirAcceso(lista[0]);
             return lista;
         }
@@ -127,7 +149,13 @@ namespace BLL
         // si el check-in ya se hizo o si está fuera de la ventana de check-in.
         public CheckIn_GV42 IniciarCheckIn(string numeroReserva, string dniPasajero)
         {
-            CheckIn_GV42 ci = Buscar(numeroReserva, dniPasajero);
+            return IniciarCheckIn(numeroReserva, dniPasajero, Reserva_GV42.TRAMO_IDA);
+        }
+
+        // tramo: 1 = ida, 2 = vuelta.
+        public CheckIn_GV42 IniciarCheckIn(string numeroReserva, string dniPasajero, int tramo)
+        {
+            CheckIn_GV42 ci = Buscar(numeroReserva, dniPasajero, tramo);
             ExigirAcceso(ci);
             ValidarPuedeHacerCheckIn(ci);
             return ci;
@@ -136,7 +164,12 @@ namespace BLL
         // Check-in ya realizado (para volver a ver o imprimir la tarjeta de embarque y las etiquetas).
         public CheckIn_GV42 BuscarRealizado(string numeroReserva, string dniPasajero)
         {
-            CheckIn_GV42 ci = Buscar(numeroReserva, dniPasajero);
+            return BuscarRealizado(numeroReserva, dniPasajero, Reserva_GV42.TRAMO_IDA);
+        }
+
+        public CheckIn_GV42 BuscarRealizado(string numeroReserva, string dniPasajero, int tramo)
+        {
+            CheckIn_GV42 ci = Buscar(numeroReserva, dniPasajero, tramo);
             ExigirAcceso(ci);
             if (ci.Estado != EstadoCheckIn_GV42.Realizado || ci.TarjetaEmbarque == null)
                 throw new NegocioException_GV42(IdiomaManager_GV42.T("neg.checkin.noRealizado"));
@@ -151,7 +184,7 @@ namespace BLL
             catch (NegocioException_GV42 ex) { return ex.Message; }
         }
 
-        private CheckIn_GV42 Buscar(string numeroReserva, string dniPasajero)
+        private CheckIn_GV42 Buscar(string numeroReserva, string dniPasajero, int tramo)
         {
             numeroReserva = (numeroReserva ?? string.Empty).Trim().ToUpper();
             dniPasajero = (dniPasajero ?? string.Empty).Trim();
@@ -161,7 +194,7 @@ namespace BLL
             if (!Validaciones_GV42.EsDniValido(dniPasajero))
                 throw new NegocioException_GV42(Validaciones_GV42.MENSAJE_DNI);
 
-            CheckIn_GV42 ci = _dalCheckIn.BuscarPorReservaYDni(numeroReserva, dniPasajero);
+            CheckIn_GV42 ci = _dalCheckIn.BuscarPorReservaYDni(numeroReserva, dniPasajero, tramo);
             if (ci == null)
                 throw new NegocioException_GV42(IdiomaManager_GV42.T("neg.checkin.noEncontrado"));
             return ci;
@@ -202,77 +235,71 @@ namespace BLL
 
         #region Equipaje (pasos 5 a 7)
 
-        // Franquicia del pasajero: la de su clase más el equipaje extra comprado en la reserva que
-        // todavía no usaron los otros pasajeros (hasta el tope por pasajero del servicio).
+        // Franquicia del pasajero: las valijas de su clase más las valijas de equipaje extra que se
+        // compraron PARA ÉL al reservar (cada valija extra tiene dueño: no la puede usar otro pasajero).
         public FranquiciaEquipaje_GV42 ObtenerFranquicia(int idCheckIn)
         {
             return CalcularFranquicia(ObtenerParaEquipaje(idCheckIn));
         }
 
-        private FranquiciaEquipaje_GV42 CalcularFranquicia(CheckIn_GV42 ci)
+        private static FranquiciaEquipaje_GV42 CalcularFranquicia(CheckIn_GV42 ci)
         {
-            int compradas = UnidadesExtraCompradasTramo(ci, out int maxPorPasajero);
-            int usadas = _dalEquipaje.UnidadesExtraUsadas(ci.IdReserva, ci.Id);
-
+            int extra = Math.Max(0, ci.EquipajeExtraComprado);
             return new FranquiciaEquipaje_GV42
             {
-                FranquiciaClaseKg = ci.VueloClase.FranquiciaEquipajeKg,
+                BultosIncluidos = BultosIncluidos(ci.VueloClase.Clase),
+                KgPorBultoIncluido = ci.VueloClase.FranquiciaEquipajeKg,
                 KgPorUnidadExtra = KG_POR_EQUIPAJE_EXTRA,
-                UnidadesExtraDisponibles = Math.Max(0, compradas - usadas),
-                UnidadesExtraMaxPasajero = maxPorPasajero,
+                UnidadesExtraDisponibles = extra,
+                UnidadesExtraMaxPasajero = extra,
+                PesoMaximoPorBulto = MAX_PESO_POR_BULTO,
                 CostoKiloExceso = ci.Vuelo.CostoKiloExceso
             };
         }
 
-        // Unidades de equipaje extra de la reserva que corresponden a este vuelo: en ida y vuelta lo
-        // comprado se reparte entre los dos tramos (se redondea para arriba a favor del pasajero).
-        private int UnidadesExtraCompradasTramo(CheckIn_GV42 ci, out int maxPorPasajero)
-        {
-            maxPorPasajero = 0;
-            AdicionalReserva_GV42 extra = (ci.ServiciosAdicionales ?? new List<AdicionalReserva_GV42>())
-                .FirstOrDefault(a => a.TipoAdicional != null && EsEquipajeExtra(a.TipoAdicional));
-            if (extra == null || extra.Cantidad <= 0) return 0;
-
-            TipoAdicional_GV42 tipo = _dalTipoAdicional.ListarActivos().FirstOrDefault(t => t.Id == extra.TipoAdicional.Id);
-            maxPorPasajero = tipo != null ? Math.Max(1, tipo.MaxPorPasajero) : 1;
-
-            int tramos = ci.TipoViaje == TipoViaje_GV42.IdaYVuelta ? 2 : 1;
-            return (int)Math.Ceiling(extra.Cantidad / (double)tramos);
-        }
-
-        private bool EsEquipajeExtra(TipoAdicional_GV42 t)
-        {
-            if (t.EsEquipajeExtra) return true;
-            // Los adicionales de la reserva traen solo Id y Nombre: se busca el código en el catálogo.
-            TipoAdicional_GV42 enCatalogo = _dalTipoAdicional.ListarActivos().FirstOrDefault(x => x.Id == t.Id);
-            return enCatalogo != null && enCatalogo.EsEquipajeExtra;
-        }
-
         // Calcula el cargo por exceso sin guardar nada (para mostrárselo al pasajero antes de cobrar).
-        // Si no hay exceso, KilosExceso e ImporteCargo valen 0.
-        public CargoExcesoEquipaje_GV42 CalcularCargoExceso(int idCheckIn, decimal pesoTotalKg)
+        // 'pesosPorBulto' trae el peso de cada valija. Si no hay exceso, KilosExceso e ImporteCargo valen 0.
+        public CargoExcesoEquipaje_GV42 CalcularCargoExceso(int idCheckIn, IList<decimal> pesosPorBulto)
         {
-            if (pesoTotalKg <= 0)
-                throw new NegocioException_GV42(IdiomaManager_GV42.T("neg.checkin.pesoMayorCero"));
-
             CheckIn_GV42 ci = ObtenerParaEquipaje(idCheckIn);
-            return CalcularCargo(CalcularFranquicia(ci), pesoTotalKg);
+            return CalcularCargo(CalcularFranquicia(ci), pesosPorBulto, ci.VueloClase.ClaseTexto);
         }
 
-        // Usa solo las unidades de equipaje extra que hacen falta para cubrir el peso: las que sobran
-        // quedan disponibles para los demás pasajeros de la reserva.
-        private static CargoExcesoEquipaje_GV42 CalcularCargo(FranquiciaEquipaje_GV42 f, decimal pesoTotalKg)
+        // Valida cantidad y peso de cada valija y calcula el exceso. A cada valija se le asigna una
+        // franquicia (primero las incluidas en la clase y después las de equipaje extra): las valijas
+        // más pesadas se cubren con las franquicias más grandes para cobrar lo menos posible.
+        private static CargoExcesoEquipaje_GV42 CalcularCargo(FranquiciaEquipaje_GV42 f, IList<decimal> pesos, string claseTexto)
         {
-            decimal sobreClase = Math.Max(0m, pesoTotalKg - f.FranquiciaClaseKg);
-            int unidades = f.KgPorUnidadExtra <= 0 ? 0
-                : Math.Min(f.UnidadesExtraAplicables, (int)Math.Ceiling(sobreClase / f.KgPorUnidadExtra));
-            decimal franquicia = f.FranquiciaClaseKg + unidades * f.KgPorUnidadExtra;
-            decimal exceso = Math.Max(0m, pesoTotalKg - franquicia);
+            if (pesos == null || pesos.Count == 0)
+                throw new NegocioException_GV42(IdiomaManager_GV42.T("neg.checkin.bultosMinimo"));
+            if (pesos.Count > f.BultosPermitidos)
+                throw new NegocioException_GV42(IdiomaManager_GV42.T("neg.checkin.bultosPermitidos",
+                    f.BultosPermitidos, f.BultosIncluidos, (claseTexto ?? "").ToLower(), f.UnidadesExtraAplicables));
+
+            for (int i = 0; i < pesos.Count; i++)
+            {
+                if (pesos[i] <= 0)
+                    throw new NegocioException_GV42(IdiomaManager_GV42.T("neg.checkin.pesoBultoCero", i + 1));
+                if (pesos[i] > f.PesoMaximoPorBulto)
+                    throw new NegocioException_GV42(IdiomaManager_GV42.T("neg.checkin.pesoBultoMaximo",
+                        i + 1, pesos[i].ToString("0.##"), f.PesoMaximoPorBulto.ToString("0.##")));
+            }
+
+            int incluidas = Math.Min(pesos.Count, f.BultosIncluidos);
+            int extras = pesos.Count - incluidas;
+            var franquicias = Enumerable.Repeat(f.KgPorBultoIncluido, incluidas)
+                .Concat(Enumerable.Repeat(f.KgPorUnidadExtra, extras))
+                .OrderByDescending(x => x).ToList();
+            var ordenados = pesos.OrderByDescending(x => x).ToList();
+
+            decimal exceso = 0m;
+            for (int i = 0; i < ordenados.Count; i++)
+                exceso += Math.Max(0m, ordenados[i] - franquicias[i]);
 
             return new CargoExcesoEquipaje_GV42
             {
-                FranquiciaKg = franquicia,
-                UnidadesExtraUsadas = unidades,
+                FranquiciaKg = franquicias.Sum(),
+                UnidadesExtraUsadas = extras,
                 KilosExceso = exceso,
                 CostoPorKilo = f.CostoKiloExceso,
                 ImporteCargo = Math.Round(exceso * f.CostoKiloExceso, 2)
@@ -283,27 +310,20 @@ namespace BLL
         // también registra el cargo por exceso y su cobro: con tarjeta se validan los datos (Luhn,
         // vencimiento, código) y se genera el código de autorización; con transferencia se pide el número
         // de operación; en efectivo el número lo genera el sistema. Solo en el mostrador.
-        public Equipaje_GV42 RegistrarEquipaje(int idCheckIn, int cantidadBultos, decimal pesoTotalKg,
+        public Equipaje_GV42 RegistrarEquipaje(int idCheckIn, IList<decimal> pesosPorBulto,
                                                MedioPago_GV42? medioCobro, string numeroOperacion, DatosTarjeta_GV42 tarjeta)
         {
             if (!PuedeAtenderMostrador())
                 throw new NegocioException_GV42(IdiomaManager_GV42.T("neg.checkin.equipajeSoloMostrador"));
-
-            if (cantidadBultos < 1)
-                throw new NegocioException_GV42(IdiomaManager_GV42.T("neg.checkin.bultosMinimo"));
-            if (cantidadBultos > MAX_BULTOS)
-                throw new NegocioException_GV42(IdiomaManager_GV42.T("neg.checkin.bultosMaximo", MAX_BULTOS));
-            if (pesoTotalKg > MAX_PESO_KG)
-                throw new NegocioException_GV42(IdiomaManager_GV42.T("neg.checkin.pesoMaximo", MAX_PESO_KG));
-            if (pesoTotalKg <= 0)
-                throw new NegocioException_GV42(IdiomaManager_GV42.T("neg.checkin.pesoMayorCero"));
 
             CheckIn_GV42 ci = ObtenerParaEquipaje(idCheckIn);
             if (ci.Equipaje != null)
                 throw new NegocioException_GV42(IdiomaManager_GV42.T("neg.checkin.yaDespacho"));
 
             FranquiciaEquipaje_GV42 franquicia = CalcularFranquicia(ci);
-            CargoExcesoEquipaje_GV42 cargo = CalcularCargo(franquicia, pesoTotalKg);
+            CargoExcesoEquipaje_GV42 cargo = CalcularCargo(franquicia, pesosPorBulto, ci.VueloClase.ClaseTexto);
+            int cantidadBultos = pesosPorBulto.Count;
+            decimal pesoTotalKg = pesosPorBulto.Sum();
             int unidadesUsadas = cargo.UnidadesExtraUsadas;
             decimal franquiciaAplicada = cargo.FranquiciaKg;
 
@@ -333,10 +353,12 @@ namespace BLL
 
             // Códigos de equipaje: EQ + Nº de check-in + Nº de bulto (ej: EQ000012-01).
             for (int i = 1; i <= cantidadBultos; i++)
+            {
                 equipaje.Etiquetas.Add("EQ" + ci.Id.ToString("D6") + "-" + i.ToString("D2"));
+                equipaje.PesosKg.Add(Math.Round(pesosPorBulto[i - 1], 2));
+            }
 
-            int compradas = UnidadesExtraCompradasTramo(ci, out int _);
-            Equipaje_GV42 guardado = _dalEquipaje.Registrar(equipaje, ci.IdReserva, compradas);
+            Equipaje_GV42 guardado = _dalEquipaje.Registrar(equipaje);
 
             string detalle = ci.NumeroReserva + " - DNI " + ci.Pasajero.DNI + " - " + cantidadBultos + " bulto(s), " +
                              pesoTotalKg.ToString("0.##") + " kg";

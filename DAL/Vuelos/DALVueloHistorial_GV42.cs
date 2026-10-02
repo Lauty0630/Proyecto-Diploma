@@ -126,7 +126,7 @@ namespace DAL
                 if (baja)
                 {
                     object vigentes = _acceso.leerEscalar(tx,
-                        "SELECT COUNT(1) FROM Reserva WHERE IdVuelo = @IdVuelo AND IdEstadoReserva <> @Cancelada",
+                        "SELECT COUNT(1) FROM Reserva WHERE (IdVuelo = @IdVuelo OR IdVueloVuelta = @IdVuelo) AND IdEstadoReserva <> @Cancelada",
                         new[] { new SqlParameter("@IdVuelo", idVuelo), new SqlParameter("@Cancelada", (int)EstadoReserva_GV42.Cancelada) });
                     if (vigentes != null && Convert.ToInt32(vigentes) > 0)
                         throw new NegocioException_GV42("Esa versión da de baja el vuelo " + codigo + ", pero tiene reservas vigentes.");

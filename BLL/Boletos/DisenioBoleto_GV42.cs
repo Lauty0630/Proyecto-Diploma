@@ -60,6 +60,9 @@ namespace BLL
             // Textos que dependen del idioma: si el boleto trae los valores sin traducir, se traducen ahora.
             string clase = b.ClaseValor.HasValue ? b.ClaseValor.Value.Texto() : b.Clase;
             string tipoViaje = b.TipoViajeValor.HasValue ? b.TipoViajeValor.Value.Texto() : b.TipoViaje;
+            // Ida y vuelta: cada boleto aclara si es el de la ida o el de la vuelta.
+            if (b.EsIdaYVuelta)
+                tipoViaje += " · " + IdiomaManager_GV42.T(b.Tramo == 2 ? "tramo.vuelta" : "tramo.ida");
             string formaPago = b.MedioPagoValor.HasValue ? b.MedioPagoValor.Value.Texto() : b.FormaPago;
             string estado = TextoEstado(b);
             string servicios = b.Adicionales != null ? BLLBoleto_GV42.TextoServicios(b.Adicionales) : b.ServiciosAdicionales;
