@@ -44,6 +44,7 @@
             this.gestionVuelosToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.bitacoraVuelosToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.clientesToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.aeropuertosToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.reportesToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.reporteReservasToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.reporteCheckInToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
@@ -201,7 +202,8 @@
             this.vuelosToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.gestionVuelosToolStripMenuItem,
             this.bitacoraVuelosToolStripMenuItem,
-            this.clientesToolStripMenuItem});
+            this.clientesToolStripMenuItem,
+            this.aeropuertosToolStripMenuItem});
             this.vuelosToolStripMenuItem.Name = "vuelosToolStripMenuItem";
             this.vuelosToolStripMenuItem.Padding = new System.Windows.Forms.Padding(8, 0, 8, 0);
             this.vuelosToolStripMenuItem.Size = new System.Drawing.Size(72, 23);
@@ -230,6 +232,14 @@
             this.clientesToolStripMenuItem.Size = new System.Drawing.Size(220, 26);
             this.clientesToolStripMenuItem.Text = "Clientes";
             this.clientesToolStripMenuItem.Click += new System.EventHandler(this.clientesToolStripMenuItem_Click);
+            //
+            // aeropuertosToolStripMenuItem
+            //
+            this.aeropuertosToolStripMenuItem.Font = new System.Drawing.Font("Segoe UI", 10F);
+            this.aeropuertosToolStripMenuItem.Name = "aeropuertosToolStripMenuItem";
+            this.aeropuertosToolStripMenuItem.Size = new System.Drawing.Size(220, 26);
+            this.aeropuertosToolStripMenuItem.Text = "Aeropuertos";
+            this.aeropuertosToolStripMenuItem.Click += new System.EventHandler(this.aeropuertosToolStripMenuItem_Click);
             //
             // reportesToolStripMenuItem
             //
@@ -568,6 +578,7 @@
         private System.Windows.Forms.ToolStripMenuItem gestionVuelosToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem bitacoraVuelosToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem clientesToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem aeropuertosToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem reportesToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem reporteReservasToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem reporteCheckInToolStripMenuItem;

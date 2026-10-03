@@ -1270,3 +1270,42 @@ BEGIN
     VALUES (12, N'Maestro de clientes: patentes y eventos de bitácora');
 END
 GO
+
+/* =====================================================================================
+   VERSIÓN 13 – Maestro de aeropuertos (ABM)
+   La tabla Aeropuerto ya existe; solo se agregan la patente de la pantalla y sus eventos.
+   ===================================================================================== */
+
+/* ---------- 34) Patente del maestro de aeropuertos ---------- */
+IF NOT EXISTS (SELECT 1 FROM dbo.Patente WHERE DataKey = N'Aeropuertos.Gestionar')
+    INSERT INTO dbo.Patente (Nombre, DataKey) VALUES (N'Aeropuertos - Gestionar', N'Aeropuertos.Gestionar');
+GO
+
+-- Lo usan los mismos roles que ya gestionan los vuelos.
+INSERT INTO dbo.RolPatente (IdRol, IdPatente)
+SELECT DISTINCT RP.IdRol, N.Id
+FROM dbo.RolPatente RP
+INNER JOIN dbo.Patente P ON P.Id = RP.IdPatente AND P.DataKey = N'Vuelos.Gestionar'
+INNER JOIN dbo.Patente N ON N.DataKey = N'Aeropuertos.Gestionar'
+WHERE NOT EXISTS (SELECT 1 FROM dbo.RolPatente X WHERE X.IdRol = RP.IdRol AND X.IdPatente = N.Id);
+GO
+
+/* ---------- 35) Tipos de evento de bitácora del maestro de aeropuertos ---------- */
+INSERT INTO dbo.TipoEvento (Nombre)
+SELECT E.Nombre FROM (VALUES (N'Aeropuerto creado'),
+                             (N'Aeropuerto modificado'),
+                             (N'Aeropuerto eliminado')) AS E(Nombre)
+WHERE NOT EXISTS (SELECT 1 FROM dbo.TipoEvento X WHERE X.Nombre = E.Nombre);
+GO
+
+IF NOT EXISTS (SELECT 1 FROM dbo.VersionBD_GV42 WHERE Version = 13)
+BEGIN
+    -- Las filas nuevas de Patente, RolPatente y TipoEvento necesitan su dígito verificador: lo calcula el sistema.
+    INSERT INTO dbo.TareaPendiente_GV42 (Nombre)
+    SELECT X.T FROM (VALUES (N'RecalcularDV:Patente'), (N'RecalcularDV:RolPatente'), (N'RecalcularDV:TipoEvento')) AS X(T)
+    WHERE NOT EXISTS (SELECT 1 FROM dbo.TareaPendiente_GV42 P WHERE P.Nombre = X.T);
+
+    INSERT INTO dbo.VersionBD_GV42 (Version, Descripcion)
+    VALUES (13, N'Maestro de aeropuertos: patente y eventos de bitácora');
+END
+GO

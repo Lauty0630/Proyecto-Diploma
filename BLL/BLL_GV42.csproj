@@ -63,6 +63,7 @@
     <Compile Include="Reportes\BLLReporteReserva_GV42.cs" />
     <Compile Include="Vuelos\BLLVuelo_GV42.cs" />
     <Compile Include="Clientes\BLLCliente_GV42.cs" />
+    <Compile Include="Vuelos\BLLAeropuerto_GV42.cs" />
     <Compile Include="Vuelos\BLLVueloHistorial_GV42.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
