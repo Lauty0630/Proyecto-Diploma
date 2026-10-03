@@ -228,6 +228,12 @@
     <Compile Include="Reservas\FRMConsultarReservas_GV42.Designer.cs">
       <DependentUpon>FRMConsultarReservas_GV42.cs</DependentUpon>
     </Compile>
+    <Compile Include="Reportes\FRMReporteCheckIn_GV42.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Reportes\FRMReporteCheckIn_GV42.Designer.cs">
+      <DependentUpon>FRMReporteCheckIn_GV42.cs</DependentUpon>
+    </Compile>
     <Compile Include="Reportes\FRMReporteReservas_GV42.cs">
       <SubType>Form</SubType>
     </Compile>

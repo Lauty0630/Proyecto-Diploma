@@ -1098,3 +1098,47 @@ GO
 IF OBJECT_ID('dbo.FK_Reserva_Tarifa', 'F') IS NULL
     ALTER TABLE dbo.Reserva ADD CONSTRAINT FK_Reserva_Tarifa FOREIGN KEY (IdTarifa) REFERENCES dbo.TarifaFamilia (Id);
 GO
+
+/* =====================================================================================
+   VERSIÓN 9 – Reporte de check-in (RFN 2)
+   ===================================================================================== */
+
+/* ---------- 28) Patentes del reporte de check-in ---------- */
+IF NOT EXISTS (SELECT 1 FROM dbo.Patente WHERE DataKey = N'Reportes.CheckIn')
+    INSERT INTO dbo.Patente (Nombre, DataKey) VALUES (N'Reportes - Check-in', N'Reportes.CheckIn');
+IF NOT EXISTS (SELECT 1 FROM dbo.Patente WHERE DataKey = N'Reportes.CheckInExportarPDF')
+    INSERT INTO dbo.Patente (Nombre, DataKey) VALUES (N'Reportes - Check-in Exportar PDF', N'Reportes.CheckInExportarPDF');
+GO
+
+-- Lo consultan el personal de mostrador (quien atiende el check-in) y quienes ya ven los reportes
+-- de gestión (Gerente y Admin).
+INSERT INTO dbo.RolPatente (IdRol, IdPatente)
+SELECT DISTINCT RP.IdRol, N.Id
+FROM dbo.RolPatente RP
+INNER JOIN dbo.Patente P ON P.Id = RP.IdPatente
+INNER JOIN (VALUES (N'CheckIn.Realizar',             N'Reportes.CheckIn'),
+                   (N'CheckIn.Realizar',             N'Reportes.CheckInExportarPDF'),
+                   (N'Reportes.Reservas',            N'Reportes.CheckIn'),
+                   (N'Reportes.ReservasExportarPDF', N'Reportes.CheckInExportarPDF')) AS M(Origen, Nueva) ON M.Origen = P.DataKey
+INNER JOIN dbo.Patente N ON N.DataKey = M.Nueva
+WHERE NOT EXISTS (SELECT 1 FROM dbo.RolPatente X WHERE X.IdRol = RP.IdRol AND X.IdPatente = N.Id);
+GO
+
+/* ---------- 29) Tipos de evento de bitácora del reporte ---------- */
+INSERT INTO dbo.TipoEvento (Nombre)
+SELECT E.Nombre FROM (VALUES (N'Reporte de check-in consultado'),
+                             (N'Reporte de check-in exportado a PDF')) AS E(Nombre)
+WHERE NOT EXISTS (SELECT 1 FROM dbo.TipoEvento X WHERE X.Nombre = E.Nombre);
+GO
+
+IF NOT EXISTS (SELECT 1 FROM dbo.VersionBD_GV42 WHERE Version = 9)
+BEGIN
+    -- Las filas nuevas de Patente, RolPatente y TipoEvento necesitan su dígito verificador: lo calcula el sistema.
+    INSERT INTO dbo.TareaPendiente_GV42 (Nombre)
+    SELECT X.T FROM (VALUES (N'RecalcularDV:Patente'), (N'RecalcularDV:RolPatente'), (N'RecalcularDV:TipoEvento')) AS X(T)
+    WHERE NOT EXISTS (SELECT 1 FROM dbo.TareaPendiente_GV42 P WHERE P.Nombre = X.T);
+
+    INSERT INTO dbo.VersionBD_GV42 (Version, Descripcion)
+    VALUES (9, N'Reporte de check-in (RFN 2): patentes y eventos de bitácora');
+END
+GO

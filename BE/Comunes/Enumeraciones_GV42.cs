@@ -79,6 +79,16 @@ namespace BE
             return v == EstadoCheckIn_GV42.Pendiente ? Tr("enum.checkin.pendiente", "Pendiente") : Tr("enum.checkin.realizado", "Realizado");
         }
 
+        public static string Texto(this EstadoAsistencia_GV42 v)
+        {
+            switch (v)
+            {
+                case EstadoAsistencia_GV42.Presente: return Tr("enum.asistenciaVuelo.presente", "Presente");
+                case EstadoAsistencia_GV42.Ausente: return Tr("enum.asistenciaVuelo.ausente", "Ausente");
+                default: return Tr("enum.asistenciaVuelo.aConfirmar", "A confirmar");
+            }
+        }
+
         public static string Texto(this CanalVenta_GV42 v)
         {
             return v == CanalVenta_GV42.Presencial ? Tr("enum.canal.presencial", "Presencial") : Tr("enum.canal.autogestion", "Autogestión");

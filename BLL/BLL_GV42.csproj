@@ -59,6 +59,7 @@
     <Compile Include="CheckIn\DisenioTarjetaEmbarque_GV42.cs" />
     <Compile Include="Reservas\BLLNegocioUtil_GV42.cs" />
     <Compile Include="Reservas\BLLReserva_GV42.cs" />
+    <Compile Include="Reportes\BLLReporteCheckIn_GV42.cs" />
     <Compile Include="Reportes\BLLReporteReserva_GV42.cs" />
     <Compile Include="Vuelos\BLLVuelo_GV42.cs" />
     <Compile Include="Vuelos\BLLVueloHistorial_GV42.cs" />

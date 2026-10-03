@@ -45,6 +45,7 @@
             this.bitacoraVuelosToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.reportesToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.reporteReservasToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.reporteCheckInToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.idiomaToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.espanolToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.inglesToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
@@ -223,7 +224,8 @@
             // reportesToolStripMenuItem
             //
             this.reportesToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
-            this.reporteReservasToolStripMenuItem});
+            this.reporteReservasToolStripMenuItem,
+            this.reporteCheckInToolStripMenuItem});
             this.reportesToolStripMenuItem.Name = "reportesToolStripMenuItem";
             this.reportesToolStripMenuItem.Padding = new System.Windows.Forms.Padding(8, 0, 8, 0);
             this.reportesToolStripMenuItem.Size = new System.Drawing.Size(84, 23);
@@ -236,6 +238,14 @@
             this.reporteReservasToolStripMenuItem.Size = new System.Drawing.Size(220, 26);
             this.reporteReservasToolStripMenuItem.Text = "Reporte de reservas";
             this.reporteReservasToolStripMenuItem.Click += new System.EventHandler(this.reporteReservasToolStripMenuItem_Click);
+            //
+            // reporteCheckInToolStripMenuItem
+            //
+            this.reporteCheckInToolStripMenuItem.Font = new System.Drawing.Font("Segoe UI", 10F);
+            this.reporteCheckInToolStripMenuItem.Name = "reporteCheckInToolStripMenuItem";
+            this.reporteCheckInToolStripMenuItem.Size = new System.Drawing.Size(220, 26);
+            this.reporteCheckInToolStripMenuItem.Text = "Reporte de check-in";
+            this.reporteCheckInToolStripMenuItem.Click += new System.EventHandler(this.reporteCheckInToolStripMenuItem_Click);
             //
             // idiomaToolStripMenuItem
             //
@@ -549,6 +559,7 @@
         private System.Windows.Forms.ToolStripMenuItem bitacoraVuelosToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem reportesToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem reporteReservasToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem reporteCheckInToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem idiomaToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem espanolToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem inglesToolStripMenuItem;

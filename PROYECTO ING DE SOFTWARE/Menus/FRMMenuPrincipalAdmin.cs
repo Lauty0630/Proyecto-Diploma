@@ -63,6 +63,7 @@ namespace PROYECTO_ING_DE_SOFTWARE
 
             reportesToolStripMenuItem.Text = IdiomaManager_GV42.T("menu.reportes");
             reporteReservasToolStripMenuItem.Text = IdiomaManager_GV42.T("menu.reporteReservas");
+            reporteCheckInToolStripMenuItem.Text = IdiomaManager_GV42.T("menu.reporteCheckIn");
 
             usuarioToolStripMenuItem.Text = IdiomaManager_GV42.T("menu.usuario");
             reLoginToolStripMenuItem.Text = IdiomaManager_GV42.T("menu.relogin");
@@ -193,7 +194,9 @@ namespace PROYECTO_ING_DE_SOFTWARE
 
             bool puedeVerReporteReservas = dataKeys.Contains("Reportes.Reservas");
             reporteReservasToolStripMenuItem.Visible = puedeVerReporteReservas;
-            reportesToolStripMenuItem.Visible = puedeVerReporteReservas;
+            bool puedeVerReporteCheckIn = dataKeys.Contains("Reportes.CheckIn");
+            reporteCheckInToolStripMenuItem.Visible = puedeVerReporteCheckIn;
+            reportesToolStripMenuItem.Visible = puedeVerReporteReservas || puedeVerReporteCheckIn;
 
             bool puedeCambiarIdioma = dataKeys.Contains("Sesion.CambiarIdioma");
             idiomaToolStripMenuItem.Visible = puedeCambiarIdioma;
@@ -326,10 +329,15 @@ namespace PROYECTO_ING_DE_SOFTWARE
             AbrirFormularioHijo(new FRMBitacoraVuelos_GV42());
         }
 
-        // Reportes de gestión (rol Gerente). Por ahora: reporte de reservas del RFN 1.
+        // Reportes: el de reservas (RFN 1, rol Gerente) y el de check-in (RFN 2, mostrador y Gerente).
         private void reporteReservasToolStripMenuItem_Click(object sender, EventArgs e)
         {
             AbrirFormularioHijo(new FRMReporteReservas_GV42());
+        }
+
+        private void reporteCheckInToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            AbrirFormularioHijo(new FRMReporteCheckIn_GV42());
         }
 
         private void espanolToolStripMenuItem_Click(object sender, EventArgs e)
