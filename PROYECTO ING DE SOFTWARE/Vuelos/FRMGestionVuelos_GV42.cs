@@ -8,8 +8,9 @@ using System.Windows.Forms;
 
 namespace PROYECTO_ING_DE_SOFTWARE
 {
-    // Gestión de vuelos: modificar los datos de un vuelo existente y darlo de baja / reactivarlo
-    // (borrado lógico). Cada cambio queda registrado solo en Vuelo_C por el trigger de la base;
+    // Gestión de vuelos: crear un vuelo, modificar los datos de uno existente y darlo de baja /
+    // reactivarlo (borrado lógico). El código de vuelo se define en el alta y no se modifica.
+    // Cada alta o cambio queda registrado solo en Vuelo_C por el trigger de la base;
     // se consulta desde "Bitácora de cambios". El diseño está en FRMGestionVuelos_GV42.Designer.cs.
     public partial class FRMGestionVuelos_GV42 : Form, IObservadorIdioma_GV42
     {
@@ -33,6 +34,7 @@ namespace PROYECTO_ING_DE_SOFTWARE
             ActualizarIdioma();
 
             CargarCatalogos();
+            MostrarSeleccionado();   // sin vuelos cargados solo queda disponible "Nuevo vuelo"
             CargarVuelos(0);
         }
 
@@ -61,6 +63,7 @@ namespace PROYECTO_ING_DE_SOFTWARE
             btnGuardar.Text = IdiomaManager_GV42.T("vuelos.guardar");
             btnBaja.Text = IdiomaManager_GV42.T("vuelos.baja");
             btnReactivar.Text = IdiomaManager_GV42.T("vuelos.reactivar");
+            btnNuevo.Text = IdiomaManager_GV42.T("vuelos.nuevo");
 
             colCodigo.HeaderText = IdiomaManager_GV42.T("vuelos.colVuelo");
             colAerolinea.HeaderText = IdiomaManager_GV42.T("vuelos.aerolinea");
@@ -165,13 +168,15 @@ namespace PROYECTO_ING_DE_SOFTWARE
         {
             if (dgvVuelos.SelectedRows.Count == 0)
             {
+                // Sin vuelo elegido solo queda disponible "Nuevo vuelo".
                 _seleccionado = null;
-                pnlEditor.Enabled = false;
+                tlpCampos.Enabled = false;
+                btnGuardar.Enabled = btnBaja.Enabled = btnReactivar.Enabled = false;
                 return;
             }
 
             _seleccionado = ((FilaVuelo)dgvVuelos.SelectedRows[0].DataBoundItem).Vuelo;
-            pnlEditor.Enabled = true;
+            tlpCampos.Enabled = true;
 
             txtCodigo.Text = _seleccionado.CodigoVuelo;
             cmbAerolinea.SelectedValue = _seleccionado.Aerolinea.Id;
@@ -259,6 +264,16 @@ namespace PROYECTO_ING_DE_SOFTWARE
             catch (Exception ex)
             {
                 MessageBox.Show(ex.Message, IdiomaManager_GV42.T("vuelos.errorGuardar"), MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        // Alta: se carga en un diálogo aparte (incluye el precio base de cada clase).
+        private void btnNuevo_Click(object sender, EventArgs e)
+        {
+            using (var alta = new FRMAltaVuelo_GV42())
+            {
+                if (alta.ShowDialog(this) == DialogResult.OK)
+                    CargarVuelos(alta.IdVueloCreado);
             }
         }
 

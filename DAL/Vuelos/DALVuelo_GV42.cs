@@ -189,15 +189,77 @@ namespace DAL
             return r == null ? 0 : Convert.ToInt32(r);
         }
 
+        // Alta de un vuelo con sus clases y su mapa de asientos, todo en una transacción. Devuelve el Id.
+        // El trigger TR_Vuelo_Historial de la base genera el primer registro del vuelo en Vuelo_C.
+        // Mapa de asientos: 6 butacas por fila (A-F); las primeras filas son de Primera, las siguientes
+        // de Ejecutiva y el resto de Económica (el mismo mapa que usan los vuelos ya cargados).
+        public int Crear(Vuelo_GV42 v, List<VueloClase_GV42> clases, int filasPrimera, int filasEjecutiva, int filasTotales)
+        {
+            return _acceso.EjecutarEnTransaccion(tx =>
+            {
+                // SCOPE_IDENTITY y no @@IDENTITY: el trigger de Vuelo inserta en Vuelo_C, que también tiene identidad.
+                object nuevo = _acceso.leerEscalar(tx,
+                    "INSERT INTO Vuelo (CodigoVuelo, IdAerolinea, IdOrigen, IdDestino, FechaHoraSalida, FechaHoraLlegada, " +
+                    "                   PuertaEmbarque, CostoKiloExceso, BorradoLogico) " +
+                    "VALUES (@Cod, @IdAerolinea, @IdOrigen, @IdDestino, @Salida, @Llegada, @Puerta, @Costo, 0); " +
+                    "SELECT CAST(SCOPE_IDENTITY() AS INT);",
+                    new[] {
+                        new SqlParameter("@Cod", v.CodigoVuelo),
+                        new SqlParameter("@IdAerolinea", v.Aerolinea.Id),
+                        new SqlParameter("@IdOrigen", v.Origen.Id),
+                        new SqlParameter("@IdDestino", v.Destino.Id),
+                        new SqlParameter("@Salida", v.FechaHoraSalida),
+                        new SqlParameter("@Llegada", v.FechaHoraLlegada),
+                        new SqlParameter("@Puerta", v.PuertaEmbarque),
+                        new SqlParameter("@Costo", v.CostoKiloExceso)
+                    });
+                int idVuelo = Convert.ToInt32(nuevo);
+
+                foreach (VueloClase_GV42 c in clases)
+                {
+                    _acceso.escribir(tx,
+                        "INSERT INTO VueloClase (IdVuelo, IdClase, PrecioBase, CapacidadAsientos, AsientosReservados, FranquiciaEquipajeKg) " +
+                        "VALUES (@IdVuelo, @IdClase, @Precio, @Capacidad, 0, @Franquicia)",
+                        new[] {
+                            new SqlParameter("@IdVuelo", idVuelo),
+                            new SqlParameter("@IdClase", (int)c.Clase),
+                            new SqlParameter("@Precio", c.PrecioBase),
+                            new SqlParameter("@Capacidad", c.CapacidadAsientos),
+                            new SqlParameter("@Franquicia", c.FranquiciaEquipajeKg)
+                        });
+                }
+
+                _acceso.escribir(tx,
+                    "INSERT INTO Asiento (IdVuelo, Fila, Letra, IdClase, Ubicacion) " +
+                    "SELECT @IdVuelo, F.Fila, L.Letra, " +
+                    "       CASE WHEN F.Fila <= @FilasPrimera THEN @Primera WHEN F.Fila <= @FilasPrimera + @FilasEjecutiva THEN @Ejecutiva ELSE @Economica END, " +
+                    "       L.Ubicacion " +
+                    "FROM (SELECT TOP (@Filas) ROW_NUMBER() OVER (ORDER BY (SELECT NULL)) AS Fila FROM sys.all_objects) AS F " +
+                    "CROSS JOIN (VALUES ('A', N'Ventana'), ('B', N'Central'), ('C', N'Pasillo'), " +
+                    "                   ('D', N'Pasillo'), ('E', N'Central'), ('F', N'Ventana')) AS L (Letra, Ubicacion)",
+                    new[] {
+                        new SqlParameter("@IdVuelo", idVuelo),
+                        new SqlParameter("@FilasPrimera", filasPrimera),
+                        new SqlParameter("@FilasEjecutiva", filasEjecutiva),
+                        new SqlParameter("@Filas", filasTotales),
+                        new SqlParameter("@Primera", (int)ClaseVuelo_GV42.Primera),
+                        new SqlParameter("@Ejecutiva", (int)ClaseVuelo_GV42.Ejecutiva),
+                        new SqlParameter("@Economica", (int)ClaseVuelo_GV42.Economica)
+                    });
+
+                return idVuelo;
+            });
+        }
+
         // El trigger TR_Vuelo_Historial de la base genera el registro nuevo en Vuelo_C.
+        // El código de vuelo no se modifica: es la identificación del vuelo y de su historial.
         public void Modificar(Vuelo_GV42 v)
         {
             _acceso.escribir(
-                "UPDATE Vuelo SET CodigoVuelo = @Cod, IdAerolinea = @IdAerolinea, IdOrigen = @IdOrigen, IdDestino = @IdDestino, " +
+                "UPDATE Vuelo SET IdAerolinea = @IdAerolinea, IdOrigen = @IdOrigen, IdDestino = @IdDestino, " +
                 "                 FechaHoraSalida = @Salida, FechaHoraLlegada = @Llegada, PuertaEmbarque = @Puerta, CostoKiloExceso = @Costo " +
                 "WHERE Id = @Id",
                 new[] {
-                    new SqlParameter("@Cod", v.CodigoVuelo),
                     new SqlParameter("@IdAerolinea", v.Aerolinea.Id),
                     new SqlParameter("@IdOrigen", v.Origen.Id),
                     new SqlParameter("@IdDestino", v.Destino.Id),

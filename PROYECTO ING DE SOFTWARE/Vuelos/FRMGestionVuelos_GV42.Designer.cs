@@ -52,6 +52,7 @@
             this.lblAyuda = new System.Windows.Forms.Label();
             this.flpBotones = new System.Windows.Forms.FlowLayoutPanel();
             this.btnGuardar = new PROYECTO_ING_DE_SOFTWARE.BotonModerno_GV42();
+            this.btnNuevo = new PROYECTO_ING_DE_SOFTWARE.BotonModerno_GV42();
             this.btnBaja = new PROYECTO_ING_DE_SOFTWARE.BotonModerno_GV42();
             this.btnReactivar = new PROYECTO_ING_DE_SOFTWARE.BotonModerno_GV42();
             this.tlpCampos = new System.Windows.Forms.TableLayoutPanel();
@@ -115,7 +116,7 @@
             this.lblSubtitulo.Name = "lblSubtitulo";
             this.lblSubtitulo.Size = new System.Drawing.Size(391, 19);
             this.lblSubtitulo.TabIndex = 1;
-            this.lblSubtitulo.Text = "Modificá los datos de un vuelo, dalo de baja o reactivalo";
+            this.lblSubtitulo.Text = "Creá un vuelo, modificá sus datos, dalo de baja o reactivalo";
             //
             // pnlContenido
             //
@@ -256,7 +257,6 @@
             this.pnlEditor.Controls.Add(this.tlpCampos);
             this.pnlEditor.Controls.Add(this.lblSeccionEditor);
             this.pnlEditor.Dock = System.Windows.Forms.DockStyle.Bottom;
-            this.pnlEditor.Enabled = false;
             this.pnlEditor.Location = new System.Drawing.Point(24, 318);
             this.pnlEditor.Name = "pnlEditor";
             this.pnlEditor.Padding = new System.Windows.Forms.Padding(20, 14, 20, 12);
@@ -280,7 +280,7 @@
             this.lblAyuda.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(96)))), ((int)(((byte)(125)))), ((int)(((byte)(139)))));
             this.lblAyuda.Location = new System.Drawing.Point(0, 0);
             this.lblAyuda.Name = "lblAyuda";
-            this.lblAyuda.Size = new System.Drawing.Size(402, 60);
+            this.lblAyuda.Size = new System.Drawing.Size(322, 60);
             this.lblAyuda.TabIndex = 1;
             this.lblAyuda.Text = "Cada cambio queda registrado en la bitácora de vuelos (Vuelo_C).\nLa baja es lógica: el vuelo no se elimina, solo deja de ofrecerse.";
             this.lblAyuda.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
@@ -290,12 +290,13 @@
             this.flpBotones.Controls.Add(this.btnGuardar);
             this.flpBotones.Controls.Add(this.btnBaja);
             this.flpBotones.Controls.Add(this.btnReactivar);
+            this.flpBotones.Controls.Add(this.btnNuevo);
             this.flpBotones.Dock = System.Windows.Forms.DockStyle.Right;
             this.flpBotones.FlowDirection = System.Windows.Forms.FlowDirection.RightToLeft;
-            this.flpBotones.Location = new System.Drawing.Point(402, 0);
+            this.flpBotones.Location = new System.Drawing.Point(322, 0);
             this.flpBotones.Name = "flpBotones";
             this.flpBotones.Padding = new System.Windows.Forms.Padding(0, 8, 0, 0);
-            this.flpBotones.Size = new System.Drawing.Size(510, 60);
+            this.flpBotones.Size = new System.Drawing.Size(590, 60);
             this.flpBotones.TabIndex = 0;
             this.flpBotones.WrapContents = false;
             //
@@ -304,10 +305,10 @@
             this.btnGuardar.FlatAppearance.BorderSize = 0;
             this.btnGuardar.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.btnGuardar.Font = new System.Drawing.Font("Segoe UI Semibold", 10F, System.Drawing.FontStyle.Bold);
-            this.btnGuardar.Location = new System.Drawing.Point(340, 11);
+            this.btnGuardar.Location = new System.Drawing.Point(430, 11);
             this.btnGuardar.Margin = new System.Windows.Forms.Padding(10, 3, 0, 3);
             this.btnGuardar.Name = "btnGuardar";
-            this.btnGuardar.Size = new System.Drawing.Size(170, 40);
+            this.btnGuardar.Size = new System.Drawing.Size(160, 40);
             this.btnGuardar.TabIndex = 0;
             this.btnGuardar.Text = "Guardar cambios";
             this.btnGuardar.UseVisualStyleBackColor = false;
@@ -319,10 +320,10 @@
             this.btnBaja.FlatAppearance.BorderSize = 0;
             this.btnBaja.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.btnBaja.Font = new System.Drawing.Font("Segoe UI Semibold", 10F, System.Drawing.FontStyle.Bold);
-            this.btnBaja.Location = new System.Drawing.Point(180, 11);
+            this.btnBaja.Location = new System.Drawing.Point(290, 11);
             this.btnBaja.Margin = new System.Windows.Forms.Padding(10, 3, 0, 3);
             this.btnBaja.Name = "btnBaja";
-            this.btnBaja.Size = new System.Drawing.Size(150, 40);
+            this.btnBaja.Size = new System.Drawing.Size(130, 40);
             this.btnBaja.TabIndex = 1;
             this.btnBaja.Text = "Dar de baja";
             this.btnBaja.UseVisualStyleBackColor = false;
@@ -334,14 +335,29 @@
             this.btnReactivar.FlatAppearance.BorderSize = 0;
             this.btnReactivar.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.btnReactivar.Font = new System.Drawing.Font("Segoe UI Semibold", 10F, System.Drawing.FontStyle.Bold);
-            this.btnReactivar.Location = new System.Drawing.Point(20, 11);
+            this.btnReactivar.Location = new System.Drawing.Point(160, 11);
             this.btnReactivar.Margin = new System.Windows.Forms.Padding(10, 3, 0, 3);
             this.btnReactivar.Name = "btnReactivar";
-            this.btnReactivar.Size = new System.Drawing.Size(150, 40);
+            this.btnReactivar.Size = new System.Drawing.Size(120, 40);
             this.btnReactivar.TabIndex = 2;
             this.btnReactivar.Text = "Reactivar";
             this.btnReactivar.UseVisualStyleBackColor = false;
             this.btnReactivar.Click += new System.EventHandler(this.btnReactivar_Click);
+            //
+            // btnNuevo
+            //
+            this.btnNuevo.Estilo = PROYECTO_ING_DE_SOFTWARE.EstiloBoton_GV42.Secundario;
+            this.btnNuevo.FlatAppearance.BorderSize = 0;
+            this.btnNuevo.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.btnNuevo.Font = new System.Drawing.Font("Segoe UI Semibold", 10F, System.Drawing.FontStyle.Bold);
+            this.btnNuevo.Location = new System.Drawing.Point(10, 11);
+            this.btnNuevo.Margin = new System.Windows.Forms.Padding(10, 3, 0, 3);
+            this.btnNuevo.Name = "btnNuevo";
+            this.btnNuevo.Size = new System.Drawing.Size(140, 40);
+            this.btnNuevo.TabIndex = 3;
+            this.btnNuevo.Text = "Nuevo vuelo";
+            this.btnNuevo.UseVisualStyleBackColor = false;
+            this.btnNuevo.Click += new System.EventHandler(this.btnNuevo_Click);
             //
             // tlpCampos
             //
@@ -438,6 +454,7 @@
             this.txtCodigo.Margin = new System.Windows.Forms.Padding(0, 3, 18, 3);
             this.txtCodigo.MaxLength = 10;
             this.txtCodigo.Name = "txtCodigo";
+            this.txtCodigo.ReadOnly = true;
             this.txtCodigo.Size = new System.Drawing.Size(164, 26);
             this.txtCodigo.TabIndex = 4;
             //
@@ -646,6 +663,7 @@
         private System.Windows.Forms.Label lblAyuda;
         private System.Windows.Forms.FlowLayoutPanel flpBotones;
         private PROYECTO_ING_DE_SOFTWARE.BotonModerno_GV42 btnGuardar;
+        private PROYECTO_ING_DE_SOFTWARE.BotonModerno_GV42 btnNuevo;
         private PROYECTO_ING_DE_SOFTWARE.BotonModerno_GV42 btnBaja;
         private PROYECTO_ING_DE_SOFTWARE.BotonModerno_GV42 btnReactivar;
         private System.Windows.Forms.TableLayoutPanel tlpCampos;

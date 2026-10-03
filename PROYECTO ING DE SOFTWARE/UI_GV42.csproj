@@ -216,6 +216,12 @@
     <Compile Include="Vuelos\FRMGestionVuelos_GV42.Designer.cs">
       <DependentUpon>FRMGestionVuelos_GV42.cs</DependentUpon>
     </Compile>
+    <Compile Include="Clientes\FRMMaestroClientes_GV42.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Clientes\FRMMaestroClientes_GV42.Designer.cs">
+      <DependentUpon>FRMMaestroClientes_GV42.cs</DependentUpon>
+    </Compile>
     <Compile Include="Vuelos\FRMBitacoraVuelos_GV42.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -227,6 +233,12 @@
     </Compile>
     <Compile Include="Reservas\FRMConsultarReservas_GV42.Designer.cs">
       <DependentUpon>FRMConsultarReservas_GV42.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Vuelos\FRMAltaVuelo_GV42.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Vuelos\FRMAltaVuelo_GV42.Designer.cs">
+      <DependentUpon>FRMAltaVuelo_GV42.cs</DependentUpon>
     </Compile>
     <Compile Include="Reportes\FRMReporteCheckIn_GV42.cs">
       <SubType>Form</SubType>

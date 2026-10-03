@@ -1,6 +1,6 @@
 ﻿namespace PROYECTO_ING_DE_SOFTWARE
 {
-    partial class FRMGestionUsuariosAdmin
+    partial class FRMMaestroClientes_GV42
     {
         /// <summary>
         /// Variable del diseñador necesaria.
@@ -47,31 +47,42 @@
             this.label4 = new System.Windows.Forms.Label();
             this.txtEmail = new PROYECTO_ING_DE_SOFTWARE.TextBoxModerno_GV42();
             this.label5 = new System.Windows.Forms.Label();
-            this.comboBox1 = new System.Windows.Forms.ComboBox();
-            this.label6 = new System.Windows.Forms.Label();
-            this.txtUser = new PROYECTO_ING_DE_SOFTWARE.TextBoxModerno_GV42();
-            this.label7 = new System.Windows.Forms.Label();
-            this.txtBloqueado = new PROYECTO_ING_DE_SOFTWARE.TextBoxModerno_GV42();
-            this.label8 = new System.Windows.Forms.Label();
-            this.txtActivo = new PROYECTO_ING_DE_SOFTWARE.TextBoxModerno_GV42();
+            this.txtTelefono = new PROYECTO_ING_DE_SOFTWARE.TextBoxModerno_GV42();
+            this.lblTituloMensaje = new System.Windows.Forms.Label();
+            this.txtMensaje = new PROYECTO_ING_DE_SOFTWARE.TextBoxModerno_GV42();
             this.tlpDerecha = new System.Windows.Forms.TableLayoutPanel();
             this.pnlGrilla = new PROYECTO_ING_DE_SOFTWARE.PanelTarjeta_GV42();
             this.tlpGrilla = new System.Windows.Forms.TableLayoutPanel();
             this.flpFiltros = new System.Windows.Forms.FlowLayoutPanel();
             this.lblTituloGrilla = new System.Windows.Forms.Label();
-            this.rbActivos = new System.Windows.Forms.RadioButton();
-            this.rbTodos = new System.Windows.Forms.RadioButton();
-            this.dgvUsuarios = new PROYECTO_ING_DE_SOFTWARE.GrillaModerna_GV42();
+            this.dgvClientes = new PROYECTO_ING_DE_SOFTWARE.GrillaModerna_GV42();
+            this.colDni = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.colApellido = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.colNombre = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.colEmail = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.colTelefono = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.pnlSerializacion = new PROYECTO_ING_DE_SOFTWARE.PanelTarjeta_GV42();
+            this.tlpSerializacion = new System.Windows.Forms.TableLayoutPanel();
+            this.lblTituloSerializacion = new System.Windows.Forms.Label();
+            this.flpAccionesSerializacion = new System.Windows.Forms.FlowLayoutPanel();
+            this.btnLimpiar = new PROYECTO_ING_DE_SOFTWARE.BotonModerno_GV42();
+            this.btnActualizar = new PROYECTO_ING_DE_SOFTWARE.BotonModerno_GV42();
+            this.btnSerializar = new PROYECTO_ING_DE_SOFTWARE.BotonModerno_GV42();
+            this.btnDeserializar = new PROYECTO_ING_DE_SOFTWARE.BotonModerno_GV42();
+            this.txtRutaSerializar = new PROYECTO_ING_DE_SOFTWARE.TextBoxModerno_GV42();
+            this.btnUbicacionSerializar = new PROYECTO_ING_DE_SOFTWARE.BotonModerno_GV42();
+            this.txtRutaDeserializar = new PROYECTO_ING_DE_SOFTWARE.TextBoxModerno_GV42();
+            this.btnUbicacionDeserializar = new PROYECTO_ING_DE_SOFTWARE.BotonModerno_GV42();
             this.pnlBotonera = new PROYECTO_ING_DE_SOFTWARE.PanelTarjeta_GV42();
             this.flpAcciones = new System.Windows.Forms.FlowLayoutPanel();
             this.btnCrear = new PROYECTO_ING_DE_SOFTWARE.BotonModerno_GV42();
             this.btnModificar = new PROYECTO_ING_DE_SOFTWARE.BotonModerno_GV42();
-            this.btnDesbloquear = new PROYECTO_ING_DE_SOFTWARE.BotonModerno_GV42();
-            this.btnActivarDesactivar = new PROYECTO_ING_DE_SOFTWARE.BotonModerno_GV42();
+            this.btnEliminar = new PROYECTO_ING_DE_SOFTWARE.BotonModerno_GV42();
             this.flpConfirmacion = new System.Windows.Forms.FlowLayoutPanel();
             this.btnSalir = new PROYECTO_ING_DE_SOFTWARE.BotonModerno_GV42();
             this.btnCancelar = new PROYECTO_ING_DE_SOFTWARE.BotonModerno_GV42();
             this.btnAplicar = new PROYECTO_ING_DE_SOFTWARE.BotonModerno_GV42();
+            this.toolTipAyuda = new System.Windows.Forms.ToolTip(this.components);
             this.pnlEncabezado.SuspendLayout();
             this.pnlContenido.SuspendLayout();
             this.tlpPrincipal.SuspendLayout();
@@ -81,7 +92,10 @@
             this.pnlGrilla.SuspendLayout();
             this.tlpGrilla.SuspendLayout();
             this.flpFiltros.SuspendLayout();
-            ((System.ComponentModel.ISupportInitialize)(this.dgvUsuarios)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.dgvClientes)).BeginInit();
+            this.pnlSerializacion.SuspendLayout();
+            this.tlpSerializacion.SuspendLayout();
+            this.flpAccionesSerializacion.SuspendLayout();
             this.pnlBotonera.SuspendLayout();
             this.flpAcciones.SuspendLayout();
             this.flpConfirmacion.SuspendLayout();
@@ -106,7 +120,7 @@
             this.lblSubtitulo.Location = new System.Drawing.Point(29, 48);
             this.lblSubtitulo.Name = "lblSubtitulo";
             this.lblSubtitulo.TabIndex = 1;
-            this.lblSubtitulo.Text = "Alta, modificación, desbloqueo y activación de las cuentas del sistema";
+            this.lblSubtitulo.Text = "Alta, modificación y baja de clientes, y serialización XML del maestro";
             // 
             // lblTitulo
             // 
@@ -117,7 +131,7 @@
             this.lblTitulo.Location = new System.Drawing.Point(26, 12);
             this.lblTitulo.Name = "lblTitulo";
             this.lblTitulo.TabIndex = 0;
-            this.lblTitulo.Text = "Gestión de Usuarios";
+            this.lblTitulo.Text = "Maestro de clientes";
             // 
             // pnlContenido
             // 
@@ -175,17 +189,13 @@
             this.tlpDatos.Controls.Add(this.label4, 0, 5);
             this.tlpDatos.Controls.Add(this.txtEmail, 1, 5);
             this.tlpDatos.Controls.Add(this.label5, 0, 6);
-            this.tlpDatos.Controls.Add(this.comboBox1, 1, 6);
-            this.tlpDatos.Controls.Add(this.label6, 0, 7);
-            this.tlpDatos.Controls.Add(this.txtUser, 1, 7);
-            this.tlpDatos.Controls.Add(this.label7, 0, 8);
-            this.tlpDatos.Controls.Add(this.txtBloqueado, 1, 8);
-            this.tlpDatos.Controls.Add(this.label8, 2, 8);
-            this.tlpDatos.Controls.Add(this.txtActivo, 3, 8);
+            this.tlpDatos.Controls.Add(this.txtTelefono, 1, 6);
+            this.tlpDatos.Controls.Add(this.lblTituloMensaje, 0, 7);
+            this.tlpDatos.Controls.Add(this.txtMensaje, 0, 8);
             this.tlpDatos.Dock = System.Windows.Forms.DockStyle.Fill;
             this.tlpDatos.Margin = new System.Windows.Forms.Padding(0);
             this.tlpDatos.Name = "tlpDatos";
-            this.tlpDatos.RowCount = 11;
+            this.tlpDatos.RowCount = 9;
             this.tlpDatos.TabIndex = 0;
             this.tlpDatos.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Absolute, 100F));
             this.tlpDatos.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 50F));
@@ -193,8 +203,6 @@
             this.tlpDatos.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 50F));
             this.tlpDatos.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 30F));
             this.tlpDatos.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 36F));
-            this.tlpDatos.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 34F));
-            this.tlpDatos.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 34F));
             this.tlpDatos.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 34F));
             this.tlpDatos.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 34F));
             this.tlpDatos.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 34F));
@@ -208,8 +216,9 @@
             this.tlpDatos.SetColumnSpan(this.txtApellido, 3);
             this.tlpDatos.SetColumnSpan(this.txtNombre, 3);
             this.tlpDatos.SetColumnSpan(this.txtEmail, 3);
-            this.tlpDatos.SetColumnSpan(this.comboBox1, 3);
-            this.tlpDatos.SetColumnSpan(this.txtUser, 3);
+            this.tlpDatos.SetColumnSpan(this.txtTelefono, 3);
+            this.tlpDatos.SetColumnSpan(this.lblTituloMensaje, 4);
+            this.tlpDatos.SetColumnSpan(this.txtMensaje, 4);
             // 
             // lblTituloDatos
             // 
@@ -220,7 +229,7 @@
             this.lblTituloDatos.Margin = new System.Windows.Forms.Padding(0);
             this.lblTituloDatos.Name = "lblTituloDatos";
             this.lblTituloDatos.TabIndex = 0;
-            this.lblTituloDatos.Text = "Datos del usuario";
+            this.lblTituloDatos.Text = "Datos del cliente";
             // 
             // lblMensaje
             // 
@@ -333,95 +342,58 @@
             this.label5.Margin = new System.Windows.Forms.Padding(0, 0, 8, 0);
             this.label5.Name = "label5";
             this.label5.TabIndex = 10;
-            this.label5.Text = "Rol";
+            this.label5.Text = "Teléfono";
             // 
-            // comboBox1
+            // txtTelefono
             // 
-            this.comboBox1.Anchor = ((System.Windows.Forms.AnchorStyles)(System.Windows.Forms.AnchorStyles.Left | System.Windows.Forms.AnchorStyles.Right));
-            this.comboBox1.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
-            this.comboBox1.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.comboBox1.Font = new System.Drawing.Font("Segoe UI", 10F);
-            this.comboBox1.FormattingEnabled = true;
-            this.comboBox1.Margin = new System.Windows.Forms.Padding(0, 3, 0, 3);
-            this.comboBox1.Name = "comboBox1";
-            this.comboBox1.Size = new System.Drawing.Size(200, 25);
-            this.comboBox1.TabIndex = 11;
+            this.txtTelefono.Anchor = ((System.Windows.Forms.AnchorStyles)(System.Windows.Forms.AnchorStyles.Left | System.Windows.Forms.AnchorStyles.Right));
+            this.txtTelefono.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
+            this.txtTelefono.Font = new System.Drawing.Font("Segoe UI", 10.5F);
+            this.txtTelefono.Margin = new System.Windows.Forms.Padding(0, 3, 0, 3);
+            this.txtTelefono.Name = "txtTelefono";
+            this.txtTelefono.Size = new System.Drawing.Size(200, 26);
+            this.txtTelefono.TabIndex = 13;
             // 
-            // label6
+            // lblTituloMensaje
             // 
-            this.label6.Anchor = System.Windows.Forms.AnchorStyles.Left;
-            this.label6.AutoSize = true;
-            this.label6.Font = new System.Drawing.Font("Segoe UI Semibold", 9.75F, System.Drawing.FontStyle.Bold);
-            this.label6.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(13)))), ((int)(((byte)(71)))), ((int)(((byte)(161)))));
-            this.label6.Margin = new System.Windows.Forms.Padding(0, 0, 8, 0);
-            this.label6.Name = "label6";
-            this.label6.TabIndex = 12;
-            this.label6.Text = "UserName";
+            this.lblTituloMensaje.Anchor = ((System.Windows.Forms.AnchorStyles)(System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left));
+            this.lblTituloMensaje.AutoSize = true;
+            this.lblTituloMensaje.Font = new System.Drawing.Font("Segoe UI Semibold", 9.75F, System.Drawing.FontStyle.Bold);
+            this.lblTituloMensaje.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(13)))), ((int)(((byte)(71)))), ((int)(((byte)(161)))));
+            this.lblTituloMensaje.Margin = new System.Windows.Forms.Padding(0, 0, 0, 4);
+            this.lblTituloMensaje.Name = "lblTituloMensaje";
+            this.lblTituloMensaje.TabIndex = 18;
+            this.lblTituloMensaje.Text = "Mensaje:";
             // 
-            // txtUser
+            // txtMensaje
             // 
-            this.txtUser.Anchor = ((System.Windows.Forms.AnchorStyles)(System.Windows.Forms.AnchorStyles.Left | System.Windows.Forms.AnchorStyles.Right));
-            this.txtUser.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
-            this.txtUser.Font = new System.Drawing.Font("Segoe UI", 10.5F);
-            this.txtUser.Margin = new System.Windows.Forms.Padding(0, 3, 0, 3);
-            this.txtUser.Name = "txtUser";
-            this.txtUser.Size = new System.Drawing.Size(200, 26);
-            this.txtUser.TabIndex = 13;
-            // 
-            // label7
-            // 
-            this.label7.Anchor = System.Windows.Forms.AnchorStyles.Left;
-            this.label7.AutoSize = true;
-            this.label7.Font = new System.Drawing.Font("Segoe UI Semibold", 9.75F, System.Drawing.FontStyle.Bold);
-            this.label7.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(13)))), ((int)(((byte)(71)))), ((int)(((byte)(161)))));
-            this.label7.Margin = new System.Windows.Forms.Padding(0, 0, 8, 0);
-            this.label7.Name = "label7";
-            this.label7.TabIndex = 14;
-            this.label7.Text = "Bloqueado";
-            // 
-            // txtBloqueado
-            // 
-            this.txtBloqueado.Anchor = ((System.Windows.Forms.AnchorStyles)(System.Windows.Forms.AnchorStyles.Left | System.Windows.Forms.AnchorStyles.Right));
-            this.txtBloqueado.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
-            this.txtBloqueado.Font = new System.Drawing.Font("Segoe UI", 10.5F);
-            this.txtBloqueado.Margin = new System.Windows.Forms.Padding(0, 3, 0, 3);
-            this.txtBloqueado.Name = "txtBloqueado";
-            this.txtBloqueado.Size = new System.Drawing.Size(200, 26);
-            this.txtBloqueado.TabIndex = 15;
-            // 
-            // label8
-            // 
-            this.label8.Anchor = System.Windows.Forms.AnchorStyles.Left;
-            this.label8.AutoSize = true;
-            this.label8.Font = new System.Drawing.Font("Segoe UI Semibold", 9.75F, System.Drawing.FontStyle.Bold);
-            this.label8.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(13)))), ((int)(((byte)(71)))), ((int)(((byte)(161)))));
-            this.label8.Margin = new System.Windows.Forms.Padding(10, 0, 8, 0);
-            this.label8.Name = "label8";
-            this.label8.TabIndex = 16;
-            this.label8.Text = "Activo";
-            // 
-            // txtActivo
-            // 
-            this.txtActivo.Anchor = ((System.Windows.Forms.AnchorStyles)(System.Windows.Forms.AnchorStyles.Left | System.Windows.Forms.AnchorStyles.Right));
-            this.txtActivo.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
-            this.txtActivo.Font = new System.Drawing.Font("Segoe UI", 10.5F);
-            this.txtActivo.Margin = new System.Windows.Forms.Padding(0, 3, 0, 3);
-            this.txtActivo.Name = "txtActivo";
-            this.txtActivo.Size = new System.Drawing.Size(200, 26);
-            this.txtActivo.TabIndex = 17;
+            this.txtMensaje.BackColor = System.Drawing.Color.White;
+            this.txtMensaje.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
+            this.txtMensaje.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.txtMensaje.Font = new System.Drawing.Font("Segoe UI", 9F);
+            this.txtMensaje.Margin = new System.Windows.Forms.Padding(0, 3, 0, 3);
+            this.txtMensaje.Multiline = true;
+            this.txtMensaje.Name = "txtMensaje";
+            this.txtMensaje.ReadOnly = true;
+            this.txtMensaje.ScrollBars = System.Windows.Forms.ScrollBars.Vertical;
+            this.txtMensaje.Size = new System.Drawing.Size(300, 60);
+            this.txtMensaje.TabIndex = 19;
+            this.txtMensaje.TabStop = false;
             // 
             // tlpDerecha
             // 
             this.tlpDerecha.BackColor = System.Drawing.Color.Transparent;
             this.tlpDerecha.ColumnCount = 1;
             this.tlpDerecha.Controls.Add(this.pnlGrilla, 0, 0);
+            this.tlpDerecha.Controls.Add(this.pnlSerializacion, 0, 1);
             this.tlpDerecha.Dock = System.Windows.Forms.DockStyle.Fill;
             this.tlpDerecha.Margin = new System.Windows.Forms.Padding(8, 0, 0, 0);
             this.tlpDerecha.Name = "tlpDerecha";
-            this.tlpDerecha.RowCount = 1;
+            this.tlpDerecha.RowCount = 2;
             this.tlpDerecha.TabIndex = 0;
             this.tlpDerecha.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 100F));
             this.tlpDerecha.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 100F));
+            this.tlpDerecha.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 154F));
             // 
             // pnlGrilla
             // 
@@ -438,7 +410,7 @@
             this.tlpGrilla.BackColor = System.Drawing.Color.White;
             this.tlpGrilla.ColumnCount = 1;
             this.tlpGrilla.Controls.Add(this.flpFiltros, 0, 0);
-            this.tlpGrilla.Controls.Add(this.dgvUsuarios, 0, 1);
+            this.tlpGrilla.Controls.Add(this.dgvClientes, 0, 1);
             this.tlpGrilla.Dock = System.Windows.Forms.DockStyle.Fill;
             this.tlpGrilla.Margin = new System.Windows.Forms.Padding(0);
             this.tlpGrilla.Name = "tlpGrilla";
@@ -452,8 +424,6 @@
             // 
             this.flpFiltros.BackColor = System.Drawing.Color.White;
             this.flpFiltros.Controls.Add(this.lblTituloGrilla);
-            this.flpFiltros.Controls.Add(this.rbActivos);
-            this.flpFiltros.Controls.Add(this.rbTodos);
             this.flpFiltros.Dock = System.Windows.Forms.DockStyle.Fill;
             this.flpFiltros.FlowDirection = System.Windows.Forms.FlowDirection.LeftToRight;
             this.flpFiltros.Margin = new System.Windows.Forms.Padding(0);
@@ -469,61 +439,260 @@
             this.lblTituloGrilla.Margin = new System.Windows.Forms.Padding(0, 6, 24, 0);
             this.lblTituloGrilla.Name = "lblTituloGrilla";
             this.lblTituloGrilla.TabIndex = 0;
-            this.lblTituloGrilla.Text = "Usuarios del sistema";
+            this.lblTituloGrilla.Text = "Clientes registrados";
             // 
-            // rbActivos
+            // dgvClientes
             // 
-            this.rbActivos.AutoSize = true;
-            this.rbActivos.Cursor = System.Windows.Forms.Cursors.Hand;
-            this.rbActivos.Font = new System.Drawing.Font("Segoe UI", 9.75F);
-            this.rbActivos.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(13)))), ((int)(((byte)(71)))), ((int)(((byte)(161)))));
-            this.rbActivos.Margin = new System.Windows.Forms.Padding(0, 7, 16, 0);
-            this.rbActivos.Name = "rbActivos";
-            this.rbActivos.TabIndex = 1;
-            this.rbActivos.TabStop = true;
-            this.rbActivos.Text = "Activos";
-            this.rbActivos.UseVisualStyleBackColor = true;
-            this.rbActivos.CheckedChanged += new System.EventHandler(this.rbActivos_CheckedChanged);
+            this.dgvClientes.AllowUserToAddRows = false;
+            this.dgvClientes.AllowUserToDeleteRows = false;
+            this.dgvClientes.AllowUserToOrderColumns = false;
+            this.dgvClientes.AllowUserToResizeColumns = false;
+            this.dgvClientes.AllowUserToResizeRows = false;
+            this.dgvClientes.AutoSizeColumnsMode = System.Windows.Forms.DataGridViewAutoSizeColumnsMode.Fill;
+            this.dgvClientes.BackgroundColor = System.Drawing.Color.White;
+            this.dgvClientes.BorderStyle = System.Windows.Forms.BorderStyle.None;
+            this.dgvClientes.CellBorderStyle = System.Windows.Forms.DataGridViewCellBorderStyle.SingleHorizontal;
+            this.dgvClientes.ColumnHeadersHeight = 38;
+            this.dgvClientes.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.DisableResizing;
+            this.dgvClientes.Columns.AddRange(new System.Windows.Forms.DataGridViewColumn[] {
+            this.colDni,
+            this.colApellido,
+            this.colNombre,
+            this.colEmail,
+            this.colTelefono});
+            this.dgvClientes.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.dgvClientes.EnableHeadersVisualStyles = false;
+            this.dgvClientes.Margin = new System.Windows.Forms.Padding(0, 6, 0, 0);
+            this.dgvClientes.MultiSelect = false;
+            this.dgvClientes.Name = "dgvClientes";
+            this.dgvClientes.ReadOnly = true;
+            this.dgvClientes.RowHeadersVisible = false;
+            this.dgvClientes.RowHeadersWidthSizeMode = System.Windows.Forms.DataGridViewRowHeadersWidthSizeMode.DisableResizing;
+            this.dgvClientes.SelectionMode = System.Windows.Forms.DataGridViewSelectionMode.FullRowSelect;
+            this.dgvClientes.Size = new System.Drawing.Size(500, 200);
+            this.dgvClientes.TabIndex = 0;
+            this.dgvClientes.SelectionChanged += new System.EventHandler(this.dgvClientes_SelectionChanged);
             // 
-            // rbTodos
+            // colDni
             // 
-            this.rbTodos.AutoSize = true;
-            this.rbTodos.Cursor = System.Windows.Forms.Cursors.Hand;
-            this.rbTodos.Font = new System.Drawing.Font("Segoe UI", 9.75F);
-            this.rbTodos.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(13)))), ((int)(((byte)(71)))), ((int)(((byte)(161)))));
-            this.rbTodos.Margin = new System.Windows.Forms.Padding(0, 7, 16, 0);
-            this.rbTodos.Name = "rbTodos";
-            this.rbTodos.TabIndex = 2;
-            this.rbTodos.TabStop = true;
-            this.rbTodos.Text = "Todos";
-            this.rbTodos.UseVisualStyleBackColor = true;
-            this.rbTodos.CheckedChanged += new System.EventHandler(this.rbTodos_CheckedChanged);
+            this.colDni.DataPropertyName = "DNI";
+            this.colDni.FillWeight = 80F;
+            this.colDni.HeaderText = "DNI";
+            this.colDni.MinimumWidth = 84;
+            this.colDni.Name = "colDni";
+            this.colDni.ReadOnly = true;
             // 
-            // dgvUsuarios
+            // colApellido
             // 
-            this.dgvUsuarios.AllowUserToAddRows = false;
-            this.dgvUsuarios.AllowUserToDeleteRows = false;
-            this.dgvUsuarios.AllowUserToOrderColumns = false;
-            this.dgvUsuarios.AllowUserToResizeColumns = false;
-            this.dgvUsuarios.AllowUserToResizeRows = false;
-            this.dgvUsuarios.AutoSizeColumnsMode = System.Windows.Forms.DataGridViewAutoSizeColumnsMode.Fill;
-            this.dgvUsuarios.BackgroundColor = System.Drawing.Color.White;
-            this.dgvUsuarios.BorderStyle = System.Windows.Forms.BorderStyle.None;
-            this.dgvUsuarios.CellBorderStyle = System.Windows.Forms.DataGridViewCellBorderStyle.SingleHorizontal;
-            this.dgvUsuarios.ColumnHeadersHeight = 38;
-            this.dgvUsuarios.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.DisableResizing;
-            this.dgvUsuarios.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.dgvUsuarios.EnableHeadersVisualStyles = false;
-            this.dgvUsuarios.Margin = new System.Windows.Forms.Padding(0, 6, 0, 0);
-            this.dgvUsuarios.MultiSelect = false;
-            this.dgvUsuarios.Name = "dgvUsuarios";
-            this.dgvUsuarios.ReadOnly = true;
-            this.dgvUsuarios.RowHeadersVisible = false;
-            this.dgvUsuarios.RowHeadersWidthSizeMode = System.Windows.Forms.DataGridViewRowHeadersWidthSizeMode.DisableResizing;
-            this.dgvUsuarios.SelectionMode = System.Windows.Forms.DataGridViewSelectionMode.FullRowSelect;
-            this.dgvUsuarios.Size = new System.Drawing.Size(500, 200);
-            this.dgvUsuarios.TabIndex = 0;
-            this.dgvUsuarios.SelectionChanged += new System.EventHandler(this.dgvUsuarios_SelectionChanged);
+            this.colApellido.DataPropertyName = "Apellido";
+            this.colApellido.FillWeight = 100F;
+            this.colApellido.HeaderText = "Apellido";
+            this.colApellido.MinimumWidth = 70;
+            this.colApellido.Name = "colApellido";
+            this.colApellido.ReadOnly = true;
+            // 
+            // colNombre
+            // 
+            this.colNombre.DataPropertyName = "Nombre";
+            this.colNombre.FillWeight = 100F;
+            this.colNombre.HeaderText = "Nombre";
+            this.colNombre.MinimumWidth = 70;
+            this.colNombre.Name = "colNombre";
+            this.colNombre.ReadOnly = true;
+            // 
+            // colEmail
+            // 
+            this.colEmail.DataPropertyName = "Email";
+            this.colEmail.FillWeight = 160F;
+            this.colEmail.HeaderText = "Email";
+            this.colEmail.MinimumWidth = 90;
+            this.colEmail.Name = "colEmail";
+            this.colEmail.ReadOnly = true;
+            // 
+            // colTelefono
+            // 
+            this.colTelefono.DataPropertyName = "Telefono";
+            this.colTelefono.FillWeight = 100F;
+            this.colTelefono.HeaderText = "Teléfono";
+            this.colTelefono.MinimumWidth = 80;
+            this.colTelefono.Name = "colTelefono";
+            this.colTelefono.ReadOnly = true;
+            // 
+            // pnlSerializacion
+            // 
+            this.pnlSerializacion.BackColor = System.Drawing.Color.White;
+            this.pnlSerializacion.Controls.Add(this.tlpSerializacion);
+            this.pnlSerializacion.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.pnlSerializacion.Margin = new System.Windows.Forms.Padding(0, 8, 0, 8);
+            this.pnlSerializacion.Name = "pnlSerializacion";
+            this.pnlSerializacion.Padding = new System.Windows.Forms.Padding(20, 12, 20, 12);
+            this.pnlSerializacion.TabIndex = 1;
+            // 
+            // tlpSerializacion
+            // 
+            this.tlpSerializacion.BackColor = System.Drawing.Color.White;
+            this.tlpSerializacion.ColumnCount = 4;
+            this.tlpSerializacion.Controls.Add(this.lblTituloSerializacion, 0, 0);
+            this.tlpSerializacion.Controls.Add(this.flpAccionesSerializacion, 2, 0);
+            this.tlpSerializacion.Controls.Add(this.btnSerializar, 0, 1);
+            this.tlpSerializacion.Controls.Add(this.btnDeserializar, 2, 1);
+            this.tlpSerializacion.Controls.Add(this.txtRutaSerializar, 0, 2);
+            this.tlpSerializacion.Controls.Add(this.btnUbicacionSerializar, 1, 2);
+            this.tlpSerializacion.Controls.Add(this.txtRutaDeserializar, 2, 2);
+            this.tlpSerializacion.Controls.Add(this.btnUbicacionDeserializar, 3, 2);
+            this.tlpSerializacion.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.tlpSerializacion.Margin = new System.Windows.Forms.Padding(0);
+            this.tlpSerializacion.Name = "tlpSerializacion";
+            this.tlpSerializacion.RowCount = 3;
+            this.tlpSerializacion.TabIndex = 0;
+            this.tlpSerializacion.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 50F));
+            this.tlpSerializacion.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Absolute, 44F));
+            this.tlpSerializacion.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 50F));
+            this.tlpSerializacion.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Absolute, 44F));
+            this.tlpSerializacion.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 36F));
+            this.tlpSerializacion.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 46F));
+            this.tlpSerializacion.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 36F));
+            this.tlpSerializacion.SetColumnSpan(this.lblTituloSerializacion, 2);
+            this.tlpSerializacion.SetColumnSpan(this.flpAccionesSerializacion, 2);
+            this.tlpSerializacion.SetColumnSpan(this.btnSerializar, 2);
+            this.tlpSerializacion.SetColumnSpan(this.btnDeserializar, 2);
+            // 
+            // lblTituloSerializacion
+            // 
+            this.lblTituloSerializacion.Anchor = System.Windows.Forms.AnchorStyles.Left;
+            this.lblTituloSerializacion.AutoSize = true;
+            this.lblTituloSerializacion.Font = new System.Drawing.Font("Segoe UI Semibold", 11.25F, System.Drawing.FontStyle.Bold);
+            this.lblTituloSerializacion.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(13)))), ((int)(((byte)(71)))), ((int)(((byte)(161)))));
+            this.lblTituloSerializacion.Margin = new System.Windows.Forms.Padding(0);
+            this.lblTituloSerializacion.Name = "lblTituloSerializacion";
+            this.lblTituloSerializacion.TabIndex = 0;
+            this.lblTituloSerializacion.Text = "Serialización XML";
+            // 
+            // flpAccionesSerializacion
+            // 
+            this.flpAccionesSerializacion.BackColor = System.Drawing.Color.White;
+            this.flpAccionesSerializacion.Controls.Add(this.btnLimpiar);
+            this.flpAccionesSerializacion.Controls.Add(this.btnActualizar);
+            this.flpAccionesSerializacion.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.flpAccionesSerializacion.FlowDirection = System.Windows.Forms.FlowDirection.RightToLeft;
+            this.flpAccionesSerializacion.Margin = new System.Windows.Forms.Padding(0);
+            this.flpAccionesSerializacion.Name = "flpAccionesSerializacion";
+            this.flpAccionesSerializacion.TabIndex = 1;
+            this.flpAccionesSerializacion.WrapContents = false;
+            // 
+            // btnLimpiar
+            // 
+            this.btnLimpiar.Estilo = PROYECTO_ING_DE_SOFTWARE.EstiloBoton_GV42.Secundario;
+            this.btnLimpiar.FlatAppearance.BorderSize = 0;
+            this.btnLimpiar.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.btnLimpiar.Font = new System.Drawing.Font("Segoe UI Semibold", 9.75F, System.Drawing.FontStyle.Bold);
+            this.btnLimpiar.Margin = new System.Windows.Forms.Padding(8, 0, 0, 0);
+            this.btnLimpiar.Name = "btnLimpiar";
+            this.btnLimpiar.Size = new System.Drawing.Size(110, 32);
+            this.btnLimpiar.TabIndex = 1;
+            this.btnLimpiar.Text = "Limpiar";
+            this.btnLimpiar.UseVisualStyleBackColor = false;
+            this.btnLimpiar.Click += new System.EventHandler(this.btnLimpiar_Click);
+            // 
+            // btnActualizar
+            // 
+            this.btnActualizar.Estilo = PROYECTO_ING_DE_SOFTWARE.EstiloBoton_GV42.Secundario;
+            this.btnActualizar.FlatAppearance.BorderSize = 0;
+            this.btnActualizar.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.btnActualizar.Font = new System.Drawing.Font("Segoe UI Semibold", 9.75F, System.Drawing.FontStyle.Bold);
+            this.btnActualizar.Margin = new System.Windows.Forms.Padding(8, 0, 0, 0);
+            this.btnActualizar.Name = "btnActualizar";
+            this.btnActualizar.Size = new System.Drawing.Size(110, 32);
+            this.btnActualizar.TabIndex = 0;
+            this.btnActualizar.Text = "Actualizar";
+            this.btnActualizar.UseVisualStyleBackColor = false;
+            this.btnActualizar.Click += new System.EventHandler(this.btnActualizar_Click);
+            // 
+            // btnSerializar
+            // 
+            this.btnSerializar.Anchor = System.Windows.Forms.AnchorStyles.Left;
+            this.btnSerializar.Estilo = PROYECTO_ING_DE_SOFTWARE.EstiloBoton_GV42.Exito;
+            this.btnSerializar.FlatAppearance.BorderSize = 0;
+            this.btnSerializar.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.btnSerializar.Font = new System.Drawing.Font("Segoe UI Semibold", 10F, System.Drawing.FontStyle.Bold);
+            this.btnSerializar.Margin = new System.Windows.Forms.Padding(0);
+            this.btnSerializar.Name = "btnSerializar";
+            this.btnSerializar.Size = new System.Drawing.Size(170, 38);
+            this.btnSerializar.TabIndex = 2;
+            this.btnSerializar.Text = "SERIALIZAR";
+            this.btnSerializar.UseVisualStyleBackColor = false;
+            this.btnSerializar.Click += new System.EventHandler(this.btnSerializar_Click);
+            // 
+            // btnDeserializar
+            // 
+            this.btnDeserializar.Anchor = System.Windows.Forms.AnchorStyles.Left;
+            this.btnDeserializar.Estilo = PROYECTO_ING_DE_SOFTWARE.EstiloBoton_GV42.Exito;
+            this.btnDeserializar.FlatAppearance.BorderSize = 0;
+            this.btnDeserializar.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.btnDeserializar.Font = new System.Drawing.Font("Segoe UI Semibold", 10F, System.Drawing.FontStyle.Bold);
+            this.btnDeserializar.Margin = new System.Windows.Forms.Padding(12, 0, 0, 0);
+            this.btnDeserializar.Name = "btnDeserializar";
+            this.btnDeserializar.Size = new System.Drawing.Size(170, 38);
+            this.btnDeserializar.TabIndex = 4;
+            this.btnDeserializar.Text = "DES-SERIALIZAR";
+            this.btnDeserializar.UseVisualStyleBackColor = false;
+            this.btnDeserializar.Click += new System.EventHandler(this.btnDeserializar_Click);
+            // 
+            // txtRutaSerializar
+            // 
+            this.txtRutaSerializar.Anchor = ((System.Windows.Forms.AnchorStyles)(System.Windows.Forms.AnchorStyles.Left | System.Windows.Forms.AnchorStyles.Right));
+            this.txtRutaSerializar.BackColor = System.Drawing.Color.White;
+            this.txtRutaSerializar.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
+            this.txtRutaSerializar.Font = new System.Drawing.Font("Segoe UI", 9F);
+            this.txtRutaSerializar.Margin = new System.Windows.Forms.Padding(0, 3, 0, 3);
+            this.txtRutaSerializar.Name = "txtRutaSerializar";
+            this.txtRutaSerializar.ReadOnly = true;
+            this.txtRutaSerializar.Size = new System.Drawing.Size(200, 26);
+            this.txtRutaSerializar.TabIndex = 3;
+            // 
+            // btnUbicacionSerializar
+            // 
+            this.btnUbicacionSerializar.Anchor = System.Windows.Forms.AnchorStyles.Left;
+            this.btnUbicacionSerializar.Estilo = PROYECTO_ING_DE_SOFTWARE.EstiloBoton_GV42.Secundario;
+            this.btnUbicacionSerializar.FlatAppearance.BorderSize = 0;
+            this.btnUbicacionSerializar.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.btnUbicacionSerializar.Font = new System.Drawing.Font("Segoe UI Semibold", 9.75F, System.Drawing.FontStyle.Bold);
+            this.btnUbicacionSerializar.Margin = new System.Windows.Forms.Padding(6, 0, 0, 0);
+            this.btnUbicacionSerializar.Name = "btnUbicacionSerializar";
+            this.btnUbicacionSerializar.Radio = 6;
+            this.btnUbicacionSerializar.Size = new System.Drawing.Size(36, 30);
+            this.btnUbicacionSerializar.TabIndex = 4;
+            this.btnUbicacionSerializar.Text = "...";
+            this.btnUbicacionSerializar.UseVisualStyleBackColor = false;
+            this.btnUbicacionSerializar.Click += new System.EventHandler(this.btnUbicacionSerializar_Click);
+            // 
+            // txtRutaDeserializar
+            // 
+            this.txtRutaDeserializar.Anchor = ((System.Windows.Forms.AnchorStyles)(System.Windows.Forms.AnchorStyles.Left | System.Windows.Forms.AnchorStyles.Right));
+            this.txtRutaDeserializar.BackColor = System.Drawing.Color.White;
+            this.txtRutaDeserializar.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
+            this.txtRutaDeserializar.Font = new System.Drawing.Font("Segoe UI", 9F);
+            this.txtRutaDeserializar.Margin = new System.Windows.Forms.Padding(12, 3, 0, 3);
+            this.txtRutaDeserializar.Name = "txtRutaDeserializar";
+            this.txtRutaDeserializar.ReadOnly = true;
+            this.txtRutaDeserializar.Size = new System.Drawing.Size(200, 26);
+            this.txtRutaDeserializar.TabIndex = 6;
+            // 
+            // btnUbicacionDeserializar
+            // 
+            this.btnUbicacionDeserializar.Anchor = System.Windows.Forms.AnchorStyles.Left;
+            this.btnUbicacionDeserializar.Estilo = PROYECTO_ING_DE_SOFTWARE.EstiloBoton_GV42.Secundario;
+            this.btnUbicacionDeserializar.FlatAppearance.BorderSize = 0;
+            this.btnUbicacionDeserializar.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.btnUbicacionDeserializar.Font = new System.Drawing.Font("Segoe UI Semibold", 9.75F, System.Drawing.FontStyle.Bold);
+            this.btnUbicacionDeserializar.Margin = new System.Windows.Forms.Padding(6, 0, 0, 0);
+            this.btnUbicacionDeserializar.Name = "btnUbicacionDeserializar";
+            this.btnUbicacionDeserializar.Radio = 6;
+            this.btnUbicacionDeserializar.Size = new System.Drawing.Size(36, 30);
+            this.btnUbicacionDeserializar.TabIndex = 7;
+            this.btnUbicacionDeserializar.Text = "...";
+            this.btnUbicacionDeserializar.UseVisualStyleBackColor = false;
+            this.btnUbicacionDeserializar.Click += new System.EventHandler(this.btnUbicacionDeserializar_Click);
             // 
             // pnlBotonera
             // 
@@ -541,8 +710,7 @@
             this.flpAcciones.BackColor = System.Drawing.Color.White;
             this.flpAcciones.Controls.Add(this.btnCrear);
             this.flpAcciones.Controls.Add(this.btnModificar);
-            this.flpAcciones.Controls.Add(this.btnDesbloquear);
-            this.flpAcciones.Controls.Add(this.btnActivarDesactivar);
+            this.flpAcciones.Controls.Add(this.btnEliminar);
             this.flpAcciones.Dock = System.Windows.Forms.DockStyle.Fill;
             this.flpAcciones.FlowDirection = System.Windows.Forms.FlowDirection.LeftToRight;
             this.flpAcciones.Margin = new System.Windows.Forms.Padding(0);
@@ -559,7 +727,7 @@
             this.btnCrear.Name = "btnCrear";
             this.btnCrear.Size = new System.Drawing.Size(92, 40);
             this.btnCrear.TabIndex = 0;
-            this.btnCrear.Text = "Crear";
+            this.btnCrear.Text = "Añadir";
             this.btnCrear.UseVisualStyleBackColor = false;
             this.btnCrear.Click += new System.EventHandler(this.btnCrear_Click);
             // 
@@ -576,33 +744,19 @@
             this.btnModificar.UseVisualStyleBackColor = false;
             this.btnModificar.Click += new System.EventHandler(this.btnModificar_Click);
             // 
-            // btnDesbloquear
+            // btnEliminar
             // 
-            this.btnDesbloquear.Estilo = PROYECTO_ING_DE_SOFTWARE.EstiloBoton_GV42.Advertencia;
-            this.btnDesbloquear.FlatAppearance.BorderSize = 0;
-            this.btnDesbloquear.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.btnDesbloquear.Font = new System.Drawing.Font("Segoe UI Semibold", 9.75F, System.Drawing.FontStyle.Bold);
-            this.btnDesbloquear.Margin = new System.Windows.Forms.Padding(0, 0, 6, 0);
-            this.btnDesbloquear.Name = "btnDesbloquear";
-            this.btnDesbloquear.Size = new System.Drawing.Size(116, 40);
-            this.btnDesbloquear.TabIndex = 2;
-            this.btnDesbloquear.Text = "Desbloquear";
-            this.btnDesbloquear.UseVisualStyleBackColor = false;
-            this.btnDesbloquear.Click += new System.EventHandler(this.btnDesbloquear_Click);
-            // 
-            // btnActivarDesactivar
-            // 
-            this.btnActivarDesactivar.Estilo = PROYECTO_ING_DE_SOFTWARE.EstiloBoton_GV42.Peligro;
-            this.btnActivarDesactivar.FlatAppearance.BorderSize = 0;
-            this.btnActivarDesactivar.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.btnActivarDesactivar.Font = new System.Drawing.Font("Segoe UI Semibold", 9.75F, System.Drawing.FontStyle.Bold);
-            this.btnActivarDesactivar.Margin = new System.Windows.Forms.Padding(0, 0, 6, 0);
-            this.btnActivarDesactivar.Name = "btnActivarDesactivar";
-            this.btnActivarDesactivar.Size = new System.Drawing.Size(150, 40);
-            this.btnActivarDesactivar.TabIndex = 3;
-            this.btnActivarDesactivar.Text = "Activar/Desactivar";
-            this.btnActivarDesactivar.UseVisualStyleBackColor = false;
-            this.btnActivarDesactivar.Click += new System.EventHandler(this.btnActivarDesactivar_Click);
+            this.btnEliminar.Estilo = PROYECTO_ING_DE_SOFTWARE.EstiloBoton_GV42.Peligro;
+            this.btnEliminar.FlatAppearance.BorderSize = 0;
+            this.btnEliminar.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.btnEliminar.Font = new System.Drawing.Font("Segoe UI Semibold", 9.75F, System.Drawing.FontStyle.Bold);
+            this.btnEliminar.Margin = new System.Windows.Forms.Padding(0, 0, 6, 0);
+            this.btnEliminar.Name = "btnEliminar";
+            this.btnEliminar.Size = new System.Drawing.Size(104, 40);
+            this.btnEliminar.TabIndex = 2;
+            this.btnEliminar.Text = "Eliminar";
+            this.btnEliminar.UseVisualStyleBackColor = false;
+            this.btnEliminar.Click += new System.EventHandler(this.btnEliminar_Click);
             // 
             // flpConfirmacion
             // 
@@ -659,7 +813,14 @@
             this.btnAplicar.UseVisualStyleBackColor = false;
             this.btnAplicar.Click += new System.EventHandler(this.btnAplicar_Click);
             // 
-            // FRMGestionUsuariosAdmin
+            // toolTipAyuda
+            // 
+            this.toolTipAyuda.AutoPopDelay = 10000;
+            this.toolTipAyuda.InitialDelay = 400;
+            this.toolTipAyuda.ReshowDelay = 100;
+            this.toolTipAyuda.ToolTipIcon = System.Windows.Forms.ToolTipIcon.Info;
+            // 
+            // FRMMaestroClientes_GV42
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 15F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
@@ -668,11 +829,11 @@
             this.Controls.Add(this.pnlContenido);
             this.Controls.Add(this.pnlEncabezado);
             this.Font = new System.Drawing.Font("Segoe UI", 9F);
-            this.Name = "FRMGestionUsuariosAdmin";
+            this.Name = "FRMMaestroClientes_GV42";
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
-            this.Text = "Gestión de Usuarios";
+            this.Text = "Maestro de clientes";
             this.WindowState = System.Windows.Forms.FormWindowState.Maximized;
-            this.Load += new System.EventHandler(this.FRMPrincipalAdmin_Load);
+            this.Load += new System.EventHandler(this.FRMMaestroClientes_GV42_Load);
             this.pnlEncabezado.ResumeLayout(false);
             this.pnlEncabezado.PerformLayout();
             this.pnlContenido.ResumeLayout(false);
@@ -691,7 +852,13 @@
             this.tlpGrilla.PerformLayout();
             this.flpFiltros.ResumeLayout(false);
             this.flpFiltros.PerformLayout();
-            ((System.ComponentModel.ISupportInitialize)(this.dgvUsuarios)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.dgvClientes)).EndInit();
+            this.pnlSerializacion.ResumeLayout(false);
+            this.pnlSerializacion.PerformLayout();
+            this.tlpSerializacion.ResumeLayout(false);
+            this.tlpSerializacion.PerformLayout();
+            this.flpAccionesSerializacion.ResumeLayout(false);
+            this.flpAccionesSerializacion.PerformLayout();
             this.pnlBotonera.ResumeLayout(false);
             this.pnlBotonera.PerformLayout();
             this.flpAcciones.ResumeLayout(false);
@@ -722,30 +889,41 @@
         private System.Windows.Forms.Label label4;
         private PROYECTO_ING_DE_SOFTWARE.TextBoxModerno_GV42 txtEmail;
         private System.Windows.Forms.Label label5;
-        private System.Windows.Forms.ComboBox comboBox1;
-        private System.Windows.Forms.Label label6;
-        private PROYECTO_ING_DE_SOFTWARE.TextBoxModerno_GV42 txtUser;
-        private System.Windows.Forms.Label label7;
-        private PROYECTO_ING_DE_SOFTWARE.TextBoxModerno_GV42 txtBloqueado;
-        private System.Windows.Forms.Label label8;
-        private PROYECTO_ING_DE_SOFTWARE.TextBoxModerno_GV42 txtActivo;
+        private PROYECTO_ING_DE_SOFTWARE.TextBoxModerno_GV42 txtTelefono;
+        private System.Windows.Forms.Label lblTituloMensaje;
+        private PROYECTO_ING_DE_SOFTWARE.TextBoxModerno_GV42 txtMensaje;
         private System.Windows.Forms.TableLayoutPanel tlpDerecha;
         private PROYECTO_ING_DE_SOFTWARE.PanelTarjeta_GV42 pnlGrilla;
         private System.Windows.Forms.TableLayoutPanel tlpGrilla;
         private System.Windows.Forms.FlowLayoutPanel flpFiltros;
         private System.Windows.Forms.Label lblTituloGrilla;
-        private System.Windows.Forms.RadioButton rbActivos;
-        private System.Windows.Forms.RadioButton rbTodos;
-        private PROYECTO_ING_DE_SOFTWARE.GrillaModerna_GV42 dgvUsuarios;
+        private PROYECTO_ING_DE_SOFTWARE.GrillaModerna_GV42 dgvClientes;
+        private System.Windows.Forms.DataGridViewTextBoxColumn colDni;
+        private System.Windows.Forms.DataGridViewTextBoxColumn colApellido;
+        private System.Windows.Forms.DataGridViewTextBoxColumn colNombre;
+        private System.Windows.Forms.DataGridViewTextBoxColumn colEmail;
+        private System.Windows.Forms.DataGridViewTextBoxColumn colTelefono;
+        private PROYECTO_ING_DE_SOFTWARE.PanelTarjeta_GV42 pnlSerializacion;
+        private System.Windows.Forms.TableLayoutPanel tlpSerializacion;
+        private System.Windows.Forms.Label lblTituloSerializacion;
+        private System.Windows.Forms.FlowLayoutPanel flpAccionesSerializacion;
+        private PROYECTO_ING_DE_SOFTWARE.BotonModerno_GV42 btnLimpiar;
+        private PROYECTO_ING_DE_SOFTWARE.BotonModerno_GV42 btnActualizar;
+        private PROYECTO_ING_DE_SOFTWARE.BotonModerno_GV42 btnSerializar;
+        private PROYECTO_ING_DE_SOFTWARE.BotonModerno_GV42 btnDeserializar;
+        private PROYECTO_ING_DE_SOFTWARE.TextBoxModerno_GV42 txtRutaSerializar;
+        private PROYECTO_ING_DE_SOFTWARE.BotonModerno_GV42 btnUbicacionSerializar;
+        private PROYECTO_ING_DE_SOFTWARE.TextBoxModerno_GV42 txtRutaDeserializar;
+        private PROYECTO_ING_DE_SOFTWARE.BotonModerno_GV42 btnUbicacionDeserializar;
         private PROYECTO_ING_DE_SOFTWARE.PanelTarjeta_GV42 pnlBotonera;
         private System.Windows.Forms.FlowLayoutPanel flpAcciones;
         private PROYECTO_ING_DE_SOFTWARE.BotonModerno_GV42 btnCrear;
         private PROYECTO_ING_DE_SOFTWARE.BotonModerno_GV42 btnModificar;
-        private PROYECTO_ING_DE_SOFTWARE.BotonModerno_GV42 btnDesbloquear;
-        private PROYECTO_ING_DE_SOFTWARE.BotonModerno_GV42 btnActivarDesactivar;
+        private PROYECTO_ING_DE_SOFTWARE.BotonModerno_GV42 btnEliminar;
         private System.Windows.Forms.FlowLayoutPanel flpConfirmacion;
         private PROYECTO_ING_DE_SOFTWARE.BotonModerno_GV42 btnSalir;
         private PROYECTO_ING_DE_SOFTWARE.BotonModerno_GV42 btnCancelar;
         private PROYECTO_ING_DE_SOFTWARE.BotonModerno_GV42 btnAplicar;
+        private System.Windows.Forms.ToolTip toolTipAyuda;
     }
 }

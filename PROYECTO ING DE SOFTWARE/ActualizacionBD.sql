@@ -1142,3 +1142,131 @@ BEGIN
     VALUES (9, N'Reporte de check-in (RFN 2): patentes y eventos de bitácora');
 END
 GO
+
+/* =====================================================================================
+   VERSIÓN 10 – Bitácora de cambios de vuelos: activación por trigger y alta de vuelos
+   ===================================================================================== */
+
+/* ---------- 30) Activar un registro de Vuelo_C ----------
+   Desde la pantalla "Bitácora de cambios" solo se asigna Act = 1 al registro elegido (y 0 al que
+   estaba activo). Este trigger es el que deja la tabla Vuelo con los datos de ese registro.
+   - Dónde: sobre Vuelo_C.
+   - Cuándo: después de un UPDATE que pasa un registro de Act = 0 a Act = 1.
+   - Cómo: copia las columnas de ese registro a la fila de Vuelo que le corresponde (IdVuelo).
+   El trigger TR_Vuelo_Historial (sobre Vuelo) no genera un registro nuevo por esta actualización,
+   porque los datos de Vuelo quedan iguales a los del registro que ya figura como activo. */
+IF OBJECT_ID('dbo.TR_Vuelo_C_Activar', 'TR') IS NOT NULL
+    DROP TRIGGER dbo.TR_Vuelo_C_Activar;
+GO
+
+CREATE TRIGGER dbo.TR_Vuelo_C_Activar ON dbo.Vuelo_C
+AFTER UPDATE
+AS
+BEGIN
+    SET NOCOUNT ON;
+    IF NOT UPDATE(Act) RETURN;
+
+    -- Solo actúa si algún registro pasó de Act = 0 a Act = 1. Sin esta salida, el trigger de Vuelo
+    -- (que hace un UPDATE sobre Vuelo_C aunque no cambie ninguna fila) y este se llamarían uno al
+    -- otro sin fin: un trigger AFTER se dispara aunque la sentencia afecte cero filas.
+    IF NOT EXISTS (SELECT 1 FROM inserted i INNER JOIN deleted d ON d.Id = i.Id WHERE i.Act = 1 AND d.Act = 0)
+        RETURN;
+
+    UPDATE V SET V.CodigoVuelo      = i.CodigoVuelo,
+                 V.IdAerolinea      = i.IdAerolinea,
+                 V.IdOrigen         = i.IdOrigen,
+                 V.IdDestino        = i.IdDestino,
+                 V.FechaHoraSalida  = i.FechaHoraSalida,
+                 V.FechaHoraLlegada = i.FechaHoraLlegada,
+                 V.PuertaEmbarque   = i.PuertaEmbarque,
+                 V.CostoKiloExceso  = i.CostoKiloExceso,
+                 V.BorradoLogico    = i.BorradoLogico
+    FROM dbo.Vuelo V
+    INNER JOIN inserted i ON i.IdVuelo = V.Id
+    INNER JOIN deleted d ON d.Id = i.Id
+    WHERE i.Act = 1 AND d.Act = 0
+      AND (V.CodigoVuelo      <> i.CodigoVuelo
+        OR V.IdAerolinea      <> i.IdAerolinea
+        OR V.IdOrigen         <> i.IdOrigen
+        OR V.IdDestino        <> i.IdDestino
+        OR V.FechaHoraSalida  <> i.FechaHoraSalida
+        OR V.FechaHoraLlegada <> i.FechaHoraLlegada
+        OR V.PuertaEmbarque   <> i.PuertaEmbarque
+        OR V.CostoKiloExceso  <> i.CostoKiloExceso
+        OR V.BorradoLogico    <> i.BorradoLogico);
+END
+GO
+
+/* ---------- 31) Tipo de evento de bitácora del alta de vuelos ---------- */
+INSERT INTO dbo.TipoEvento (Nombre)
+SELECT E.Nombre FROM (VALUES (N'Vuelo creado')) AS E(Nombre)
+WHERE NOT EXISTS (SELECT 1 FROM dbo.TipoEvento X WHERE X.Nombre = E.Nombre);
+GO
+
+IF NOT EXISTS (SELECT 1 FROM dbo.VersionBD_GV42 WHERE Version = 10)
+BEGIN
+    -- La fila nueva de TipoEvento necesita su dígito verificador: lo calcula el sistema.
+    INSERT INTO dbo.TareaPendiente_GV42 (Nombre)
+    SELECT X.T FROM (VALUES (N'RecalcularDV:TipoEvento')) AS X(T)
+    WHERE NOT EXISTS (SELECT 1 FROM dbo.TareaPendiente_GV42 P WHERE P.Nombre = X.T);
+
+    INSERT INTO dbo.VersionBD_GV42 (Version, Descripcion)
+    VALUES (10, N'Bitácora de vuelos: activación por trigger y alta de vuelos');
+END
+GO
+
+/* =====================================================================================
+   VERSIÓN 11 – Corrección del trigger TR_Vuelo_C_Activar
+   El trigger se vuelve a crear más arriba (punto 30) con la salida temprana que evita la
+   llamada en cadena con TR_Vuelo_Historial ("nesting level exceeded").
+   ===================================================================================== */
+IF NOT EXISTS (SELECT 1 FROM dbo.VersionBD_GV42 WHERE Version = 11)
+    INSERT INTO dbo.VersionBD_GV42 (Version, Descripcion)
+    VALUES (11, N'Bitácora de vuelos: corrección del trigger de activación');
+GO
+
+/* =====================================================================================
+   VERSIÓN 12 – Maestro de clientes (ABM y serialización XML)
+   Los clientes se guardan en la tabla Pasajero (la tabla de personas del negocio); no hay tabla
+   nueva. Solo se agregan las patentes de la pantalla y sus eventos de bitácora.
+   ===================================================================================== */
+
+/* ---------- 32) Patentes del maestro de clientes ---------- */
+IF NOT EXISTS (SELECT 1 FROM dbo.Patente WHERE DataKey = N'Clientes.Ver')
+    INSERT INTO dbo.Patente (Nombre, DataKey) VALUES (N'Clientes - Ver y serializar', N'Clientes.Ver');
+IF NOT EXISTS (SELECT 1 FROM dbo.Patente WHERE DataKey = N'Clientes.Gestionar')
+    INSERT INTO dbo.Patente (Nombre, DataKey) VALUES (N'Clientes - Gestionar', N'Clientes.Gestionar');
+GO
+
+-- Lo usan los mismos roles que ya mantienen el otro maestro del negocio (gestión de vuelos).
+INSERT INTO dbo.RolPatente (IdRol, IdPatente)
+SELECT DISTINCT RP.IdRol, N.Id
+FROM dbo.RolPatente RP
+INNER JOIN dbo.Patente P ON P.Id = RP.IdPatente
+INNER JOIN (VALUES (N'Vuelos.Gestionar', N'Clientes.Ver'),
+                   (N'Vuelos.Gestionar', N'Clientes.Gestionar')) AS M(Origen, Nueva) ON M.Origen = P.DataKey
+INNER JOIN dbo.Patente N ON N.DataKey = M.Nueva
+WHERE NOT EXISTS (SELECT 1 FROM dbo.RolPatente X WHERE X.IdRol = RP.IdRol AND X.IdPatente = N.Id);
+GO
+
+/* ---------- 33) Tipos de evento de bitácora del maestro de clientes ---------- */
+INSERT INTO dbo.TipoEvento (Nombre)
+SELECT E.Nombre FROM (VALUES (N'Cliente registrado'),
+                             (N'Cliente modificado'),
+                             (N'Cliente eliminado'),
+                             (N'Clientes serializados a XML'),
+                             (N'Clientes deserializados desde XML')) AS E(Nombre)
+WHERE NOT EXISTS (SELECT 1 FROM dbo.TipoEvento X WHERE X.Nombre = E.Nombre);
+GO
+
+IF NOT EXISTS (SELECT 1 FROM dbo.VersionBD_GV42 WHERE Version = 12)
+BEGIN
+    -- Las filas nuevas de Patente, RolPatente y TipoEvento necesitan su dígito verificador: lo calcula el sistema.
+    INSERT INTO dbo.TareaPendiente_GV42 (Nombre)
+    SELECT X.T FROM (VALUES (N'RecalcularDV:Patente'), (N'RecalcularDV:RolPatente'), (N'RecalcularDV:TipoEvento')) AS X(T)
+    WHERE NOT EXISTS (SELECT 1 FROM dbo.TareaPendiente_GV42 P WHERE P.Nombre = X.T);
+
+    INSERT INTO dbo.VersionBD_GV42 (Version, Descripcion)
+    VALUES (12, N'Maestro de clientes: patentes y eventos de bitácora');
+END
+GO

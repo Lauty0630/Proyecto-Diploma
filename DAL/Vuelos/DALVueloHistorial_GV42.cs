@@ -30,8 +30,9 @@ namespace DAL
 
         #region Métodos públicos
 
-        // Filtros opcionales: código de vuelo, nombre (ruta) y rango de fechas del cambio.
-        public List<VueloCambio_GV42> Listar(string codigoVuelo, string nombre, DateTime? fechaIni, DateTime? fechaFin)
+        // Filtros opcionales: código de vuelo, nombre (ruta) y rango de fechas del cambio. Con soloConCambios
+        // se omiten los vuelos que tienen una única versión. Orden: el cambio más reciente primero.
+        public List<VueloCambio_GV42> Listar(string codigoVuelo, string nombre, DateTime? fechaIni, DateTime? fechaFin, bool soloConCambios)
         {
             string query =
                 "SELECT C.Id, C.IdVuelo, C.CodigoVuelo, C.Fecha, C.Hora, " + NOMBRE_RUTA + " AS Nombre, " +
@@ -45,12 +46,14 @@ namespace DAL
                 "  AND (@Nombre IS NULL OR " + NOMBRE_RUTA + " = @Nombre) " +
                 "  AND (@Ini IS NULL OR C.Fecha >= @Ini) " +
                 "  AND (@Fin IS NULL OR C.Fecha <= @Fin) " +
-                "ORDER BY C.CodigoVuelo, C.Fecha, C.Hora, C.Id";
+                "  AND (@Solo = 0 OR (SELECT COUNT(1) FROM Vuelo_C X WHERE X.IdVuelo = C.IdVuelo) > 1) " +
+                "ORDER BY C.Fecha DESC, C.Hora DESC, C.Id DESC";
 
             SqlParameter[] p = {
                 new SqlParameter("@Cod", SqlDbType.NVarChar, 10) { Value = DALUtil_GV42.ADb(codigoVuelo) },
                 new SqlParameter("@Nombre", SqlDbType.NVarChar, 20) { Value = DALUtil_GV42.ADb(nombre) },
                 new SqlParameter("@Ini", SqlDbType.Date) { Value = DALUtil_GV42.ADb(fechaIni.HasValue ? (object)fechaIni.Value.Date : null) },
+                new SqlParameter("@Solo", SqlDbType.Bit) { Value = soloConCambios },
                 new SqlParameter("@Fin", SqlDbType.Date) { Value = DALUtil_GV42.ADb(fechaFin.HasValue ? (object)fechaFin.Value.Date : null) }
             };
 
@@ -96,8 +99,9 @@ namespace DAL
             return lista;
         }
 
-        // Deja como único registro activo (Act = 1) del vuelo al indicado y actualiza la tabla Vuelo
-        // con sus datos, todo en una transacción. Devuelve el código del vuelo afectado.
+        // Deja como único registro activo (Act = 1) del vuelo al indicado. Desde acá solo se toca la
+        // columna Act de Vuelo_C: el trigger TR_Vuelo_C_Activar de la base es el que copia los datos de
+        // ese registro a la tabla Vuelo. Devuelve el código del vuelo afectado.
         // El trigger de Vuelo no genera otra versión porque los datos ya coinciden con el registro activo.
         public string ActivarVersion(int idCambio)
         {
@@ -132,17 +136,12 @@ namespace DAL
                         throw new NegocioException_GV42("Esa versión da de baja el vuelo " + codigo + ", pero tiene reservas vigentes.");
                 }
 
-                _acceso.escribir(tx, "UPDATE Vuelo_C SET Act = 0 WHERE IdVuelo = @IdVuelo AND Act = 1",
-                    new[] { new SqlParameter("@IdVuelo", idVuelo) });
-                _acceso.escribir(tx, "UPDATE Vuelo_C SET Act = 1 WHERE Id = @Id",
-                    new[] { new SqlParameter("@Id", idCambio) });
-
+                // Una sola sentencia: el registro elegido pasa a Act = 1 y el que estaba activo a 0
+                // (el índice único de "un solo activo por vuelo" se valida al terminar la sentencia).
                 _acceso.escribir(tx,
-                    "UPDATE V SET V.CodigoVuelo = C.CodigoVuelo, V.IdAerolinea = C.IdAerolinea, V.IdOrigen = C.IdOrigen, " +
-                    "             V.IdDestino = C.IdDestino, V.FechaHoraSalida = C.FechaHoraSalida, V.FechaHoraLlegada = C.FechaHoraLlegada, " +
-                    "             V.PuertaEmbarque = C.PuertaEmbarque, V.CostoKiloExceso = C.CostoKiloExceso, V.BorradoLogico = C.BorradoLogico " +
-                    "FROM Vuelo V INNER JOIN Vuelo_C C ON C.IdVuelo = V.Id WHERE C.Id = @Id",
-                    new[] { new SqlParameter("@Id", idCambio) });
+                    "UPDATE Vuelo_C SET Act = CASE WHEN Id = @Id THEN 1 ELSE 0 END " +
+                    "WHERE IdVuelo = @IdVuelo AND (Act = 1 OR Id = @Id)",
+                    new[] { new SqlParameter("@Id", idCambio), new SqlParameter("@IdVuelo", idVuelo) });
 
                 return codigo;
             });

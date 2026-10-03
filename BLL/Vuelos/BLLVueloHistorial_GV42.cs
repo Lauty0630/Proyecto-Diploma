@@ -30,7 +30,7 @@ namespace BLL
         public List<string> ListarNombres() { return _dal.ListarNombres(); }
 
         // Cualquier filtro en null/vacío no se aplica.
-        public List<VueloCambio_GV42> Consultar(string codigoVuelo, string nombre, DateTime? fechaIni, DateTime? fechaFin)
+        public List<VueloCambio_GV42> Consultar(string codigoVuelo, string nombre, DateTime? fechaIni, DateTime? fechaFin, bool soloConCambios)
         {
             BLLNegocioUtil_GV42.ExigirPatente("Vuelos.Bitacora", IdiomaManager_GV42.T("neg.vueloHist.sinPermisoVer"));
 
@@ -40,7 +40,7 @@ namespace BLL
             return _dal.Listar(
                 string.IsNullOrWhiteSpace(codigoVuelo) ? null : codigoVuelo.Trim(),
                 string.IsNullOrWhiteSpace(nombre) ? null : nombre.Trim(),
-                fechaIni, fechaFin);
+                fechaIni, fechaFin, soloConCambios);
         }
 
         #endregion
@@ -56,12 +56,20 @@ namespace BLL
             if (cambio.Act)
                 throw new NegocioException_GV42(IdiomaManager_GV42.T("neg.vueloHist.yaActivo", cambio.CodigoVuelo));
 
-            // Activar una versión vieja es un cambio más del vuelo: pasa por las mismas reglas que
-            // "Modificar" (antes se restauraba cualquier versión, incluso con la salida en el pasado).
+            // Se puede activar cualquier registro del historial. La única regla que se mantiene es la que
+            // protege a los pasajeros: con reservas vigentes no se cambia la aerolínea ni la ruta del vuelo
+            // (y la capa de datos no deja activar un registro "dado de baja" si hay reservas vigentes).
             var bllVuelo = new BLLVuelo_GV42();
-            bllVuelo.ValidarCambio(bllVuelo.BuscarActual(cambio.IdVuelo), cambio.CodigoVuelo, cambio.Aerolinea, cambio.Nombre,
-                                   cambio.FechaHoraSalida, cambio.FechaHoraLlegada, cambio.CostoKiloExceso);
+            Vuelo_GV42 actual = bllVuelo.BuscarActual(cambio.IdVuelo);
+            if (actual == null)
+                throw new NegocioException_GV42(IdiomaManager_GV42.T("neg.vuelo.noExiste"));
+            string rutaActual = actual.Origen.CodigoIata + " -> " + actual.Destino.CodigoIata;
+            bool cambiaIdentidad = !string.Equals(cambio.Aerolinea, actual.Aerolinea.Nombre, StringComparison.OrdinalIgnoreCase)
+                                || !string.Equals((cambio.Nombre ?? string.Empty).Replace(" ", ""), rutaActual.Replace(" ", ""), StringComparison.OrdinalIgnoreCase);
+            if (cambiaIdentidad && bllVuelo.ContarReservasVigentes(actual.Id) > 0)
+                throw new NegocioException_GV42(IdiomaManager_GV42.T("neg.vueloHist.reservasVigentesIdentidad", actual.CodigoVuelo));
 
+            // Solo se asigna Act = 1 al registro elegido: el trigger de la base actualiza la tabla Vuelo.
             string codigo = _dal.ActivarVersion(cambio.Id);
 
             BLLNegocioUtil_GV42.Auditar(BLLNegocioUtil_GV42.MODULO_VUELOS, "Version de vuelo activada",

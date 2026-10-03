@@ -10,8 +10,9 @@ using System.Windows.Forms;
 namespace PROYECTO_ING_DE_SOFTWARE
 {
     // Bitácora de cambios de vuelos (tabla Vuelo_C). Muestra todas las versiones por las que pasó cada
-    // vuelo, filtrable por código, nombre (ruta) y rango de fechas. El registro con Act = 1 es el que
-    // hoy está vigente en la tabla Vuelo; ACTIVAR permite volver a una versión anterior.
+    // vuelo, con cada atributo en su columna, filtrable por código, nombre (ruta) y rango de fechas.
+    // El registro con Act = 1 es el que hoy está vigente en la tabla Vuelo; ACTIVAR asigna Act = 1 al
+    // registro elegido y el trigger de la base deja la tabla Vuelo con esos datos.
     // El diseño está en FRMBitacoraVuelos_GV42.Designer.cs (Form Designer).
     public partial class FRMBitacoraVuelos_GV42 : Form, IObservadorIdioma_GV42
     {
@@ -38,6 +39,7 @@ namespace PROYECTO_ING_DE_SOFTWARE
             ActualizarIdioma();
 
             CargarCombos();
+            FiltrosDeArranque();
             Aplicar();
         }
 
@@ -56,6 +58,7 @@ namespace PROYECTO_ING_DE_SOFTWARE
             lblNombre.Text = IdiomaManager_GV42.T("bitVuelos.nombreRuta");
             lblFechaIni.Text = IdiomaManager_GV42.T("bitVuelos.fechaIni");
             lblFechaFin.Text = IdiomaManager_GV42.T("bitVuelos.fechaFin");
+            chkSoloCambios.Text = IdiomaManager_GV42.T("bitVuelos.soloCambios");
             lblAyuda.Text = IdiomaManager_GV42.T("bitVuelos.ayuda");
 
             btnAplicar.Text = IdiomaManager_GV42.T("bitVuelos.aplicar");
@@ -67,8 +70,18 @@ namespace PROYECTO_ING_DE_SOFTWARE
             colFecha.HeaderText = IdiomaManager_GV42.T("bitVuelos.colFecha");
             colHora.HeaderText = IdiomaManager_GV42.T("bitVuelos.colHora");
             colNombre.HeaderText = IdiomaManager_GV42.T("bitVuelos.colNombre");
-            colDescripcion.HeaderText = IdiomaManager_GV42.T("bitVuelos.colDescripcion");
+            colAerolinea.HeaderText = IdiomaManager_GV42.T("vuelos.aerolinea");
+            colSalida.HeaderText = IdiomaManager_GV42.T("vuelos.salida");
+            colLlegada.HeaderText = IdiomaManager_GV42.T("vuelos.llegada");
+            colPuerta.HeaderText = IdiomaManager_GV42.T("vuelos.puerta");
+            colCostoKilo.HeaderText = IdiomaManager_GV42.T("vuelos.colCostoKilo");
+            colBaja.HeaderText = IdiomaManager_GV42.T("bitVuelos.colBaja");
             colAct.HeaderText = IdiomaManager_GV42.T("bitVuelos.colAct");
+
+            // Con datos cargados se traduce el Sí/No de cada fila sin volver a consultar la base.
+            var filas = dgvCambios.DataSource as List<FilaCambio>;
+            if (filas != null)
+                foreach (FilaCambio fila in filas) fila.Baja = TextoBaja(fila.Cambio);
             dgvCambios.Invalidate();
 
             // El primer ítem de cada combo es "(Todos)": se traduce sin perder lo elegido.
@@ -129,7 +142,7 @@ namespace PROYECTO_ING_DE_SOFTWARE
                 DateTime? ini = dtIni.Checked ? (DateTime?)dtIni.Value.Date : null;
                 DateTime? fin = dtFin.Checked ? (DateTime?)dtFin.Value.Date : null;
 
-                List<VueloCambio_GV42> cambios = _bll.Consultar(codigo, nombre, ini, fin);
+                List<VueloCambio_GV42> cambios = _bll.Consultar(codigo, nombre, ini, fin, chkSoloCambios.Checked);
 
                 var filas = cambios.Select(c => new FilaCambio
                 {
@@ -137,7 +150,12 @@ namespace PROYECTO_ING_DE_SOFTWARE
                     Fecha = c.Fecha,
                     Hora = c.Hora.ToString(@"hh\:mm"),
                     Nombre = c.Nombre,
-                    Descripcion = c.Descripcion,
+                    Aerolinea = c.Aerolinea,
+                    Salida = c.FechaHoraSalida,
+                    Llegada = c.FechaHoraLlegada,
+                    Puerta = c.PuertaEmbarque,
+                    CostoKilo = c.CostoKiloExceso,
+                    Baja = TextoBaja(c),
                     Act = c.Act ? 1 : 0,
                     Cambio = c
                 }).ToList();
@@ -156,13 +174,29 @@ namespace PROYECTO_ING_DE_SOFTWARE
             }
         }
 
+        // Borrado lógico de esa versión del vuelo.
+        private static string TextoBaja(VueloCambio_GV42 c)
+        {
+            return IdiomaManager_GV42.T(c.BorradoLogico ? "general.si" : "general.no");
+        }
+
         private void Limpiar()
         {
-            cmbCodigo.SelectedIndex = 0;
-            cmbNombre.SelectedIndex = 0;
-            dtIni.Checked = false;
-            dtFin.Checked = false;
+            FiltrosDeArranque();
             Aplicar();
+        }
+
+        // Estado inicial de la pantalla: sin filtro de código ni de nombre y con los cambios
+        // del último mes. Es el mismo estado al que vuelve el botón LIMPIAR.
+        private void FiltrosDeArranque()
+        {
+            if (cmbCodigo.Items.Count > 0) cmbCodigo.SelectedIndex = 0;
+            if (cmbNombre.Items.Count > 0) cmbNombre.SelectedIndex = 0;
+            dtIni.Value = DateTime.Today.AddMonths(-1);
+            dtIni.Checked = true;
+            dtFin.Value = DateTime.Today;
+            dtFin.Checked = true;
+            chkSoloCambios.Checked = false;
         }
 
         #endregion
@@ -247,7 +281,12 @@ namespace PROYECTO_ING_DE_SOFTWARE
             public DateTime Fecha { get; set; }
             public string Hora { get; set; }
             public string Nombre { get; set; }
-            public string Descripcion { get; set; }
+            public string Aerolinea { get; set; }
+            public DateTime Salida { get; set; }
+            public DateTime Llegada { get; set; }
+            public string Puerta { get; set; }
+            public decimal CostoKilo { get; set; }
+            public string Baja { get; set; }
             public int Act { get; set; }
             public VueloCambio_GV42 Cambio { get; set; }
         }

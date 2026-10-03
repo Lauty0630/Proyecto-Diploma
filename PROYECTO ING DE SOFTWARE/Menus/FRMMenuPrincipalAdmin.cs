@@ -60,6 +60,7 @@ namespace PROYECTO_ING_DE_SOFTWARE
             vuelosToolStripMenuItem.Text = IdiomaManager_GV42.T("menu.vuelos");
             gestionVuelosToolStripMenuItem.Text = IdiomaManager_GV42.T("menu.gestionVuelos");
             bitacoraVuelosToolStripMenuItem.Text = IdiomaManager_GV42.T("menu.bitacoraVuelos");
+            clientesToolStripMenuItem.Text = IdiomaManager_GV42.T("menu.clientes");
 
             reportesToolStripMenuItem.Text = IdiomaManager_GV42.T("menu.reportes");
             reporteReservasToolStripMenuItem.Text = IdiomaManager_GV42.T("menu.reporteReservas");
@@ -190,7 +191,9 @@ namespace PROYECTO_ING_DE_SOFTWARE
             bool puedeVerBitacoraVuelos = dataKeys.Contains("Vuelos.Bitacora");
             gestionVuelosToolStripMenuItem.Visible = puedeGestionarVuelos;
             bitacoraVuelosToolStripMenuItem.Visible = puedeVerBitacoraVuelos;
-            vuelosToolStripMenuItem.Visible = puedeGestionarVuelos || puedeVerBitacoraVuelos;
+            bool puedeVerClientes = dataKeys.Contains("Clientes.Ver");
+            clientesToolStripMenuItem.Visible = puedeVerClientes;
+            vuelosToolStripMenuItem.Visible = puedeGestionarVuelos || puedeVerBitacoraVuelos || puedeVerClientes;
 
             bool puedeVerReporteReservas = dataKeys.Contains("Reportes.Reservas");
             reporteReservasToolStripMenuItem.Visible = puedeVerReporteReservas;
@@ -317,7 +320,7 @@ namespace PROYECTO_ING_DE_SOFTWARE
             AbrirFormularioHijo(new FRMCheckIn_GV42());
         }
 
-        // Vuelos: gestión (modificar / baja lógica) y bitácora de cambios (tabla Vuelo_C).
+        // Maestros: gestión de vuelos (alta / modificar / baja lógica) y bitácora de cambios (tabla Vuelo_C).
         // Cada opción se muestra según su patente (Vuelos.Gestionar / Vuelos.Bitacora).
         private void gestionVuelosToolStripMenuItem_Click(object sender, EventArgs e)
         {
@@ -327,6 +330,12 @@ namespace PROYECTO_ING_DE_SOFTWARE
         private void bitacoraVuelosToolStripMenuItem_Click(object sender, EventArgs e)
         {
             AbrirFormularioHijo(new FRMBitacoraVuelos_GV42());
+        }
+
+        // Maestros: maestro de clientes (ABM y serialización XML). Patente Clientes.Ver.
+        private void clientesToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            AbrirFormularioHijo(new FRMMaestroClientes_GV42());
         }
 
         // Reportes: el de reservas (RFN 1, rol Gerente) y el de check-in (RFN 2, mostrador y Gerente).

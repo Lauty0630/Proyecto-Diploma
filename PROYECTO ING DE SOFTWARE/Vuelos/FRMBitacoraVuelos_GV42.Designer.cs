@@ -30,6 +30,10 @@
         {
             System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle1 = new System.Windows.Forms.DataGridViewCellStyle();
             System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle2 = new System.Windows.Forms.DataGridViewCellStyle();
+            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle3 = new System.Windows.Forms.DataGridViewCellStyle();
+            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle4 = new System.Windows.Forms.DataGridViewCellStyle();
+            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle5 = new System.Windows.Forms.DataGridViewCellStyle();
+            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle6 = new System.Windows.Forms.DataGridViewCellStyle();
             this.pnlEncabezado = new PROYECTO_ING_DE_SOFTWARE.PanelEncabezado_GV42();
             this.lblTitulo = new System.Windows.Forms.Label();
             this.lblSubtitulo = new System.Windows.Forms.Label();
@@ -40,7 +44,12 @@
             this.colFecha = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.colHora = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.colNombre = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.colDescripcion = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.colAerolinea = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.colSalida = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.colLlegada = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.colPuerta = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.colCostoKilo = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.colBaja = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.colAct = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.lblSeccionLista = new System.Windows.Forms.Label();
             this.pnlSeparadorArriba = new System.Windows.Forms.Panel();
@@ -54,6 +63,7 @@
             this.cmbNombre = new System.Windows.Forms.ComboBox();
             this.dtIni = new System.Windows.Forms.DateTimePicker();
             this.dtFin = new System.Windows.Forms.DateTimePicker();
+            this.chkSoloCambios = new System.Windows.Forms.CheckBox();
             this.flpBotonesFiltro = new System.Windows.Forms.FlowLayoutPanel();
             this.btnAplicar = new PROYECTO_ING_DE_SOFTWARE.BotonModerno_GV42();
             this.btnLimpiar = new PROYECTO_ING_DE_SOFTWARE.BotonModerno_GV42();
@@ -140,7 +150,12 @@
             this.colFecha,
             this.colHora,
             this.colNombre,
-            this.colDescripcion,
+            this.colAerolinea,
+            this.colSalida,
+            this.colLlegada,
+            this.colPuerta,
+            this.colCostoKilo,
+            this.colBaja,
             this.colAct});
             this.dgvCambios.Dock = System.Windows.Forms.DockStyle.Fill;
             this.dgvCambios.Location = new System.Drawing.Point(16, 44);
@@ -152,7 +167,7 @@
             // colCodigoVuelo
             //
             this.colCodigoVuelo.DataPropertyName = "CodigoVuelo";
-            this.colCodigoVuelo.FillWeight = 70F;
+            this.colCodigoVuelo.FillWeight = 62F;
             this.colCodigoVuelo.HeaderText = "Cod. vuelo";
             this.colCodigoVuelo.Name = "colCodigoVuelo";
             this.colCodigoVuelo.ReadOnly = true;
@@ -162,7 +177,7 @@
             this.colFecha.DataPropertyName = "Fecha";
             dataGridViewCellStyle1.Format = "dd/MM/yyyy";
             this.colFecha.DefaultCellStyle = dataGridViewCellStyle1;
-            this.colFecha.FillWeight = 70F;
+            this.colFecha.FillWeight = 68F;
             this.colFecha.HeaderText = "Fecha";
             this.colFecha.Name = "colFecha";
             this.colFecha.ReadOnly = true;
@@ -170,7 +185,7 @@
             // colHora
             //
             this.colHora.DataPropertyName = "Hora";
-            this.colHora.FillWeight = 45F;
+            this.colHora.FillWeight = 42F;
             this.colHora.HeaderText = "Hora";
             this.colHora.Name = "colHora";
             this.colHora.ReadOnly = true;
@@ -178,25 +193,74 @@
             // colNombre
             //
             this.colNombre.DataPropertyName = "Nombre";
-            this.colNombre.FillWeight = 75F;
+            this.colNombre.FillWeight = 72F;
             this.colNombre.HeaderText = "Nombre";
             this.colNombre.Name = "colNombre";
             this.colNombre.ReadOnly = true;
             //
-            // colDescripcion
+            // colAerolinea
             //
-            this.colDescripcion.DataPropertyName = "Descripcion";
-            this.colDescripcion.FillWeight = 260F;
-            this.colDescripcion.HeaderText = "Desc.";
-            this.colDescripcion.Name = "colDescripcion";
-            this.colDescripcion.ReadOnly = true;
+            this.colAerolinea.DataPropertyName = "Aerolinea";
+            this.colAerolinea.FillWeight = 110F;
+            this.colAerolinea.HeaderText = "Aerolínea";
+            this.colAerolinea.Name = "colAerolinea";
+            this.colAerolinea.ReadOnly = true;
+            //
+            // colSalida
+            //
+            this.colSalida.DataPropertyName = "Salida";
+            dataGridViewCellStyle2.Format = "dd/MM/yyyy HH:mm";
+            this.colSalida.DefaultCellStyle = dataGridViewCellStyle2;
+            this.colSalida.FillWeight = 98F;
+            this.colSalida.HeaderText = "Salida";
+            this.colSalida.Name = "colSalida";
+            this.colSalida.ReadOnly = true;
+            //
+            // colLlegada
+            //
+            this.colLlegada.DataPropertyName = "Llegada";
+            dataGridViewCellStyle3.Format = "dd/MM/yyyy HH:mm";
+            this.colLlegada.DefaultCellStyle = dataGridViewCellStyle3;
+            this.colLlegada.FillWeight = 98F;
+            this.colLlegada.HeaderText = "Llegada";
+            this.colLlegada.Name = "colLlegada";
+            this.colLlegada.ReadOnly = true;
+            //
+            // colPuerta
+            //
+            this.colPuerta.DataPropertyName = "Puerta";
+            this.colPuerta.FillWeight = 48F;
+            this.colPuerta.HeaderText = "Puerta";
+            this.colPuerta.Name = "colPuerta";
+            this.colPuerta.ReadOnly = true;
+            //
+            // colCostoKilo
+            //
+            this.colCostoKilo.DataPropertyName = "CostoKilo";
+            dataGridViewCellStyle4.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleRight;
+            dataGridViewCellStyle4.Format = "N2";
+            this.colCostoKilo.DefaultCellStyle = dataGridViewCellStyle4;
+            this.colCostoKilo.FillWeight = 70F;
+            this.colCostoKilo.HeaderText = "$/kg exceso";
+            this.colCostoKilo.Name = "colCostoKilo";
+            this.colCostoKilo.ReadOnly = true;
+            //
+            // colBaja
+            //
+            this.colBaja.DataPropertyName = "Baja";
+            dataGridViewCellStyle5.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleCenter;
+            this.colBaja.DefaultCellStyle = dataGridViewCellStyle5;
+            this.colBaja.FillWeight = 40F;
+            this.colBaja.HeaderText = "Baja";
+            this.colBaja.Name = "colBaja";
+            this.colBaja.ReadOnly = true;
             //
             // colAct
             //
             this.colAct.DataPropertyName = "Act";
-            dataGridViewCellStyle2.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleCenter;
-            this.colAct.DefaultCellStyle = dataGridViewCellStyle2;
-            this.colAct.FillWeight = 35F;
+            dataGridViewCellStyle6.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleCenter;
+            this.colAct.DefaultCellStyle = dataGridViewCellStyle6;
+            this.colAct.FillWeight = 36F;
             this.colAct.HeaderText = "Act.";
             this.colAct.Name = "colAct";
             this.colAct.ReadOnly = true;
@@ -228,7 +292,7 @@
             this.pnlFiltros.Location = new System.Drawing.Point(24, 20);
             this.pnlFiltros.Name = "pnlFiltros";
             this.pnlFiltros.Padding = new System.Windows.Forms.Padding(20, 16, 20, 14);
-            this.pnlFiltros.Size = new System.Drawing.Size(952, 100);
+            this.pnlFiltros.Size = new System.Drawing.Size(952, 126);
             this.pnlFiltros.TabIndex = 0;
             //
             // tlpFiltros
@@ -248,13 +312,15 @@
             this.tlpFiltros.Controls.Add(this.dtIni, 2, 1);
             this.tlpFiltros.Controls.Add(this.dtFin, 3, 1);
             this.tlpFiltros.Controls.Add(this.flpBotonesFiltro, 4, 1);
+            this.tlpFiltros.Controls.Add(this.chkSoloCambios, 0, 2);
             this.tlpFiltros.Dock = System.Windows.Forms.DockStyle.Fill;
             this.tlpFiltros.Location = new System.Drawing.Point(20, 16);
             this.tlpFiltros.Name = "tlpFiltros";
-            this.tlpFiltros.RowCount = 2;
+            this.tlpFiltros.RowCount = 3;
             this.tlpFiltros.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 22F));
             this.tlpFiltros.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 48F));
-            this.tlpFiltros.Size = new System.Drawing.Size(912, 70);
+            this.tlpFiltros.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 26F));
+            this.tlpFiltros.Size = new System.Drawing.Size(912, 96);
             this.tlpFiltros.TabIndex = 0;
             //
             // lblCodigo
@@ -360,6 +426,19 @@
             this.dtFin.ShowCheckBox = true;
             this.dtFin.Size = new System.Drawing.Size(148, 25);
             this.dtFin.TabIndex = 7;
+            //
+            // chkSoloCambios
+            //
+            this.chkSoloCambios.AutoSize = true;
+            this.tlpFiltros.SetColumnSpan(this.chkSoloCambios, 3);
+            this.chkSoloCambios.Font = new System.Drawing.Font("Segoe UI", 9.75F);
+            this.chkSoloCambios.Location = new System.Drawing.Point(0, 74);
+            this.chkSoloCambios.Margin = new System.Windows.Forms.Padding(0, 4, 3, 0);
+            this.chkSoloCambios.Name = "chkSoloCambios";
+            this.chkSoloCambios.Size = new System.Drawing.Size(230, 21);
+            this.chkSoloCambios.TabIndex = 9;
+            this.chkSoloCambios.Text = "Solo vuelos con cambios";
+            this.chkSoloCambios.UseVisualStyleBackColor = true;
             //
             // flpBotonesFiltro
             //
@@ -515,7 +594,12 @@
         private System.Windows.Forms.DataGridViewTextBoxColumn colFecha;
         private System.Windows.Forms.DataGridViewTextBoxColumn colHora;
         private System.Windows.Forms.DataGridViewTextBoxColumn colNombre;
-        private System.Windows.Forms.DataGridViewTextBoxColumn colDescripcion;
+        private System.Windows.Forms.DataGridViewTextBoxColumn colAerolinea;
+        private System.Windows.Forms.DataGridViewTextBoxColumn colSalida;
+        private System.Windows.Forms.DataGridViewTextBoxColumn colLlegada;
+        private System.Windows.Forms.DataGridViewTextBoxColumn colPuerta;
+        private System.Windows.Forms.DataGridViewTextBoxColumn colCostoKilo;
+        private System.Windows.Forms.DataGridViewTextBoxColumn colBaja;
         private System.Windows.Forms.DataGridViewTextBoxColumn colAct;
         private System.Windows.Forms.Label lblSeccionLista;
         private System.Windows.Forms.Panel pnlSeparadorArriba;
@@ -529,6 +613,7 @@
         private System.Windows.Forms.ComboBox cmbNombre;
         private System.Windows.Forms.DateTimePicker dtIni;
         private System.Windows.Forms.DateTimePicker dtFin;
+        private System.Windows.Forms.CheckBox chkSoloCambios;
         private System.Windows.Forms.FlowLayoutPanel flpBotonesFiltro;
         private PROYECTO_ING_DE_SOFTWARE.BotonModerno_GV42 btnAplicar;
         private PROYECTO_ING_DE_SOFTWARE.BotonModerno_GV42 btnLimpiar;

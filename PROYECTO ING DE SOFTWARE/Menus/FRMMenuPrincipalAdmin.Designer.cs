@@ -43,6 +43,7 @@
             this.vuelosToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.gestionVuelosToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.bitacoraVuelosToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.clientesToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.reportesToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.reporteReservasToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.reporteCheckInToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
@@ -199,11 +200,12 @@
             //
             this.vuelosToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.gestionVuelosToolStripMenuItem,
-            this.bitacoraVuelosToolStripMenuItem});
+            this.bitacoraVuelosToolStripMenuItem,
+            this.clientesToolStripMenuItem});
             this.vuelosToolStripMenuItem.Name = "vuelosToolStripMenuItem";
             this.vuelosToolStripMenuItem.Padding = new System.Windows.Forms.Padding(8, 0, 8, 0);
             this.vuelosToolStripMenuItem.Size = new System.Drawing.Size(72, 23);
-            this.vuelosToolStripMenuItem.Text = "Vuelos";
+            this.vuelosToolStripMenuItem.Text = "Maestros";
             //
             // gestionVuelosToolStripMenuItem
             //
@@ -220,6 +222,14 @@
             this.bitacoraVuelosToolStripMenuItem.Size = new System.Drawing.Size(220, 26);
             this.bitacoraVuelosToolStripMenuItem.Text = "Bitácora de cambios";
             this.bitacoraVuelosToolStripMenuItem.Click += new System.EventHandler(this.bitacoraVuelosToolStripMenuItem_Click);
+            //
+            // clientesToolStripMenuItem
+            //
+            this.clientesToolStripMenuItem.Font = new System.Drawing.Font("Segoe UI", 10F);
+            this.clientesToolStripMenuItem.Name = "clientesToolStripMenuItem";
+            this.clientesToolStripMenuItem.Size = new System.Drawing.Size(220, 26);
+            this.clientesToolStripMenuItem.Text = "Clientes";
+            this.clientesToolStripMenuItem.Click += new System.EventHandler(this.clientesToolStripMenuItem_Click);
             //
             // reportesToolStripMenuItem
             //
@@ -557,6 +567,7 @@
         private System.Windows.Forms.ToolStripMenuItem vuelosToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem gestionVuelosToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem bitacoraVuelosToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem clientesToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem reportesToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem reporteReservasToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem reporteCheckInToolStripMenuItem;
