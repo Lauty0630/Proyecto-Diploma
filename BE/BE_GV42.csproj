@@ -73,6 +73,7 @@
     <Compile Include="CheckIn\TarjetaEmbarque_GV42.cs" />
     <Compile Include="Reservas\TipoAdicional_GV42.cs" />
     <Compile Include="Reportes\ReporteCheckIn_GV42.cs" />
+    <Compile Include="Reportes\ReporteMillas_GV42.cs" />
     <Compile Include="Reportes\ReporteReserva_GV42.cs" />
     <Compile Include="Vuelos\VueloClase_GV42.cs" />
     <Compile Include="Vuelos\Vuelo_GV42.cs" />

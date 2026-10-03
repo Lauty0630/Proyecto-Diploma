@@ -1309,3 +1309,48 @@ BEGIN
     VALUES (13, N'Maestro de aeropuertos: patente y eventos de bitácora');
 END
 GO
+
+/* =====================================================================================
+   3ra ENTREGA (TODAVÍA NO SE APLICA) – Reporte de millas
+   Este bloque está comentado a propósito: mientras siga así, la base no cambia y en Gestión de
+   permisos no aparece nada nuevo. El reporte de millas, la ayuda y el reinstalador funcionan sin
+   él (el reporte usa por ahora las patentes del reporte de reservas).
+
+   Para la 3ra entrega, si se quiere que el reporte de millas tenga patentes y eventos propios:
+     1) quitar los "--" del principio de cada línea de este bloque;
+     2) subir VERSION_ACTUAL a 14 en DAL/Instalacion/InstaladorBD_GV42.cs;
+     3) en BLL/Reportes/BLLReporteMillas_GV42.cs cambiar PATENTE_VER por "Reportes.Millas" y
+        PATENTE_EXPORTAR por "Reportes.MillasExportarPDF".
+   ===================================================================================== */
+-- IF NOT EXISTS (SELECT 1 FROM dbo.Patente WHERE DataKey = N'Reportes.Millas')
+--     INSERT INTO dbo.Patente (Nombre, DataKey) VALUES (N'Reportes - Millas', N'Reportes.Millas');
+-- IF NOT EXISTS (SELECT 1 FROM dbo.Patente WHERE DataKey = N'Reportes.MillasExportarPDF')
+--     INSERT INTO dbo.Patente (Nombre, DataKey) VALUES (N'Reportes - Millas Exportar PDF', N'Reportes.MillasExportarPDF');
+-- GO
+--
+-- INSERT INTO dbo.RolPatente (IdRol, IdPatente)
+-- SELECT DISTINCT RP.IdRol, N.Id
+-- FROM dbo.RolPatente RP
+-- INNER JOIN dbo.Patente P ON P.Id = RP.IdPatente
+-- INNER JOIN (VALUES (N'Reportes.Reservas',            N'Reportes.Millas'),
+--                    (N'Reportes.ReservasExportarPDF', N'Reportes.MillasExportarPDF')) AS M(Origen, Nueva) ON M.Origen = P.DataKey
+-- INNER JOIN dbo.Patente N ON N.DataKey = M.Nueva
+-- WHERE NOT EXISTS (SELECT 1 FROM dbo.RolPatente X WHERE X.IdRol = RP.IdRol AND X.IdPatente = N.Id);
+-- GO
+--
+-- INSERT INTO dbo.TipoEvento (Nombre)
+-- SELECT E.Nombre FROM (VALUES (N'Reporte de millas consultado'),
+--                              (N'Reporte de millas exportado a PDF')) AS E(Nombre)
+-- WHERE NOT EXISTS (SELECT 1 FROM dbo.TipoEvento X WHERE X.Nombre = E.Nombre);
+-- GO
+--
+-- IF NOT EXISTS (SELECT 1 FROM dbo.VersionBD_GV42 WHERE Version = 14)
+-- BEGIN
+--     INSERT INTO dbo.TareaPendiente_GV42 (Nombre)
+--     SELECT X.T FROM (VALUES (N'RecalcularDV:Patente'), (N'RecalcularDV:RolPatente'), (N'RecalcularDV:TipoEvento')) AS X(T)
+--     WHERE NOT EXISTS (SELECT 1 FROM dbo.TareaPendiente_GV42 P WHERE P.Nombre = X.T);
+--
+--     INSERT INTO dbo.VersionBD_GV42 (Version, Descripcion)
+--     VALUES (14, N'Reporte de millas: patentes y eventos de bitácora');
+-- END
+-- GO

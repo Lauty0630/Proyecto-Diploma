@@ -67,6 +67,12 @@ namespace PROYECTO_ING_DE_SOFTWARE
             reporteReservasToolStripMenuItem.Text = IdiomaManager_GV42.T("menu.reporteReservas");
             reporteCheckInToolStripMenuItem.Text = IdiomaManager_GV42.T("menu.reporteCheckIn");
 
+            // 3ra entrega (ocultos mientras Entregas_GV42.ENTREGA_3_ACTIVA sea false).
+            reporteMillasToolStripMenuItem.Text = IdiomaManager_GV42.T("menu.reporteMillas");
+            ayudaToolStripMenuItem.Text = IdiomaManager_GV42.T("menu.ayuda");
+            temasAyudaToolStripMenuItem.Text = IdiomaManager_GV42.T("menu.temasAyuda");
+            ayudaPantallaToolStripMenuItem.Text = IdiomaManager_GV42.T("menu.ayudaPantalla");
+
             usuarioToolStripMenuItem.Text = IdiomaManager_GV42.T("menu.usuario");
             reLoginToolStripMenuItem.Text = IdiomaManager_GV42.T("menu.relogin");
             cambiarClaveToolStripMenuItem.Text = IdiomaManager_GV42.T("menu.cambiarClave");
@@ -202,7 +208,11 @@ namespace PROYECTO_ING_DE_SOFTWARE
             reporteReservasToolStripMenuItem.Visible = puedeVerReporteReservas;
             bool puedeVerReporteCheckIn = dataKeys.Contains("Reportes.CheckIn");
             reporteCheckInToolStripMenuItem.Visible = puedeVerReporteCheckIn;
-            reportesToolStripMenuItem.Visible = puedeVerReporteReservas || puedeVerReporteCheckIn;
+            // 3ra entrega: el reporte de millas y la ayuda solo se muestran con el interruptor activo.
+            bool puedeVerReporteMillas = Entregas_GV42.ENTREGA_3_ACTIVA && dataKeys.Contains(BLLReporteMillas_GV42.PATENTE_VER);
+            reporteMillasToolStripMenuItem.Visible = puedeVerReporteMillas;
+            ayudaToolStripMenuItem.Visible = Entregas_GV42.ENTREGA_3_ACTIVA;
+            reportesToolStripMenuItem.Visible = puedeVerReporteReservas || puedeVerReporteCheckIn || puedeVerReporteMillas;
 
             bool puedeCambiarIdioma = dataKeys.Contains("Sesion.CambiarIdioma");
             idiomaToolStripMenuItem.Visible = puedeCambiarIdioma;
@@ -357,6 +367,55 @@ namespace PROYECTO_ING_DE_SOFTWARE
         {
             AbrirFormularioHijo(new FRMReporteCheckIn_GV42());
         }
+
+        // ---------------------------------------------------------------- 3ra entrega
+        // Reporte inteligente de millas y ayuda en línea. Los ítems del menú están ocultos (y F1 no
+        // hace nada) mientras Entregas_GV42.ENTREGA_3_ACTIVA sea false.
+        private void reporteMillasToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            AbrirFormularioHijo(new FRMReporteMillas_GV42());
+        }
+
+        private void temasAyudaToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            MostrarAyuda(BLLAyuda_GV42.TEMA_INICIAL);
+        }
+
+        private void ayudaPantallaToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            MostrarAyudaDeLaPantalla();
+        }
+
+        // F1 abre la ayuda en el tema de la pantalla que está abierta.
+        protected override bool ProcessCmdKey(ref Message msg, Keys keyData)
+        {
+            if (keyData == Keys.F1 && Entregas_GV42.ENTREGA_3_ACTIVA)
+            {
+                MostrarAyudaDeLaPantalla();
+                return true;
+            }
+            return base.ProcessCmdKey(ref msg, keyData);
+        }
+
+        private void MostrarAyudaDeLaPantalla()
+        {
+            Form abierto = _formularioActual != null && !_formularioActual.IsDisposed ? _formularioActual : null;
+            MostrarAyuda(abierto != null ? new BLLAyuda_GV42().TemaDeFormulario(abierto.GetType().Name) : BLLAyuda_GV42.TEMA_INICIAL);
+        }
+
+        // La ayuda es una ventana aparte (no modal): se puede dejar abierta mientras se trabaja.
+        private void MostrarAyuda(string idTema)
+        {
+            if (_frmAyuda == null || _frmAyuda.IsDisposed)
+            {
+                _frmAyuda = new FRMAyuda_GV42();
+                _frmAyuda.Show(this);
+            }
+            _frmAyuda.MostrarTema(idTema);
+            _frmAyuda.Activate();
+        }
+
+        private FRMAyuda_GV42 _frmAyuda;
 
         private void espanolToolStripMenuItem_Click(object sender, EventArgs e)
         {

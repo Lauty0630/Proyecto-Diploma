@@ -60,6 +60,7 @@
     <Compile Include="Pagos\DALPago_GV42.cs" />
     <Compile Include="Reservas\DALReserva_GV42.cs" />
     <Compile Include="Reportes\DALReporteCheckIn_GV42.cs" />
+    <Compile Include="Reportes\DALReporteMillas_GV42.cs" />
     <Compile Include="Reportes\DALReporteReserva_GV42.cs" />
     <Compile Include="CheckIn\DALTarjetaEmbarque_GV42.cs" />
     <Compile Include="Reservas\DALTipoAdicional_GV42.cs" />

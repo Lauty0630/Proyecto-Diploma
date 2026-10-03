@@ -228,6 +228,24 @@
     <Compile Include="Vuelos\FRMMaestroAeropuertos_GV42.Designer.cs">
       <DependentUpon>FRMMaestroAeropuertos_GV42.cs</DependentUpon>
     </Compile>
+    <Compile Include="Ayuda\FRMAyuda_GV42.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Ayuda\FRMAyuda_GV42.Designer.cs">
+      <DependentUpon>FRMAyuda_GV42.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Instalacion\FRMReinstalador_GV42.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Instalacion\FRMReinstalador_GV42.Designer.cs">
+      <DependentUpon>FRMReinstalador_GV42.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Reportes\FRMReporteMillas_GV42.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Reportes\FRMReporteMillas_GV42.Designer.cs">
+      <DependentUpon>FRMReporteMillas_GV42.cs</DependentUpon>
+    </Compile>
     <Compile Include="Vuelos\FRMBitacoraVuelos_GV42.cs">
       <SubType>Form</SubType>
     </Compile>

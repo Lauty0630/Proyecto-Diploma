@@ -58,6 +58,7 @@
     <Compile Include="Usuario_GV42.cs" />
     <Compile Include="Validaciones_GV42.cs" />
     <Compile Include="Integridad\CalculadorIntegridad_GV42.cs" />
+    <Compile Include="Configuracion\Entregas_GV42.cs" />
     <Compile Include="Serializacion\EstiloXmlClientes_GV42.cs" />
     <Compile Include="Serializacion\SerializadorXml_GV42.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

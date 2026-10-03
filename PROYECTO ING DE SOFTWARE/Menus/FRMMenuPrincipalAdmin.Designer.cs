@@ -44,6 +44,10 @@
             this.gestionVuelosToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.bitacoraVuelosToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.clientesToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.reporteMillasToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.ayudaToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.temasAyudaToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.ayudaPantallaToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.aeropuertosToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.reportesToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.reporteReservasToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
@@ -92,7 +96,8 @@
             this.vuelosToolStripMenuItem,
             this.reportesToolStripMenuItem,
             this.idiomaToolStripMenuItem,
-            this.usuarioToolStripMenuItem});
+            this.usuarioToolStripMenuItem,
+            this.ayudaToolStripMenuItem});
             this.mnuPrincipal.Location = new System.Drawing.Point(0, 0);
             this.mnuPrincipal.Name = "mnuPrincipal";
             this.mnuPrincipal.Padding = new System.Windows.Forms.Padding(10, 6, 10, 6);
@@ -245,7 +250,8 @@
             //
             this.reportesToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.reporteReservasToolStripMenuItem,
-            this.reporteCheckInToolStripMenuItem});
+            this.reporteCheckInToolStripMenuItem,
+            this.reporteMillasToolStripMenuItem});
             this.reportesToolStripMenuItem.Name = "reportesToolStripMenuItem";
             this.reportesToolStripMenuItem.Padding = new System.Windows.Forms.Padding(8, 0, 8, 0);
             this.reportesToolStripMenuItem.Size = new System.Drawing.Size(84, 23);
@@ -266,6 +272,42 @@
             this.reporteCheckInToolStripMenuItem.Size = new System.Drawing.Size(220, 26);
             this.reporteCheckInToolStripMenuItem.Text = "Reporte de check-in";
             this.reporteCheckInToolStripMenuItem.Click += new System.EventHandler(this.reporteCheckInToolStripMenuItem_Click);
+            //
+            // reporteMillasToolStripMenuItem
+            //
+            this.reporteMillasToolStripMenuItem.Font = new System.Drawing.Font("Segoe UI", 10F);
+            this.reporteMillasToolStripMenuItem.Name = "reporteMillasToolStripMenuItem";
+            this.reporteMillasToolStripMenuItem.Size = new System.Drawing.Size(220, 26);
+            this.reporteMillasToolStripMenuItem.Text = "Reporte de millas";
+            this.reporteMillasToolStripMenuItem.Visible = false;
+            this.reporteMillasToolStripMenuItem.Click += new System.EventHandler(this.reporteMillasToolStripMenuItem_Click);
+            //
+            // ayudaToolStripMenuItem
+            //
+            this.ayudaToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.temasAyudaToolStripMenuItem,
+            this.ayudaPantallaToolStripMenuItem});
+            this.ayudaToolStripMenuItem.Name = "ayudaToolStripMenuItem";
+            this.ayudaToolStripMenuItem.Padding = new System.Windows.Forms.Padding(8, 0, 8, 0);
+            this.ayudaToolStripMenuItem.Size = new System.Drawing.Size(66, 23);
+            this.ayudaToolStripMenuItem.Text = "Ayuda";
+            this.ayudaToolStripMenuItem.Visible = false;
+            //
+            // temasAyudaToolStripMenuItem
+            //
+            this.temasAyudaToolStripMenuItem.Font = new System.Drawing.Font("Segoe UI", 10F);
+            this.temasAyudaToolStripMenuItem.Name = "temasAyudaToolStripMenuItem";
+            this.temasAyudaToolStripMenuItem.Size = new System.Drawing.Size(220, 26);
+            this.temasAyudaToolStripMenuItem.Text = "Temas de ayuda";
+            this.temasAyudaToolStripMenuItem.Click += new System.EventHandler(this.temasAyudaToolStripMenuItem_Click);
+            //
+            // ayudaPantallaToolStripMenuItem
+            //
+            this.ayudaPantallaToolStripMenuItem.Font = new System.Drawing.Font("Segoe UI", 10F);
+            this.ayudaPantallaToolStripMenuItem.Name = "ayudaPantallaToolStripMenuItem";
+            this.ayudaPantallaToolStripMenuItem.Size = new System.Drawing.Size(220, 26);
+            this.ayudaPantallaToolStripMenuItem.Text = "Ayuda de esta pantalla (F1)";
+            this.ayudaPantallaToolStripMenuItem.Click += new System.EventHandler(this.ayudaPantallaToolStripMenuItem_Click);
             //
             // idiomaToolStripMenuItem
             //
@@ -578,6 +620,10 @@
         private System.Windows.Forms.ToolStripMenuItem gestionVuelosToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem bitacoraVuelosToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem clientesToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem reporteMillasToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem ayudaToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem temasAyudaToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem ayudaPantallaToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem aeropuertosToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem reportesToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem reporteReservasToolStripMenuItem;

@@ -32,6 +32,7 @@
             this.lblMarca = new System.Windows.Forms.Label();
             this.lblEslogan = new System.Windows.Forms.Label();
             this.lnkEspanol = new System.Windows.Forms.LinkLabel();
+            this.lnkReinstalador = new System.Windows.Forms.LinkLabel();
             this.lblSeparadorIdioma = new System.Windows.Forms.Label();
             this.lnkIngles = new System.Windows.Forms.LinkLabel();
             this.pnlCard = new PROYECTO_ING_DE_SOFTWARE.PanelTarjeta_GV42();
@@ -51,6 +52,7 @@
             // 
             // pnlEncabezado
             // 
+            this.pnlEncabezado.Controls.Add(this.lnkReinstalador);
             this.pnlEncabezado.Controls.Add(this.lnkIngles);
             this.pnlEncabezado.Controls.Add(this.lblSeparadorIdioma);
             this.pnlEncabezado.Controls.Add(this.lnkEspanol);
@@ -85,6 +87,23 @@
             this.lblEslogan.Size = new System.Drawing.Size(196, 19);
             this.lblEslogan.TabIndex = 1;
             this.lblEslogan.Text = "Sistema de reservas de vuelos";
+            // 
+            // lnkReinstalador
+            // 
+            this.lnkReinstalador.ActiveLinkColor = System.Drawing.Color.White;
+            this.lnkReinstalador.AutoSize = true;
+            this.lnkReinstalador.BackColor = System.Drawing.Color.Transparent;
+            this.lnkReinstalador.Font = new System.Drawing.Font("Segoe UI Semibold", 9F, System.Drawing.FontStyle.Bold);
+            this.lnkReinstalador.LinkBehavior = System.Windows.Forms.LinkBehavior.HoverUnderline;
+            this.lnkReinstalador.LinkColor = System.Drawing.Color.FromArgb(((int)(((byte)(187)))), ((int)(((byte)(222)))), ((int)(((byte)(251)))));
+            this.lnkReinstalador.Location = new System.Drawing.Point(32, 12);
+            this.lnkReinstalador.Name = "lnkReinstalador";
+            this.lnkReinstalador.Size = new System.Drawing.Size(74, 15);
+            this.lnkReinstalador.TabIndex = 9;
+            this.lnkReinstalador.TabStop = true;
+            this.lnkReinstalador.Text = "Reinstalador";
+            this.lnkReinstalador.Visible = false;
+            this.lnkReinstalador.LinkClicked += new System.Windows.Forms.LinkLabelLinkClickedEventHandler(this.lnkReinstalador_LinkClicked);
             // 
             // lnkEspanol
             // 
@@ -285,6 +304,7 @@
         private System.Windows.Forms.Label lblMarca;
         private System.Windows.Forms.Label lblEslogan;
         private System.Windows.Forms.LinkLabel lnkEspanol;
+        private System.Windows.Forms.LinkLabel lnkReinstalador;
         private System.Windows.Forms.Label lblSeparadorIdioma;
         private System.Windows.Forms.LinkLabel lnkIngles;
         private PROYECTO_ING_DE_SOFTWARE.PanelTarjeta_GV42 pnlCard;
