@@ -47,16 +47,16 @@ namespace DAL
             return lista;
         }
 
-        // Primer asiento libre de la clase para asignar automáticamente (tarifa sin asiento elegido).
-        // Se prefieren las butacas comunes; las preferenciales solo si no queda otra.
-        public Asiento_GV42 BuscarPrimeroLibre(int idVuelo, ClaseVuelo_GV42 clase)
+        // Asiento libre de la clase elegido al azar, para asignar automáticamente (tarifa sin asiento
+        // elegido). Se sortea entre las butacas comunes; las preferenciales solo si no queda otra.
+        public Asiento_GV42 BuscarLibreAlAzar(int idVuelo, ClaseVuelo_GV42 clase)
         {
             string query = "SELECT TOP 1 A.Id, A.IdVuelo, A.Fila, A.Letra, A.NumeroAsiento, A.IdClase, A.Ubicacion, A.EsPreferencial " +
                 "FROM Asiento A " +
                 "WHERE A.IdVuelo = @IdVuelo AND A.IdClase = @IdClase" +
                 "   AND NOT EXISTS (SELECT 1 FROM CheckIn CI WHERE CI.IdAsiento = A.Id)" +
                 "   AND NOT EXISTS (SELECT 1 FROM ReservaPasajero RP WHERE RP.IdAsiento = A.Id)" +
-                " ORDER BY A.EsPreferencial, A.Fila, A.Letra";
+                " ORDER BY A.EsPreferencial, NEWID()";
             DataTable dt = _acceso.leer(query, new[] {
                 new SqlParameter("@IdVuelo", idVuelo),
                 new SqlParameter("@IdClase", (int)clase)

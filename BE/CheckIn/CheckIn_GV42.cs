@@ -40,6 +40,8 @@ namespace BE
         public string TarifaNombre { get; set; }
         // La tarifa incluye elegir butaca preferencial sin recargo.
         public bool TarifaIncluyePreferencial { get; set; }
+        // En la tarifa, elegir asiento es un servicio pago (Light).
+        public bool TarifaAsientoPago { get; set; }
 
         public TipoPasajero_GV42 TipoPasajero { get; set; } = TipoPasajero_GV42.Adulto;
         public AsistenciaEspecial_GV42 Asistencia { get; set; } = AsistenciaEspecial_GV42.Ninguna;
@@ -50,6 +52,20 @@ namespace BE
         public string CanalTexto { get { return Canal.HasValue ? Canal.Value.Texto() : string.Empty; } }
 
         public List<AdicionalReserva_GV42> ServiciosAdicionales { get; set; } = new List<AdicionalReserva_GV42>();
+
+        // Se pagó el servicio "Selección de asiento" para este tramo al reservar.
+        public bool PagoSeleccionAsiento
+        {
+            get { return ServiciosAdicionales != null && ServiciosAdicionales.Exists(a => a.TipoAdicional != null && a.TipoAdicional.EsSeleccionAsiento); }
+        }
+
+        // Elegir (o cambiar) el asiento es un derecho de la tarifa o del servicio pago. Con una tarifa
+        // donde elegir se cobra y sin haberlo pagado, el asiento lo asigna el sistema y no se cambia:
+        // si en el check-in se pudiera elegir gratis, nadie pagaría la selección al reservar.
+        public bool PuedeElegirAsiento
+        {
+            get { return !TarifaAsientoPago || PagoSeleccionAsiento; }
+        }
 
         public Asiento_GV42 Asiento { get; set; }
         public Equipaje_GV42 Equipaje { get; set; }

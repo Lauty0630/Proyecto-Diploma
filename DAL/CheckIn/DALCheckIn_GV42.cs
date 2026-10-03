@@ -94,6 +94,8 @@ namespace DAL
                 : (ci.VueloClase.Clase == ClaseVuelo_GV42.Economica ? 1 : 2);
             ci.TarifaIncluyePreferencial = r["AsientoIncluido"] != DBNull.Value
                 && DALUtil_GV42.Int(r, "AsientoIncluido") == TarifaFamilia_GV42.ASIENTO_CUALQUIERA_GRATIS;
+            ci.TarifaAsientoPago = r["AsientoIncluido"] != DBNull.Value
+                && DALUtil_GV42.Int(r, "AsientoIncluido") == TarifaFamilia_GV42.ASIENTO_PAGO;
             ci.Infantes = ListarInfantes(ci.IdReserva);
 
             // Solo los servicios contratados para este tramo.

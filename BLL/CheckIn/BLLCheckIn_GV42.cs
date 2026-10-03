@@ -434,14 +434,21 @@ namespace BLL
             return ci != null && ((ci.Asiento != null && ci.Asiento.EsPreferencial) || ci.TarifaIncluyePreferencial);
         }
 
-        // Confirma el asiento que el pasajero eligió al reservar. Si por algún motivo no tiene (reservas
-        // viejas), se le asigna el primero libre no preferencial de su clase.
+        // Elegir o cambiar el asiento en el check-in: solo si la tarifa lo incluye o si se pagó la
+        // selección al reservar. Si no, el asiento lo asigna el sistema (no se cobra en el check-in).
+        public bool PuedeElegirAsiento(CheckIn_GV42 ci)
+        {
+            return ci != null && ci.PuedeElegirAsiento;
+        }
+
+        // Confirma el asiento que el pasajero eligió al reservar. Si no tiene (tarifa Light sin la
+        // selección paga, o reservas viejas), se le asigna uno libre de su clase elegido al azar.
         public Asiento_GV42 ValidarAsiento(int idCheckIn)
         {
             CheckIn_GV42 ci = ObtenerPendiente(idCheckIn);
             if (ci.Asiento != null) return ci.Asiento;
 
-            Asiento_GV42 libre = _dalAsiento.ListarLibres(ci.Vuelo.Id, ci.VueloClase.Clase).FirstOrDefault(a => !a.EsPreferencial);
+            Asiento_GV42 libre = _dalAsiento.BuscarLibreAlAzar(ci.Vuelo.Id, ci.VueloClase.Clase);
             if (libre == null)
                 throw new NegocioException_GV42(IdiomaManager_GV42.T("neg.checkin.sinAsientosClase", ci.VueloClase.ClaseTexto.ToLower()));
 
@@ -455,6 +462,8 @@ namespace BLL
         public Asiento_GV42 CambiarAsiento(int idCheckIn, int idAsientoNuevo)
         {
             CheckIn_GV42 ci = ObtenerPendiente(idCheckIn);
+            if (!PuedeElegirAsiento(ci))
+                throw new NegocioException_GV42(IdiomaManager_GV42.T("neg.checkin.seleccionNoPagada", ci.TarifaNombre));
 
             Asiento_GV42 asiento = _dalAsiento.BuscarPorId(idAsientoNuevo);
             if (asiento == null || asiento.IdVuelo != ci.Vuelo.Id)

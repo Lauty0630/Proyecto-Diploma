@@ -1093,7 +1093,7 @@
     "checkin.cambiarAsiento": "Change seat",
     "checkin.ocultarMapa": "Hide map",
     "checkin.asientoConforme": "If the passenger is happy with the seat, press Next to confirm it.",
-    "checkin.sinAsiento": "The passenger has no seat: pressing Next assigns a free one in their class, or choose one with \"Change seat\".",
+    "checkin.sinAsiento": "The passenger has no seat: pressing Next assigns one at random among the free seats in their class, or choose one with \"Change seat\".",
     "checkin.prefPermitido": "A preferred seat was paid for when booking: it can be changed for another preferred seat at no extra cost.",
     "checkin.prefNoPermitido": "Preferred seats can only be chosen by passengers who paid for one when booking (the surcharge is not charged at check-in).",
     "checkin.asientoNoDisponible": "The seat could not be changed",
@@ -1277,7 +1277,7 @@
     "tarifa.sinValija": "No checked bag (extra baggage can be purchased)",
     "tarifa.valijas": "{0} checked bag(s) included per passenger",
     "tarifa.asientoTodos": "Free seat selection, including preferred seats",
-    "tarifa.asientoPago": "Choosing a seat costs {0}; otherwise it is assigned free at check-in",
+    "tarifa.asientoPago": "Choosing a seat costs {0}; otherwise the system assigns one at random at check-in",
     "tarifa.asientoComun": "Free standard seat selection",
     "tarifa.cambioSinCargo": "Flight change with no penalty",
     "tarifa.cambioPenalidad": "Flight change with a {0}% penalty",
@@ -1297,7 +1297,7 @@
     "reservar.tarifa.titulo": "Choose your fare",
     "reservar.tarifa.ayuda": "The fare defines included baggage, seat selection and the change and refund conditions. It applies to the whole booking.",
     "reservar.tarifa.falta": "Choose a fare to continue.",
-    "reservar.asientoAutomatico": "Do not choose seats now: they are assigned free at check-in. (Untick to choose them: {0} per seat.)",
+    "reservar.asientoAutomatico": "Do not choose seats now: the system assigns one at random at check-in, free of charge, and it cannot be chosen or changed. (Untick to choose them: {0} per seat.)",
     "reservar.pasajeroSinNacimiento": "Enter the date of birth of passenger {0}.",
     "reservar.resumen.tarifa": "Fare: {0}",
     "reservar.resumen.importeTarifa": "Passengers' fare: {0}",
@@ -1411,5 +1411,10 @@
     "checkin.grupo.col.resultado": "Result",
     "checkin.grupo.resOk": "✓ Checked in",
     "checkin.grupo.resError": "✗ {0}",
-    "checkin.grupo.elegiTarjeta": "Pick a checked-in passenger from the list to see their boarding pass."
-}
+    "checkin.grupo.elegiTarjeta": "Pick a checked-in passenger from the list to see their boarding pass.",
+    "checkin.asiento.ayudaAuto": "The {0} fare does not include seat selection and it was not paid for when booking: the system assigns the seat at random and it cannot be changed.",
+    "checkin.sinAsientoAuto": "The passenger has no seat: pressing Next makes the system assign one at random among the free seats in their class.",
+    "checkin.asientoAutoConforme": "The seat was assigned by the system. Press Next to continue.",
+    "checkin.grupo.asientoAsignadoPieAuto": "The seats were assigned at random and cannot be changed. Press Next to continue.",
+    "neg.checkin.seleccionNoPagada": "The {0} fare does not include seat selection and it was not paid for when booking: the seat is assigned by the system and cannot be changed."
+}

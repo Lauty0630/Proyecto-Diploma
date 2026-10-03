@@ -1431,8 +1431,10 @@ namespace PROYECTO_ING_DE_SOFTWARE
 
         private void PrepararPasoAsiento()
         {
+            // Sin derecho a elegir (tarifa con selección paga que no se pagó) no hay mapa.
+            if (!PuedeElegirAsiento) _mapaVisible = false;
             // En un grupo el mapa es la vista principal (se ven los asientos de todos): se abre solo.
-            if (EsGrupo && !_mapaGrupoAbierto)
+            else if (EsGrupo && !_mapaGrupoAbierto)
             {
                 _mapaVisible = true;
                 _mapaGrupoAbierto = true;
@@ -1441,6 +1443,9 @@ namespace PROYECTO_ING_DE_SOFTWARE
             MostrarAsientoActual();
             if (_mapaVisible) CargarMapa();
         }
+
+        // El pasajero puede elegir o cambiar su asiento (lo incluye la tarifa o pagó la selección).
+        private bool PuedeElegirAsiento => _ci != null && _bll.PuedeElegirAsiento(_ci);
 
         // Asiento elegido al reservar: número, clase, ubicación y si es preferencial.
         private void MostrarAsientoActual()
@@ -1454,10 +1459,19 @@ namespace PROYECTO_ING_DE_SOFTWARE
             bool puedePreferencial = _ci != null && _bll.PuedeElegirPreferencial(_ci);
             lblAvisoPreferencial.Text = IdiomaManager_GV42.T(puedePreferencial ? "checkin.prefPermitido" : "checkin.prefNoPermitido");
 
-            lblAsientoConforme.Text = IdiomaManager_GV42.T(a == null ? "checkin.sinAsiento"
-                : EsGrupo ? "checkin.grupo.asientoConforme" : "checkin.asientoConforme");
+            bool puedeElegir = _ci == null || PuedeElegirAsiento;
+            lblAvisoPreferencial.Visible = puedeElegir;
+            btnCambiarAsiento.Visible = puedeElegir;
+            if (!puedeElegir) _mapaVisible = false;
+
+            lblAsientoConforme.Text = !puedeElegir
+                ? IdiomaManager_GV42.T(a == null ? "checkin.sinAsientoAuto" : "checkin.asientoAutoConforme")
+                : IdiomaManager_GV42.T(a == null ? "checkin.sinAsiento"
+                    : EsGrupo ? "checkin.grupo.asientoConforme" : "checkin.asientoConforme");
             lblTituloAsiento.Text = IdiomaManager_GV42.T(EsGrupo ? "checkin.grupo.asiento.titulo" : "checkin.asiento.titulo");
-            lblAyudaAsiento.Text = EsGrupo ? TextoAsientosGrupo() : IdiomaManager_GV42.T("checkin.asiento.ayuda");
+            lblAyudaAsiento.Text = !puedeElegir
+                ? IdiomaManager_GV42.T("checkin.asiento.ayudaAuto", _ci.TarifaNombre) + (EsGrupo ? "  " + TextoAsientosGrupo() : string.Empty)
+                : EsGrupo ? TextoAsientosGrupo() : IdiomaManager_GV42.T("checkin.asiento.ayuda");
             lblAsientoConforme.Visible = !_mapaVisible;
             ctrlButacas.Visible = _mapaVisible;
             btnCambiarAsiento.Text = IdiomaManager_GV42.T(_mapaVisible ? "checkin.ocultarMapa" : "checkin.cambiarAsiento");
@@ -1536,7 +1550,7 @@ namespace PROYECTO_ING_DE_SOFTWARE
 
         // Valida el asiento de cada pasajero del grupo. A los que no tenían (tarifa Light: no eligen al
         // reservar) la BLL les asigna uno libre: en ese caso se muestra cuál le tocó a cada uno y se
-        // queda en el paso, para que puedan cambiarlo en el mapa antes de seguir.
+        // queda en el paso, para que vean el asiento (y lo cambien en el mapa, si tienen derecho a elegir).
         private void ValidarAsientosDelGrupo()
         {
             GuardarActivo();
@@ -1572,7 +1586,7 @@ namespace PROYECTO_ING_DE_SOFTWARE
             if (asignados.Count > 0)
             {
                 MessageBox.Show(string.Join(Environment.NewLine, asignados) + Environment.NewLine + Environment.NewLine +
-                                IdiomaManager_GV42.T("checkin.grupo.asientoAsignadoPie"),
+                                IdiomaManager_GV42.T(PuedeElegirAsiento ? "checkin.grupo.asientoAsignadoPie" : "checkin.grupo.asientoAsignadoPieAuto"),
                                 IdiomaManager_GV42.T("checkin.grupo.titulo"), MessageBoxButtons.OK, MessageBoxIcon.Information);
                 return;
             }
@@ -2071,6 +2085,7 @@ namespace PROYECTO_ING_DE_SOFTWARE
 
         private void btnCambiarAsiento_Click(object sender, EventArgs e)
         {
+            if (!PuedeElegirAsiento) return;
             _mapaVisible = !_mapaVisible;
             MostrarAsientoActual();
             if (_mapaVisible) CargarMapa();

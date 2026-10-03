@@ -1093,7 +1093,7 @@
     "checkin.cambiarAsiento": "Cambiar asiento",
     "checkin.ocultarMapa": "Ocultar mapa",
     "checkin.asientoConforme": "Si el pasajero está conforme con su asiento, presioná Siguiente para confirmarlo.",
-    "checkin.sinAsiento": "El pasajero no tiene asiento: al presionar Siguiente se le asigna uno libre de su clase, o elegilo con \"Cambiar asiento\".",
+    "checkin.sinAsiento": "El pasajero no tiene asiento: al presionar Siguiente se le asigna uno al azar entre los libres de su clase, o elegilo con \"Cambiar asiento\".",
     "checkin.prefPermitido": "Pagó una butaca preferencial al reservar: puede cambiarla por otra preferencial sin recargo.",
     "checkin.prefNoPermitido": "Las butacas preferenciales solo las puede elegir quien pagó una al reservar (el recargo no se cobra en el check-in).",
     "checkin.asientoNoDisponible": "No se pudo cambiar el asiento",
@@ -1277,7 +1277,7 @@
     "tarifa.sinValija": "Sin valija despachada (se puede comprar equipaje extra)",
     "tarifa.valijas": "{0} valija(s) despachada(s) incluida(s) por pasajero",
     "tarifa.asientoTodos": "Elección de asiento gratis, incluso butacas preferenciales",
-    "tarifa.asientoPago": "Elegir asiento cuesta {0}; si no, se asigna gratis en el check-in",
+    "tarifa.asientoPago": "Elegir asiento cuesta {0}; si no, el sistema asigna uno al azar en el check-in",
     "tarifa.asientoComun": "Elección de asiento común gratis",
     "tarifa.cambioSinCargo": "Cambio de vuelo sin penalidad",
     "tarifa.cambioPenalidad": "Cambio de vuelo con {0}% de penalidad",
@@ -1297,7 +1297,7 @@
     "reservar.tarifa.titulo": "Elegí tu tarifa",
     "reservar.tarifa.ayuda": "La tarifa define el equipaje incluido, la elección de asiento y las condiciones de cambio y de reembolso. Vale para toda la reserva.",
     "reservar.tarifa.falta": "Elegí una tarifa para continuar.",
-    "reservar.asientoAutomatico": "No elegir asientos ahora: se asignan sin costo en el check-in. (Destildá para elegirlos: {0} por asiento.)",
+    "reservar.asientoAutomatico": "No elegir asientos ahora: el sistema asigna uno al azar en el check-in, sin costo, y no se puede elegir ni cambiar. (Destildá para elegirlos: {0} por asiento.)",
     "reservar.pasajeroSinNacimiento": "Indicá la fecha de nacimiento del pasajero {0}.",
     "reservar.resumen.tarifa": "Tarifa: {0}",
     "reservar.resumen.importeTarifa": "Tarifa de los pasajeros: {0}",
@@ -1411,5 +1411,10 @@
     "checkin.grupo.col.resultado": "Resultado",
     "checkin.grupo.resOk": "✓ Realizado",
     "checkin.grupo.resError": "✗ {0}",
-    "checkin.grupo.elegiTarjeta": "Elegí en la lista un pasajero con el check-in realizado para ver su tarjeta de embarque."
-}
+    "checkin.grupo.elegiTarjeta": "Elegí en la lista un pasajero con el check-in realizado para ver su tarjeta de embarque.",
+    "checkin.asiento.ayudaAuto": "La tarifa {0} no incluye elegir asiento y la selección no se pagó al reservar: el sistema asigna el asiento al azar y no se puede cambiar.",
+    "checkin.sinAsientoAuto": "El pasajero no tiene asiento: al presionar Siguiente el sistema le asigna uno al azar entre los libres de su clase.",
+    "checkin.asientoAutoConforme": "El asiento fue asignado por el sistema. Presioná Siguiente para continuar.",
+    "checkin.grupo.asientoAsignadoPieAuto": "Los asientos se asignaron al azar y no se pueden cambiar. Presioná Siguiente para continuar.",
+    "neg.checkin.seleccionNoPagada": "La tarifa {0} no incluye elegir asiento y la selección no se pagó al reservar: el asiento lo asigna el sistema y no se puede cambiar."
+}
