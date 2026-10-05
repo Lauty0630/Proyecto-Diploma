@@ -938,7 +938,7 @@ namespace PROYECTO_ING_DE_SOFTWARE
                 {
                     var fila = new CtrlAdicional_GV42();
                     // El cliente autogestionado no elige el precio (la BLL igual lo fuerza al de lista).
-                    fila.Configurar(tipo, _esVendedor);
+                    fila.Configurar(tipo, false);   // el precio es el del catálogo para todos
                     fila.Dock = DockStyle.Top;
                     fila.Visible = tramo == _tramo;
                     pnlListaAdicionales.Controls.Add(fila);

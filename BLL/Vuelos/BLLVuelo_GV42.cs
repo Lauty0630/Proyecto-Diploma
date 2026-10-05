@@ -15,6 +15,8 @@ namespace BLL
         #region Constantes
 
         public const int MAX_HORAS_VUELO = 24;
+        // Los vuelos se programan como máximo con un año de anticipación.
+        public const int MAX_DIAS_ANTICIPACION = 365;
         public const decimal MAX_COSTO_KILO = 99999999.99m;   // Vuelo.CostoKiloExceso decimal(10,2)
         public const decimal MAX_PRECIO_BASE = 9999999999.99m; // VueloClase.PrecioBase decimal(12,2)
 
@@ -78,6 +80,8 @@ namespace BLL
             if (costoKilo < 0 || costoKilo > MAX_COSTO_KILO)
                 throw new NegocioException_GV42(IdiomaManager_GV42.T("neg.vuelo.costoKiloRango", MAX_COSTO_KILO.ToString("N2")));
 
+            ValidarReprogramacion(actual, salida, llegada);
+
             // Con reservas vigentes no se cambia la identidad del vuelo (código, aerolínea ni ruta):
             // los pasajeros compraron ese vuelo. Sí se puede reprogramar el horario, la puerta o el costo.
             if (_dalVuelo.ContarReservasVigentes(actual.Id) > 0)
@@ -88,6 +92,23 @@ namespace BLL
                     (ruta != null && !string.Equals(ruta.Replace(" ", ""), rutaActual.Replace(" ", ""), StringComparison.OrdinalIgnoreCase)))
                     throw new NegocioException_GV42(IdiomaManager_GV42.T("neg.vuelo.reservasVigentesIdentidad", actual.CodigoVuelo));
             }
+        }
+
+        // Cambio de horario de un vuelo (al modificarlo o al activar un registro de su historial):
+        //  - la salida no puede quedar a más de un año;
+        //  - si algún pasajero ya hizo el check-in, su tarjeta de embarque tiene el horario actual;
+        //  - ninguna reserva de ida y vuelta puede quedar con la vuelta saliendo antes de que llegue la ida.
+        internal void ValidarReprogramacion(Vuelo_GV42 actual, DateTime salida, DateTime llegada)
+        {
+            if (salida == actual.FechaHoraSalida && llegada == actual.FechaHoraLlegada) return;
+
+            if (salida > DateTime.Now.AddDays(MAX_DIAS_ANTICIPACION))
+                throw new NegocioException_GV42(IdiomaManager_GV42.T("neg.vuelo.anticipacionMaxima", MAX_DIAS_ANTICIPACION));
+            if (_dalVuelo.ContarCheckInsRealizados(actual.Id) > 0)
+                throw new NegocioException_GV42(IdiomaManager_GV42.T("neg.vuelo.reprogramarConCheckIn", actual.CodigoVuelo));
+            int incoherentes = _dalVuelo.ContarReservasIncoherentes(actual.Id, salida, llegada);
+            if (incoherentes > 0)
+                throw new NegocioException_GV42(IdiomaManager_GV42.T("neg.vuelo.reprogramarRompeViaje", incoherentes));
         }
 
         #endregion
@@ -109,6 +130,8 @@ namespace BLL
 
             if (v.FechaHoraSalida <= DateTime.Now)
                 throw new NegocioException_GV42(IdiomaManager_GV42.T("neg.vuelo.salidaFutura"));
+            if (v.FechaHoraSalida > DateTime.Now.AddDays(MAX_DIAS_ANTICIPACION))
+                throw new NegocioException_GV42(IdiomaManager_GV42.T("neg.vuelo.anticipacionMaxima", MAX_DIAS_ANTICIPACION));
             if ((v.FechaHoraLlegada - v.FechaHoraSalida).TotalHours > MAX_HORAS_VUELO)
                 throw new NegocioException_GV42(IdiomaManager_GV42.T("neg.vuelo.duracionMaxima", MAX_HORAS_VUELO));
             if (v.CostoKiloExceso > MAX_COSTO_KILO)
@@ -198,6 +221,10 @@ namespace BLL
             BLLNegocioUtil_GV42.ExigirPatente("Vuelos.Gestionar", IdiomaManager_GV42.T("neg.vuelo.sinPermiso"));
             if (v == null || v.Id <= 0)
                 throw new NegocioException_GV42(IdiomaManager_GV42.T("neg.vuelo.seleccioneBaja"));
+            // El estado se lee de la base: la pantalla puede tener el vuelo desactualizado.
+            v = BuscarActual(v.Id);
+            if (v == null)
+                throw new NegocioException_GV42(IdiomaManager_GV42.T("neg.vuelo.noExiste"));
             if (v.BorradoLogico)
                 throw new NegocioException_GV42(IdiomaManager_GV42.T("neg.vuelo.yaDeBaja", v.CodigoVuelo));
             if (_dalVuelo.ContarReservasVigentes(v.Id) > 0)
@@ -213,6 +240,9 @@ namespace BLL
             BLLNegocioUtil_GV42.ExigirPatente("Vuelos.Gestionar", IdiomaManager_GV42.T("neg.vuelo.sinPermiso"));
             if (v == null || v.Id <= 0)
                 throw new NegocioException_GV42(IdiomaManager_GV42.T("neg.vuelo.seleccioneReactivar"));
+            v = BuscarActual(v.Id);
+            if (v == null)
+                throw new NegocioException_GV42(IdiomaManager_GV42.T("neg.vuelo.noExiste"));
             if (!v.BorradoLogico)
                 throw new NegocioException_GV42(IdiomaManager_GV42.T("neg.vuelo.yaActivo", v.CodigoVuelo));
             if (v.FechaHoraSalida <= DateTime.Now)

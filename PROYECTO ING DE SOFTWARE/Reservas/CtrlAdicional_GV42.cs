@@ -50,8 +50,7 @@ namespace PROYECTO_ING_DE_SOFTWARE
 
         #region Configuración
 
-        // costoEditable: solo el vendedor puede ajustar el precio (la BLL igual fuerza el de lista
-        // en autogestión).
+        // costoEditable: hoy siempre false. El precio es el del catálogo para todos (la BLL lo fuerza).
         public void Configurar(TipoAdicional_GV42 tipo, bool costoEditable)
         {
             _tipo = tipo;

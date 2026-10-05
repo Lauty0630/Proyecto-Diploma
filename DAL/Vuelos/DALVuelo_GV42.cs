@@ -189,6 +189,33 @@ namespace DAL
             return r == null ? 0 : Convert.ToInt32(r);
         }
 
+        // Check-ins ya realizados en ese vuelo (de reservas vigentes): esos pasajeros ya tienen su
+        // tarjeta de embarque emitida con el horario actual.
+        public int ContarCheckInsRealizados(int idVuelo)
+        {
+            object r = _acceso.leerEscalar(
+                "SELECT COUNT(1) FROM CheckIn C INNER JOIN Reserva R ON R.Id = C.IdReserva " +
+                "WHERE C.IdEstadoCheckIn = @Realizado AND R.IdEstadoReserva <> @Cancelada " +
+                "  AND ((C.Tramo = 1 AND R.IdVuelo = @Id) OR (C.Tramo = 2 AND R.IdVueloVuelta = @Id))",
+                new[] { new SqlParameter("@Id", idVuelo), new SqlParameter("@Realizado", (int)EstadoCheckIn_GV42.Realizado),
+                        new SqlParameter("@Cancelada", (int)EstadoReserva_GV42.Cancelada) });
+            return r == null ? 0 : Convert.ToInt32(r);
+        }
+
+        // Reservas vigentes de ida y vuelta que quedarían incoherentes si el vuelo pasara a ese horario:
+        // las que lo usan de ida y su vuelta saldría antes de que llegue, y las que lo usan de vuelta y
+        // saldría antes de que llegue su ida.
+        public int ContarReservasIncoherentes(int idVuelo, DateTime salida, DateTime llegada)
+        {
+            object r = _acceso.leerEscalar(
+                "SELECT COUNT(1) FROM Reserva R WHERE R.IdEstadoReserva <> @Cancelada AND R.IdVueloVuelta IS NOT NULL AND (" +
+                "   (R.IdVuelo = @Id AND EXISTS (SELECT 1 FROM Vuelo V WHERE V.Id = R.IdVueloVuelta AND V.FechaHoraSalida <= @Llegada)) " +
+                "OR (R.IdVueloVuelta = @Id AND EXISTS (SELECT 1 FROM Vuelo V WHERE V.Id = R.IdVuelo AND V.FechaHoraLlegada >= @Salida)))",
+                new[] { new SqlParameter("@Id", idVuelo), new SqlParameter("@Salida", salida), new SqlParameter("@Llegada", llegada),
+                        new SqlParameter("@Cancelada", (int)EstadoReserva_GV42.Cancelada) });
+            return r == null ? 0 : Convert.ToInt32(r);
+        }
+
         // Alta de un vuelo con sus clases y su mapa de asientos, todo en una transacción. Devuelve el Id.
         // El trigger TR_Vuelo_Historial de la base genera el primer registro del vuelo en Vuelo_C.
         // Mapa de asientos: 6 butacas por fila (A-F); las primeras filas son de Primera, las siguientes

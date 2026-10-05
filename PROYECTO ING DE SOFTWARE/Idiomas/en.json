@@ -1665,5 +1665,10 @@
     "ayuda.clave.titulo": "Change password",
     "ayuda.clave.texto": "Enter the current password and the new one twice. The new password must meet the rules shown on the screen.",
     "ayuda.idioma.titulo": "Language and session",
-    "ayuda.idioma.texto": "The Language menu switches between Spanish and English and the change applies at once to every open screen. LogOut ends the session and returns to the login."
+    "ayuda.idioma.texto": "The Language menu switches between Spanish and English and the change applies at once to every open screen. LogOut ends the session and returns to the login.",
+    "neg.reserva.pasajeroYaEnVuelo": "The passenger with ID {0} already has an active booking on flight {1}. They cannot travel twice on the same flight.",
+    "neg.reserva.maximoPendientes": "You already have {0} bookings pending payment. Pay or cancel one before creating another.",
+    "neg.vuelo.anticipacionMaxima": "The departure cannot be more than {0} days from today.",
+    "neg.vuelo.reprogramarConCheckIn": "Flight {0} already has checked-in passengers: its schedule cannot be changed.",
+    "neg.vuelo.reprogramarRompeViaje": "With that schedule, {0} round-trip booking(s) would have the return departing before the outbound arrives."
 }

@@ -540,6 +540,34 @@ namespace DAL
 
         #endregion
 
+        // Primer DNI de la lista que ya viaja en ese vuelo con OTRA reserva vigente (pendiente de pago
+        // o confirmada), sea como ida o como vuelta. Null si ninguno. 'idReservaExcluir': la propia
+        // reserva cuando se trata de un cambio de vuelo (0 en una reserva nueva).
+        public string PasajeroYaViajaEnVuelo(int idVuelo, IEnumerable<string> dnis, int idReservaExcluir)
+        {
+            foreach (string dni in dnis)
+            {
+                object r = _acceso.leerEscalar(
+                    "SELECT COUNT(1) FROM ReservaPasajero RP INNER JOIN Reserva R ON R.Id = RP.IdReserva " +
+                    "WHERE RP.DniPasajero = @DNI AND R.IdEstadoReserva <> @Cancelada AND R.Id <> @Excluir " +
+                    "  AND ((RP.Tramo = 1 AND R.IdVuelo = @IdVuelo) OR (RP.Tramo = 2 AND R.IdVueloVuelta = @IdVuelo))",
+                    new[] { new SqlParameter("@DNI", dni), new SqlParameter("@IdVuelo", idVuelo),
+                            new SqlParameter("@Excluir", idReservaExcluir),
+                            new SqlParameter("@Cancelada", (int)EstadoReserva_GV42.Cancelada) });
+                if (r != null && Convert.ToInt32(r) > 0) return dni;
+            }
+            return null;
+        }
+
+        // Reservas que el cliente tiene sin pagar (cada una retiene asientos hasta que vence).
+        public int ContarPendientesDePago(string dniCliente)
+        {
+            object r = _acceso.leerEscalar(
+                "SELECT COUNT(1) FROM Reserva WHERE DniCliente = @DNI AND IdEstadoReserva = @Pendiente",
+                new[] { new SqlParameter("@DNI", dniCliente), new SqlParameter("@Pendiente", (int)EstadoReserva_GV42.PendienteDePago) });
+            return r == null ? 0 : Convert.ToInt32(r);
+        }
+
         // ¿Algún pasajero de la reserva ya hizo el check-in? (entonces ya no se puede cancelar)
         public bool TieneCheckInRealizado(int idReserva)
         {

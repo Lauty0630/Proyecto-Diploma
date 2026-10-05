@@ -69,6 +69,9 @@ namespace BLL
             if (cambiaIdentidad && bllVuelo.ContarReservasVigentes(actual.Id) > 0)
                 throw new NegocioException_GV42(IdiomaManager_GV42.T("neg.vueloHist.reservasVigentesIdentidad", actual.CodigoVuelo));
 
+            // Si el registro trae otro horario, valen las mismas reglas que al reprogramar el vuelo.
+            bllVuelo.ValidarReprogramacion(actual, cambio.FechaHoraSalida, cambio.FechaHoraLlegada);
+
             // Solo se asigna Act = 1 al registro elegido: el trigger de la base actualiza la tabla Vuelo.
             string codigo = _dal.ActivarVersion(cambio.Id);
 

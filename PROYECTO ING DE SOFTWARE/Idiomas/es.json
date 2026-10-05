@@ -1665,5 +1665,10 @@
     "ayuda.clave.titulo": "Cambiar clave",
     "ayuda.clave.texto": "Se ingresa la clave actual y dos veces la nueva. La clave nueva tiene que cumplir las reglas que se indican en la pantalla.",
     "ayuda.idioma.titulo": "Idioma y sesión",
-    "ayuda.idioma.texto": "Desde el menú Idioma se pasa de español a inglés y el cambio se aplica al instante en todas las pantallas abiertas. LogOut cierra la sesión y vuelve al login."
+    "ayuda.idioma.texto": "Desde el menú Idioma se pasa de español a inglés y el cambio se aplica al instante en todas las pantallas abiertas. LogOut cierra la sesión y vuelve al login.",
+    "neg.reserva.pasajeroYaEnVuelo": "El pasajero con DNI {0} ya tiene una reserva vigente en el vuelo {1}. No puede viajar dos veces en el mismo vuelo.",
+    "neg.reserva.maximoPendientes": "Ya tenés {0} reservas pendientes de pago. Pagá o cancelá alguna antes de generar otra.",
+    "neg.vuelo.anticipacionMaxima": "La salida no puede ser a más de {0} días de hoy.",
+    "neg.vuelo.reprogramarConCheckIn": "El vuelo {0} ya tiene pasajeros con el check-in realizado: no se puede cambiar su horario.",
+    "neg.vuelo.reprogramarRompeViaje": "Con ese horario, {0} reserva(s) de ida y vuelta quedarían con la vuelta saliendo antes de que llegue la ida."
 }

@@ -19,6 +19,10 @@ namespace BLL
 
         public const int MAX_PASAJEROS_POR_RESERVA = 9;
 
+        // Un cliente autogestionado no puede acumular reservas sin pagar: cada una retiene asientos
+        // hasta que vence y con muchas podría dejar un vuelo "lleno" sin pagar nada.
+        public const int MAX_RESERVAS_PENDIENTES_AUTOGESTION = 3;
+
         // Tope absoluto por servicio (además del tope por pasajero de MaximoAdicional).
         public const int MAX_CANTIDAD_ADICIONAL = 20;
         public const decimal MAX_COSTO_ADICIONAL = 999999m;
@@ -514,6 +518,10 @@ namespace BLL
                 if (!_dalPasajero.ExisteDni(titular.DNI))
                     _dalPasajero.Insertar(titular);
                 borrador.Cliente = titular;
+
+                int pendientes = _dalReserva.ContarPendientesDePago(titular.DNI);
+                if (pendientes >= MAX_RESERVAS_PENDIENTES_AUTOGESTION)
+                    throw new NegocioException_GV42(IdiomaManager_GV42.T("neg.reserva.maximoPendientes", MAX_RESERVAS_PENDIENTES_AUTOGESTION));
             }
             else
             {
@@ -525,6 +533,10 @@ namespace BLL
 
             // Datos, identidad, fecha de nacimiento y tipo (adulto / niño / infante) de cada pasajero.
             ValidarPasajerosParaReserva(borrador.Pasajeros, vc.Vuelo.FechaHoraSalida);
+
+            // Nadie viaja dos veces en el mismo vuelo: se rechaza si algún pasajero ya está en ese
+            // vuelo con otra reserva vigente (pendiente de pago o confirmada).
+            ExigirPasajerosNoRepetidosEnVuelo(vc.Vuelo, borrador.Pasajeros, 0);
 
             // Los infantes viajan en brazos: no ocupan asiento.
             int asientosNecesarios = borrador.CantidadAsientos;
@@ -572,6 +584,7 @@ namespace BLL
                     throw new NegocioException_GV42(IdiomaManager_GV42.T("neg.reserva.vueltaAntesDeLlegar"));
                 if (vcVuelta.AsientosDisponibles < asientosNecesarios)
                     throw new NegocioException_GV42(IdiomaManager_GV42.T("neg.reserva.vueltaSinCupo", vcVuelta.AsientosDisponibles));
+                ExigirPasajerosNoRepetidosEnVuelo(vcVuelta.Vuelo, borrador.Pasajeros, 0);
                 borrador.FechaRegreso = vcVuelta.Vuelo.FechaHoraSalida.Date;
             }
             else
@@ -624,6 +637,13 @@ namespace BLL
                     creada.NumeroReserva + ": " + asientosTexto, "Baja");
 
             return creada;
+        }
+
+        private void ExigirPasajerosNoRepetidosEnVuelo(Vuelo_GV42 vuelo, IEnumerable<Pasajero_GV42> pasajeros, int idReservaExcluir)
+        {
+            string dni = _dalReserva.PasajeroYaViajaEnVuelo(vuelo.Id, pasajeros.Select(p => p.DNI).ToList(), idReservaExcluir);
+            if (dni != null)
+                throw new NegocioException_GV42(IdiomaManager_GV42.T("neg.reserva.pasajeroYaEnVuelo", dni, vuelo.CodigoVuelo));
         }
 
         // Tarifa de un tramo para todos los pasajeros: precio de la familia tarifaria por lo que paga
@@ -885,10 +905,10 @@ namespace BLL
                     throw new NegocioException_GV42(IdiomaManager_GV42.T("neg.adicional.maximo",
                         cantidadPasajeros, maximo, nombre, Math.Max(1, tipo.MaxPorPasajero)));
 
-                if (canal == CanalVenta_GV42.Autogestion)
-                    a.CostoUnitario = tipo.PrecioUnitario;
-
-                a.CostoUnitario = Math.Round(a.CostoUnitario, 2);
+                // El precio es siempre el del catálogo, para el cliente y para el vendedor (como en las
+                // aerolíneas: el mostrador no negocia el precio de un servicio). Lo que mande la pantalla
+                // se descarta.
+                a.CostoUnitario = Math.Round(tipo.PrecioUnitario, 2);
                 if (a.CostoUnitario <= 0)
                     throw new NegocioException_GV42(IdiomaManager_GV42.T("neg.adicional.costoCero", nombre));
                 if (a.CostoUnitario > MAX_COSTO_ADICIONAL)
@@ -1299,6 +1319,8 @@ namespace BLL
                 throw new NegocioException_GV42(IdiomaManager_GV42.T(tramo == Reserva_GV42.TRAMO_IDA ? "neg.cambio.idaDespuesDeVuelta" : "neg.reserva.vueltaAntesDeLlegar"));
             if (nuevo.AsientosDisponibles < reserva.CantidadAsientos)
                 throw new NegocioException_GV42(IdiomaManager_GV42.T("neg.reserva.quedanAsientos", nuevo.AsientosDisponibles));
+            // Cambio de clase dentro del mismo vuelo: los pasajeros ya están en él con esta misma reserva.
+            ExigirPasajerosNoRepetidosEnVuelo(nuevo.Vuelo, reserva.Pasajeros, reserva.Id);
 
             // Asientos del vuelo nuevo.
             asientos = (asientos ?? new List<AsientoPasajero_GV42>()).Where(a => a != null && a.Asiento != null).ToList();
