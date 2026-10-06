@@ -48,6 +48,21 @@ namespace PROYECTO_ING_DE_SOFTWARE
 
         #endregion
 
+        #region Apertura desde pantallas sin menú
+
+        // Para las pantallas que se usan antes de iniciar sesión (login, registro, reinstalador): ahí
+        // no está el menú principal, así que la ayuda se abre como diálogo en el tema indicado.
+        public static void AbrirComoDialogo(IWin32Window pantalla, string idTema)
+        {
+            using (var frm = new FRMAyuda_GV42())
+            {
+                frm.MostrarTema(idTema);
+                frm.ShowDialog(pantalla);
+            }
+        }
+
+        #endregion
+
         #region Temas
 
         // Los nodos dependen de los temas definidos en la BLL (datos), por eso se arman en código.

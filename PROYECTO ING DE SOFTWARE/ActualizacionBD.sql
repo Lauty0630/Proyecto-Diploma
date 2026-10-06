@@ -1311,6 +1311,147 @@ END
 GO
 
 /* =====================================================================================
+   VERSIÓN 14 – Roles y permisos del sistema
+   Deja solo los seis roles del sistema, cada uno con sus permisos, y saca los roles de prueba.
+   Se aplica UNA sola vez: después, lo que el administrador cambie en Gestión de permisos se respeta.
+
+     Admin            : administración del sistema y todas las operaciones del negocio.
+     Supervisor       : maestros (vuelos, clientes, aeropuertos) y bitácora de cambios de vuelos.
+     Gerente          : reportes.
+     Vendedor         : reservas, pagos, cancelaciones, cambios, reembolsos y clientes.
+     EncargadoCheckIn : check-in en el mostrador y su reporte.
+     Cliente          : autogestión de sus propias reservas, pagos y check-in.
+
+   Usuarios: los que tenían un rol de prueba no se borran. Si a un rol del sistema le falta un
+   usuario activo, se le asigna uno de esos; los demás quedan inactivos con el rol Cliente.
+   ===================================================================================== */
+IF NOT EXISTS (SELECT 1 FROM dbo.VersionBD_GV42 WHERE Version = 14)
+BEGIN
+    SET XACT_ABORT ON;
+    BEGIN TRANSACTION;
+
+    DECLARE @Finales TABLE (Orden INT, Nombre NVARCHAR(50));
+    INSERT INTO @Finales VALUES (1, N'Admin'), (2, N'Supervisor'), (3, N'Gerente'),
+                                (4, N'Vendedor'), (5, N'EncargadoCheckIn'), (6, N'Cliente');
+
+    -- 1) Roles del sistema que falten.
+    INSERT INTO dbo.Roles (Nombre)
+    SELECT F.Nombre FROM @Finales F
+    WHERE NOT EXISTS (SELECT 1 FROM dbo.Roles R WHERE R.Nombre = F.Nombre);
+
+    DECLARE @IdCliente INT = (SELECT Id FROM dbo.Roles WHERE Nombre = N'Cliente');
+
+    -- 2) "Client" era un duplicado de "Cliente": sus usuarios pasan a Cliente y siguen activos.
+    UPDATE U SET U.IdRol = @IdCliente
+    FROM dbo.Usuario U INNER JOIN dbo.Roles R ON R.Id = U.IdRol
+    WHERE R.Nombre = N'Client';
+
+    -- 3) Un usuario activo por rol: al rol del sistema que no tenga ninguno se le asigna un
+    --    usuario de un rol de prueba (por orden alfabético de nombre de usuario).
+    DECLARE @Nombre NVARCHAR(50), @IdRol INT, @Dni NVARCHAR(250);
+    DECLARE c CURSOR LOCAL FAST_FORWARD FOR SELECT Nombre FROM @Finales ORDER BY Orden;
+    OPEN c;
+    FETCH NEXT FROM c INTO @Nombre;
+    WHILE @@FETCH_STATUS = 0
+    BEGIN
+        SET @IdRol = (SELECT Id FROM dbo.Roles WHERE Nombre = @Nombre);
+        IF NOT EXISTS (SELECT 1 FROM dbo.Usuario WHERE IdRol = @IdRol AND Activo = 1 AND Bloqueo = 0)
+        BEGIN
+            SET @Dni = (SELECT TOP 1 U.DNI
+                        FROM dbo.Usuario U INNER JOIN dbo.Roles R ON R.Id = U.IdRol
+                        WHERE R.Nombre NOT IN (SELECT Nombre FROM @Finales) AND U.Activo = 1 AND U.Bloqueo = 0
+                        ORDER BY U.UserName);
+            IF @Dni IS NOT NULL
+                UPDATE dbo.Usuario SET IdRol = @IdRol WHERE DNI = @Dni;
+        END
+        FETCH NEXT FROM c INTO @Nombre;
+    END
+    CLOSE c;
+    DEALLOCATE c;
+
+    -- 4) Los usuarios que siguen con un rol de prueba quedan inactivos (baja lógica), con rol Cliente.
+    UPDATE U SET U.IdRol = @IdCliente, U.Activo = 0
+    FROM dbo.Usuario U INNER JOIN dbo.Roles R ON R.Id = U.IdRol
+    WHERE R.Nombre NOT IN (SELECT Nombre FROM @Finales);
+
+    -- 5) Se quitan todos los permisos asignados y los roles de prueba. Las familias de patentes
+    --    se conservan (quedan sin asignar a ningún rol).
+    DELETE FROM dbo.RolPatente;
+    DELETE FROM dbo.RolFamilia;
+    DELETE FROM dbo.Roles WHERE Nombre NOT IN (SELECT Nombre FROM @Finales);
+
+    -- 6) Permisos de cada rol.
+    DECLARE @Permisos TABLE (Rol NVARCHAR(50), DataKey NVARCHAR(100));
+
+    -- Admin: todo, menos las patentes "propias" (son las del cliente que se autogestiona; con ellas
+    -- el sistema lo trataría como cliente en lugar de como empleado).
+    INSERT INTO @Permisos
+    SELECT N'Admin', P.DataKey FROM dbo.Patente P
+    WHERE P.DataKey NOT LIKE N'%Propia' AND P.DataKey NOT LIKE N'%Propio';
+
+    -- Sesión: la tienen todos los roles.
+    INSERT INTO @Permisos
+    SELECT F.Nombre, S.DataKey
+    FROM @Finales F
+    CROSS JOIN (VALUES (N'Sesion.CambiarClave'), (N'Sesion.ReLogin'), (N'Sesion.Logout'), (N'Sesion.CambiarIdioma')) AS S(DataKey)
+    WHERE F.Nombre <> N'Admin';
+
+    INSERT INTO @Permisos VALUES
+        (N'Supervisor', N'Vuelos.Gestionar'),
+        (N'Supervisor', N'Vuelos.Bitacora'),
+        (N'Supervisor', N'Vuelos.Activar'),
+        (N'Supervisor', N'Clientes.Ver'),
+        (N'Supervisor', N'Clientes.Gestionar'),
+        (N'Supervisor', N'Aeropuertos.Gestionar'),
+        (N'Supervisor', N'Reservas.Consultar'),
+
+        (N'Gerente', N'Reportes.Reservas'),
+        (N'Gerente', N'Reportes.ReservasExportarPDF'),
+        (N'Gerente', N'Reportes.CheckIn'),
+        (N'Gerente', N'Reportes.CheckInExportarPDF'),
+        (N'Gerente', N'Reservas.Consultar'),
+
+        (N'Vendedor', N'Reservas.Generar'),
+        (N'Vendedor', N'Reservas.Consultar'),
+        (N'Vendedor', N'Reservas.Cancelar'),
+        (N'Vendedor', N'Reservas.Cambiar'),
+        (N'Vendedor', N'Pagos.Registrar'),
+        (N'Vendedor', N'Reembolsos.Procesar'),
+        (N'Vendedor', N'Clientes.Ver'),
+        (N'Vendedor', N'Clientes.Gestionar'),
+
+        (N'EncargadoCheckIn', N'CheckIn.Realizar'),
+        (N'EncargadoCheckIn', N'Reservas.Consultar'),
+        (N'EncargadoCheckIn', N'Reportes.CheckIn'),
+        (N'EncargadoCheckIn', N'Reportes.CheckInExportarPDF'),
+
+        (N'Cliente', N'Reservas.GenerarPropia'),
+        (N'Cliente', N'Reservas.ConsultarPropia'),
+        (N'Cliente', N'Reservas.CancelarPropia'),
+        (N'Cliente', N'Reservas.CambiarPropia'),
+        (N'Cliente', N'Pagos.RegistrarPropio'),
+        (N'Cliente', N'CheckIn.RealizarPropio');
+
+    INSERT INTO dbo.RolPatente (IdRol, IdPatente)
+    SELECT DISTINCT R.Id, P.Id
+    FROM @Permisos X
+    INNER JOIN dbo.Roles R ON R.Nombre = X.Rol
+    INNER JOIN dbo.Patente P ON P.DataKey = X.DataKey;
+
+    -- 7) Los dígitos verificadores de las tablas tocadas los recalcula el sistema al arrancar.
+    INSERT INTO dbo.TareaPendiente_GV42 (Nombre)
+    SELECT X.T FROM (VALUES (N'RecalcularDV:Usuario'), (N'RecalcularDV:Roles'),
+                            (N'RecalcularDV:RolPatente'), (N'RecalcularDV:RolFamilia')) AS X(T)
+    WHERE NOT EXISTS (SELECT 1 FROM dbo.TareaPendiente_GV42 P WHERE P.Nombre = X.T);
+
+    INSERT INTO dbo.VersionBD_GV42 (Version, Descripcion)
+    VALUES (14, N'Roles y permisos del sistema: seis roles, sin roles de prueba');
+
+    COMMIT TRANSACTION;
+END
+GO
+
+/* =====================================================================================
    3ra ENTREGA (TODAVÍA NO SE APLICA) – Reporte de millas
    Este bloque está comentado a propósito: mientras siga así, la base no cambia y en Gestión de
    permisos no aparece nada nuevo. El reporte de millas, la ayuda y el reinstalador funcionan sin
@@ -1318,7 +1459,7 @@ GO
 
    Para la 3ra entrega, si se quiere que el reporte de millas tenga patentes y eventos propios:
      1) quitar los "--" del principio de cada línea de este bloque;
-     2) subir VERSION_ACTUAL a 14 en DAL/Instalacion/InstaladorBD_GV42.cs;
+     2) subir VERSION_ACTUAL a 15 en DAL/Instalacion/InstaladorBD_GV42.cs;
      3) en BLL/Reportes/BLLReporteMillas_GV42.cs cambiar PATENTE_VER por "Reportes.Millas" y
         PATENTE_EXPORTAR por "Reportes.MillasExportarPDF".
    ===================================================================================== */
@@ -1344,13 +1485,13 @@ GO
 -- WHERE NOT EXISTS (SELECT 1 FROM dbo.TipoEvento X WHERE X.Nombre = E.Nombre);
 -- GO
 --
--- IF NOT EXISTS (SELECT 1 FROM dbo.VersionBD_GV42 WHERE Version = 14)
+-- IF NOT EXISTS (SELECT 1 FROM dbo.VersionBD_GV42 WHERE Version = 15)
 -- BEGIN
 --     INSERT INTO dbo.TareaPendiente_GV42 (Nombre)
 --     SELECT X.T FROM (VALUES (N'RecalcularDV:Patente'), (N'RecalcularDV:RolPatente'), (N'RecalcularDV:TipoEvento')) AS X(T)
 --     WHERE NOT EXISTS (SELECT 1 FROM dbo.TareaPendiente_GV42 P WHERE P.Nombre = X.T);
 --
 --     INSERT INTO dbo.VersionBD_GV42 (Version, Descripcion)
---     VALUES (14, N'Reporte de millas: patentes y eventos de bitácora');
+--     VALUES (15, N'Reporte de millas: patentes y eventos de bitácora');
 -- END
 -- GO

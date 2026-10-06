@@ -29,18 +29,13 @@ namespace BLL
         public const int MINUTOS_LIMITE_EMBARQUE = 30;
 
         // Equipaje por valija (como en las aerolíneas):
-        //  - cada clase incluye valijas de hasta VueloClase.FranquiciaEquipajeKg cada una:
-        //    Económica 1, Ejecutiva 2 y Primera 2;
+        //  - la tarifa de la reserva define cuántas valijas incluye (Light 0, Plus 1, Top 2), cada una
+        //    de hasta VueloClase.FranquiciaEquipajeKg según la clase (Económica 15, Ejecutiva 23, Primera 32);
         //  - cada "Equipaje extra" comprado en la reserva agrega una valija de hasta 23 kg;
         //  - ninguna valija se acepta por encima de 32 kg (hay que redistribuir el contenido);
         //  - entre la franquicia de la valija y los 32 kg se cobra el exceso por kilo.
         public const decimal KG_POR_EQUIPAJE_EXTRA = 23m;
         public const decimal MAX_PESO_POR_BULTO = 32m;
-
-        public static int BultosIncluidos(ClaseVuelo_GV42 clase)
-        {
-            return clase == ClaseVuelo_GV42.Economica ? 1 : 2;
-        }
 
         public const string PATENTE_MOSTRADOR = "CheckIn.Realizar";
         public const string PATENTE_ONLINE = "CheckIn.RealizarPropio";

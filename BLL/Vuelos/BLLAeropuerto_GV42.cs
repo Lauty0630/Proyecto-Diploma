@@ -43,6 +43,8 @@ namespace BLL
             if (_dal.ExisteCodigo(aeropuerto.CodigoIata, 0))
                 throw new NegocioException_GV42(IdiomaManager_GV42.T("neg.aeropuerto.codigoDuplicado", aeropuerto.CodigoIata));
 
+            ExigirNombreUnico(aeropuerto);
+
             _dal.Insertar(aeropuerto);
             BLLNegocioUtil_GV42.Auditar(BLLNegocioUtil_GV42.MODULO_VUELOS, "Aeropuerto creado",
                 aeropuerto.CodigoIata + " - " + aeropuerto.Nombre, "Media");
@@ -59,6 +61,7 @@ namespace BLL
 
             // El código IATA no cambia: se conserva el que ya tiene.
             aeropuerto.CodigoIata = actual.CodigoIata;
+            ExigirNombreUnico(aeropuerto);
             _dal.Modificar(aeropuerto);
             BLLNegocioUtil_GV42.Auditar(BLLNegocioUtil_GV42.MODULO_VUELOS, "Aeropuerto modificado",
                 aeropuerto.CodigoIata + " - " + aeropuerto.Nombre, "Media");
@@ -97,6 +100,16 @@ namespace BLL
             ExigirTexto(a.Nombre, MAX_NOMBRE, "neg.aeropuerto.nombreInvalido");
             ExigirTexto(a.Ciudad, MAX_CIUDAD, "neg.aeropuerto.ciudadInvalida");
             ExigirTexto(a.Pais, MAX_PAIS, "neg.aeropuerto.paisInvalido");
+        }
+
+        // No puede haber dos aeropuertos con el mismo nombre en la misma ciudad.
+        private void ExigirNombreUnico(Aeropuerto_GV42 a)
+        {
+            bool repetido = _dal.ListarTodos().Any(x => x.Id != a.Id
+                && Validaciones_GV42.MismoTexto(x.Nombre, a.Nombre)
+                && Validaciones_GV42.MismoTexto(x.Ciudad, a.Ciudad));
+            if (repetido)
+                throw new NegocioException_GV42(IdiomaManager_GV42.T("neg.aeropuerto.nombreDuplicado", a.Nombre, a.Ciudad));
         }
 
         private static void ExigirTexto(string valor, int maximo, string claveMensaje)

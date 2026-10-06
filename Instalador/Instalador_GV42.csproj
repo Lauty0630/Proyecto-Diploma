@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{7C1F0A52-3B64-4E0E-9A41-5D2B8F6C1E37}</ProjectGuid>
+    <OutputType>WinExe</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>Instalador</RootNamespace>
+    <AssemblyName>Instalador FLY SAFE</AssemblyName>
+    <TargetFrameworkVersion>v4.7.2</TargetFrameworkVersion>
+    <FileAlignment>512</FileAlignment>
+    <Deterministic>true</Deterministic>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="System" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Drawing" />
+    <Reference Include="System.Windows.Forms" />
+    <Reference Include="System.Xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="FRMInstalador_GV42.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="FRMInstalador_GV42.Designer.cs">
+      <DependentUpon>FRMInstalador_GV42.cs</DependentUpon>
+    </Compile>
+    <Compile Include="InstaladorSistema_GV42.cs" />
+    <Compile Include="Program.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- Los scripts de la base y los idiomas son los mismos archivos del sistema (vinculados, no copias). -->
+    <Content Include="..\PROYECTO ING DE SOFTWARE\EsquemaCompleto.sql">
+      <Link>EsquemaCompleto.sql</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\PROYECTO ING DE SOFTWARE\ActualizacionBD.sql">
+      <Link>ActualizacionBD.sql</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\PROYECTO ING DE SOFTWARE\Idiomas\es.json">
+      <Link>Idiomas\es.json</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\PROYECTO ING DE SOFTWARE\Idiomas\en.json">
+      <Link>Idiomas\en.json</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\BE\BE_GV42.csproj">
+      <Project>{0d838138-d123-4171-bca0-31731f79ccf0}</Project>
+      <Name>BE_GV42</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\BLL\BLL_GV42.csproj">
+      <Project>{51387f40-c979-4dd9-b502-9b33a3969b9f}</Project>
+      <Name>BLL_GV42</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Servicios\Servicios_GV42.csproj">
+      <Project>{662e6a38-a516-4610-ae55-4a12fc4f0fcb}</Project>
+      <Name>Servicios_GV42</Name>
+    </ProjectReference>
+    <!-- El sistema se compila antes que el instalador, pero el instalador no usa su código. -->
+    <ProjectReference Include="..\PROYECTO ING DE SOFTWARE\UI_GV42.csproj">
+      <Project>{4312ec5d-0c95-4837-96db-871e3ec4bd68}</Project>
+      <Name>UI_GV42</Name>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <!-- Después de compilar: copia el sistema ya compilado a la carpeta "Sistema", junto al instalador.
+       Lo que se entrega es la carpeta de salida completa (el instalador + "Sistema"). -->
+  <PropertyGroup>
+    <PostBuildEvent>xcopy "$(ProjectDir)..\PROYECTO ING DE SOFTWARE\bin\$(ConfigurationName)\*" "$(TargetDir)Sistema\" /E /Y /I /Q</PostBuildEvent>
+  </PropertyGroup>
+</Project>

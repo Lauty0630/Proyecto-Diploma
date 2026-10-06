@@ -1670,5 +1670,14 @@
     "neg.reserva.maximoPendientes": "Ya tenés {0} reservas pendientes de pago. Pagá o cancelá alguna antes de generar otra.",
     "neg.vuelo.anticipacionMaxima": "La salida no puede ser a más de {0} días de hoy.",
     "neg.vuelo.reprogramarConCheckIn": "El vuelo {0} ya tiene pasajeros con el check-in realizado: no se puede cambiar su horario.",
-    "neg.vuelo.reprogramarRompeViaje": "Con ese horario, {0} reserva(s) de ida y vuelta quedarían con la vuelta saliendo antes de que llegue la ida."
+    "neg.vuelo.reprogramarRompeViaje": "Con ese horario, {0} reserva(s) de ida y vuelta quedarían con la vuelta saliendo antes de que llegue la ida.",
+    "neg.aeropuerto.nombreDuplicado": "Ya existe un aeropuerto llamado \"{0}\" en {1}.",
+    "ayuda.acceso.titulo": "Acceso al sistema",
+    "ayuda.acceso.texto": "Estas pantallas se usan antes de iniciar sesión: el inicio de sesión, el registro de un cliente nuevo y el reinstalador. En todas, F1 abre esta ayuda.",
+    "ayuda.login.titulo": "Iniciar sesión",
+    "ayuda.login.texto": "Se ingresa el usuario y la contraseña. Si la contraseña se ingresa mal varias veces seguidas, el usuario queda bloqueado y lo tiene que desbloquear un administrador.\n\nUn cliente que todavía no tiene cuenta puede crearla desde esta misma pantalla.\n\nEl enlace Reinstalador sirve para recuperar la base de datos cuando el sistema no puede usarla.",
+    "ayuda.registro.titulo": "Crear cuenta de cliente",
+    "ayuda.registro.texto": "Un cliente crea su propia cuenta para reservar sus vuelos sin pasar por un vendedor.\n\nSe cargan DNI, nombre, apellido, email, teléfono, un nombre de usuario y la contraseña dos veces. El DNI y el usuario no pueden estar ya registrados.\n\nLa cuenta queda con el rol Cliente: solo puede operar sobre sus propias reservas.",
+    "ayuda.reinstalador.titulo": "Reinstalador",
+    "ayuda.reinstalador.texto": "Recupera la base de datos cuando el sistema ya está instalado. Tiene dos operaciones:\n\n- Restaurar un backup: la base vuelve al estado del archivo .bak elegido. Se pierde lo cargado después de ese backup.\n- Reinstalar la base limpia: se borra la base y se vuelve a crear con los datos iniciales.\n\nSi la base se puede leer, hay que ingresar un usuario administrador para autorizar la operación. Si la base no existe o está dañada, no se pide usuario."
 }

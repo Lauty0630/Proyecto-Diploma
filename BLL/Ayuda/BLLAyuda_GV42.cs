@@ -64,6 +64,11 @@ namespace BLL
             Tema("bitacora", "admin", "FRMBitacoraDeEventos"),
             Tema("backup", "admin", "FRMBackupManual", "FRMIntegridad"),
 
+            Tema("acceso", null),
+            Tema("login", "acceso", "FRMIniciarSesion"),
+            Tema("registro", "acceso", "FRMRegistroCliente_GV42"),
+            Tema("reinstalador", "acceso", "FRMReinstalador_GV42", "FRMSeleccionInstancia"),
+
             Tema("usuario", null),
             Tema("clave", "usuario", "FRMCambiarContrasenia"),
             Tema("idioma", "usuario")

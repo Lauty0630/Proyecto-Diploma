@@ -6,5 +6,8 @@
   <Project Path="PROYECTO_ING_DE_SOFTWARE_Setup/PROYECTO_ING_DE_SOFTWARE_Setup.vdproj" Type="Installer">
     <Build />
   </Project>
+  <!-- 3ra entrega: programa instalador / reinstalador. Para sumarlo a la solución, quitar este comentario.
+  <Project Path="Instalador/Instalador_GV42.csproj" Id="7c1f0a52-3b64-4e0e-9a41-5d2b8f6c1e37" />
+  -->
   <Project Path="Servicios/Servicios_GV42.csproj" Id="662e6a38-a516-4610-ae55-4a12fc4f0fcb" />
 </Solution>

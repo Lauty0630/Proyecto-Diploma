@@ -219,6 +219,8 @@ namespace BLL
                 throw new NegocioException_GV42(IdiomaManager_GV42.T("neg.reserva.salidaAnteriorHoy"));
             if (c.CantidadPasajeros < 1)
                 throw new NegocioException_GV42(IdiomaManager_GV42.T("neg.reserva.pasajerosMinimo"));
+            if (c.CantidadPasajeros > MAX_PASAJEROS_POR_RESERVA)
+                throw new NegocioException_GV42(IdiomaManager_GV42.T("neg.reserva.maximoPasajeros", MAX_PASAJEROS_POR_RESERVA));
 
             if (c.TipoViaje == TipoViaje_GV42.IdaYVuelta)
             {
