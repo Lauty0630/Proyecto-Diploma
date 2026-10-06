@@ -10,10 +10,8 @@
     //   - Menú Ayuda y tecla F1          (ayuda en línea)
     //   - "Reinstalador" en el login     (restaurar un backup o reinstalar la base)
     //
-    // Aparte de este interruptor, la 3ra entrega tiene dos cosas más que también están sin activar:
-    //   - El programa instalador (carpeta Instalador): no forma parte de la solución hasta que se
-    //     quite el comentario de su línea en "TP Diploma.slnx".
-    //   - Las patentes propias del reporte de millas: bloque comentado al final de ActualizacionBD.sql.
+    // Aparte de este interruptor, las patentes propias del reporte de millas también están sin
+    // activar: bloque comentado al final de ActualizacionBD.sql.
     //
     // Para probarlo: cambiar false por true en la línea de abajo, recompilar la solución y ejecutar.
     // Para ocultarlo otra vez: volver a poner false y recompilar. No toca la base de datos.
