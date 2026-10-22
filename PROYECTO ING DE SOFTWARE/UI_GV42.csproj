@@ -195,6 +195,9 @@
     <Compile Include="Reservas\CtrlPasajero_GV42.Designer.cs">
       <DependentUpon>CtrlPasajero_GV42.cs</DependentUpon>
     </Compile>
+    <Compile Include="Reservas\CtrlOfertasCliente_GV42.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
     <Compile Include="Reservas\CtrlAdicional_GV42.cs">
       <SubType>UserControl</SubType>
     </Compile>

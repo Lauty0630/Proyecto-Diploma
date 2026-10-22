@@ -20,6 +20,13 @@ namespace PROYECTO_ING_DE_SOFTWARE
 
         #endregion
 
+        #region Eventos
+
+        // Se tildó o destildó el servicio (el formulario actualiza las ofertas para el cliente).
+        public event EventHandler SeleccionCambiada;
+
+        #endregion
+
         #region Constructor
 
         public CtrlAdicional_GV42()
@@ -35,6 +42,9 @@ namespace PROYECTO_ING_DE_SOFTWARE
         public bool Seleccionado => chkSeleccionado.Checked;
         public int Cantidad => (int)numCantidad.Value;
         public decimal CostoUnitario => numCosto.Value;
+
+        // Lo usa el panel de ofertas: tilda el servicio como si lo hubiera tildado el cliente.
+        public void Seleccionar() { chkSeleccionado.Checked = true; }
 
         // Nombre del servicio en el idioma actual (si no hay traducción, el de la base).
         public string NombreTraducido
@@ -103,6 +113,9 @@ namespace PROYECTO_ING_DE_SOFTWARE
         {
             numCantidad.Enabled = chkSeleccionado.Checked;
             numCosto.Enabled = chkSeleccionado.Checked && _costoEditable;
+
+            var alCambiar = SeleccionCambiada;
+            if (alCambiar != null) alCambiar(this, EventArgs.Empty);
         }
 
         #endregion

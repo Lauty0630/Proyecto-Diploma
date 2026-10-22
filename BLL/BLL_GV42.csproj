@@ -63,6 +63,7 @@
     <Compile Include="Instalacion\BLLReinstalador_GV42.cs" />
     <Compile Include="Reportes\BLLReporteCheckIn_GV42.cs" />
     <Compile Include="Reportes\BLLReporteMillas_GV42.cs" />
+    <Compile Include="Reportes\BLLOfertasCliente_GV42.cs" />
     <Compile Include="Reportes\BLLReporteReserva_GV42.cs" />
     <Compile Include="Vuelos\BLLVuelo_GV42.cs" />
     <Compile Include="Clientes\BLLCliente_GV42.cs" />

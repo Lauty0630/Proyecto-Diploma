@@ -9,6 +9,8 @@
     //   - Reportes > Reporte de millas   (reporte inteligente, Rep. 3)
     //   - Menú Ayuda y tecla F1          (ayuda en línea)
     //   - "Reinstalador" en el login     (restaurar un backup o reinstalar la base)
+    //   - Panel "Ofertas para vos" en el paso de adicionales de la reserva (reporte inteligente: lo que le
+    //     ofrece el sistema al cliente según sus millas y las compras asociadas)
     //
     // Aparte de este interruptor, las patentes propias del reporte de millas también están sin
     // activar: bloque comentado al final de ActualizacionBD.sql.
@@ -17,6 +19,6 @@
     // Para ocultarlo otra vez: volver a poner false y recompilar. No toca la base de datos.
     public static class Entregas_GV42
     {
-        public static readonly bool ENTREGA_3_ACTIVA = false;
+        public static readonly bool ENTREGA_3_ACTIVA = true;
     }
 }
