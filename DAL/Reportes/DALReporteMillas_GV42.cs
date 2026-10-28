@@ -72,6 +72,33 @@ namespace DAL
             return lista;
         }
 
+        // Los servicios adicionales de todas las reservas confirmadas, con el cliente de cada reserva.
+        // Con esto la BLL arma las compras asociadas ("quienes contratan A también contratan B").
+        public List<ContratacionAdicional_GV42> ListarContrataciones()
+        {
+            string query =
+                "SELECT DISTINCT RA.IdReserva, RA.IdTipoAdicional, R.DniCliente" +
+                " FROM ReservaAdicional RA" +
+                " INNER JOIN Reserva R ON R.Id = RA.IdReserva" +
+                " WHERE R.IdEstadoReserva = @Confirmada";
+
+            DataTable dt = _acceso.leer(query, new[] {
+                new SqlParameter("@Confirmada", (int)EstadoReserva_GV42.Confirmada)
+            });
+
+            var lista = new List<ContratacionAdicional_GV42>();
+            foreach (DataRow r in dt.Rows)
+            {
+                lista.Add(new ContratacionAdicional_GV42
+                {
+                    IdReserva = DALUtil_GV42.Int(r, "IdReserva"),
+                    IdTipoAdicional = DALUtil_GV42.Int(r, "IdTipoAdicional"),
+                    DniCliente = DALUtil_GV42.Str(r, "DniCliente")
+                });
+            }
+            return lista;
+        }
+
         #endregion
     }
 }

@@ -18,11 +18,23 @@ namespace PROYECTO_ING_DE_SOFTWARE
 
         #endregion
 
+        #region Eventos
+
+        // Cambió la cantidad de valijas extra (el formulario actualiza las ofertas para el cliente).
+        public event EventHandler CantidadCambiada;
+
+        #endregion
+
         #region Constructor
 
         public CtrlEquipajePasajero_GV42()
         {
             InitializeComponent();
+            numCantidad.ValueChanged += (s, e) =>
+            {
+                var alCambiar = CantidadCambiada;
+                if (alCambiar != null) alCambiar(this, EventArgs.Empty);
+            };
         }
 
         #endregion

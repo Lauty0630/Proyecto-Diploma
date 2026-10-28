@@ -20,6 +20,9 @@ namespace BLL
     //  - Ingreso al programa: la fecha del primer vuelo volado. N° de cuenta: "FS-" + DNI.
     //  - Proyección: frecuencia de los últimos 12 meses x promedio de millas por vuelo.
     //
+    // La recomendación de cada pasajero también incluye los servicios adicionales que conviene ofrecerle
+    // (BLLOfertasCliente_GV42): el mismo motor se le muestra al cliente en su pantalla de reserva.
+    //
     // Por ahora usa las patentes del reporte de reservas (Gerente). En la 3ra entrega se le pueden
     // dar patentes propias: el bloque está preparado (comentado) al final de ActualizacionBD.sql.
     public class BLLReporteMillas_GV42
@@ -62,7 +65,13 @@ namespace BLL
             BLLNegocioUtil_GV42.ExigirPatente(PATENTE_VER, IdiomaManager_GV42.T("neg.millas.sinPermisoVer"));
             filtro = Normalizar(filtro);
 
-            List<ReporteMillas_GV42> filas = Calcular(_dal.ListarVuelosVolados(), filtro, DateTime.Now);
+            DateTime ahora = DateTime.Now;
+            List<VueloVolado_GV42> volados = _dal.ListarVuelosVolados();
+            List<ReporteMillas_GV42> filas = Calcular(volados, filtro, ahora);
+
+            // Además de la oferta de vuelo, se le indica al vendedor qué servicios adicionales ofrecerle a
+            // cada pasajero: el mismo cálculo que ve el cliente en su pantalla de reserva.
+            new BLLOfertasCliente_GV42().AgregarServiciosSugeridos(filas, volados, ahora);
 
             BLLNegocioUtil_GV42.Auditar(BLLNegocioUtil_GV42.MODULO_RESERVAS, EVENTO_CONSULTA,
                 "Período: " + filtro.Periodo + " | Resultados: " + filas.Count, "Baja");
@@ -112,6 +121,12 @@ namespace BLL
             for (int i = 0; i < UMBRALES.Length; i++)
                 if (millasUltimos12Meses >= UMBRALES[i]) c = i;
             return (CategoriaMillas_GV42)c;
+        }
+
+        // Millas de los últimos 12 meses con las que empieza una categoría.
+        public static int UmbralDe(CategoriaMillas_GV42 categoria)
+        {
+            return UMBRALES[(int)categoria];
         }
 
         #endregion

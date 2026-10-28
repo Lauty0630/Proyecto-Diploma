@@ -90,6 +90,10 @@ namespace PROYECTO_ING_DE_SOFTWARE
             { new List<CtrlEquipajePasajero_GV42>(), new List<CtrlEquipajePasajero_GV42>() };
         private TipoAdicional_GV42 _servicioEquipaje;
 
+        // Ofertas para el cliente (reporte inteligente, 3ra entrega): solo existen con ENTREGA_3_ACTIVA.
+        private CtrlOfertasCliente_GV42 _ctrlOfertas;
+        private readonly BLLOfertasCliente_GV42 _ofertas = new BLLOfertasCliente_GV42();
+
         // Paso resumen / resultado
         private bool _resumenArmado;
         private Reserva_GV42 _reservaGenerada;
@@ -110,6 +114,7 @@ namespace PROYECTO_ING_DE_SOFTWARE
 
             ConfigurarPasos(false);
             ConfigurarControles();
+            ConfigurarOfertas();
 
             IdiomaManager_GV42.Instancia.Suscribir(this);
             FormClosed += (s, e) => IdiomaManager_GV42.Instancia.Desuscribir(this);
@@ -316,6 +321,8 @@ namespace PROYECTO_ING_DE_SOFTWARE
             {
                 _refrescandoIdioma = false;
             }
+
+            RefrescarOfertas(false);
         }
 
         // Vuelve a cargar los ítems de un combo conservando la selección (los enums se muestran con
@@ -912,6 +919,7 @@ namespace PROYECTO_ING_DE_SOFTWARE
                 fila.Configurar((_pasajeros[i].Nombre.Text.Trim() + " " + _pasajeros[i].Apellido.Text.Trim()).Trim(),
                                 _servicioEquipaje.MaxPorPasajero, _servicioEquipaje.PrecioUnitario, false);
                 if (elegidas.ContainsKey(i)) fila.Cantidad = elegidas[i];
+                fila.CantidadCambiada += (s, e) => RefrescarOfertas(false);
                 fila.Dock = DockStyle.Top;
                 pnlListaAdicionales.Controls.Add(fila);
                 filas.Add(fila);
@@ -939,6 +947,7 @@ namespace PROYECTO_ING_DE_SOFTWARE
                     var fila = new CtrlAdicional_GV42();
                     // El cliente autogestionado no elige el precio (la BLL igual lo fuerza al de lista).
                     fila.Configurar(tipo, false);   // el precio es el del catálogo para todos
+                    fila.SeleccionCambiada += (s, e) => RefrescarOfertas(false);
                     fila.Dock = DockStyle.Top;
                     fila.Visible = tramo == _tramo;
                     pnlListaAdicionales.Controls.Add(fila);
@@ -963,7 +972,87 @@ namespace PROYECTO_ING_DE_SOFTWARE
             pnlListaAdicionales.ResumeLayout(true);
             pnlListaAdicionales.AutoScrollPosition = new System.Drawing.Point(0, 0);
             lblTituloAdicionales.Text = IdiomaManager_GV42.T("reservar.adicionales.titulo") + SufijoTramo();
+            RefrescarOfertas(true);
         }
+
+        #region Ofertas para el cliente (reporte inteligente)
+
+        // Panel "Ofertas para vos" arriba de la lista de servicios. Es de la 3ra entrega: con
+        // ENTREGA_3_ACTIVA = false no se crea y el paso se ve igual que antes.
+        private void ConfigurarOfertas()
+        {
+            if (!Entregas_GV42.ENTREGA_3_ACTIVA) return;
+
+            _ctrlOfertas = new CtrlOfertasCliente_GV42();
+            _ctrlOfertas.AgregarSolicitado += OfertaAgregada;
+            pnlPasoAdicionales.Controls.Add(_ctrlOfertas);
+            // Con Dock Top el orden de la colección manda: debajo del título y la ayuda, arriba de la lista.
+            pnlPasoAdicionales.Controls.SetChildIndex(_ctrlOfertas, 1);
+        }
+
+        // Pide las ofertas a la BLL con lo que el cliente tiene elegido en este momento y las muestra.
+        // recargar: al entrar al paso se vuelve a leer la base; con cada tilde se reutiliza lo leído.
+        private void RefrescarOfertas(bool recargar)
+        {
+            if (_ctrlOfertas == null || _refrescandoIdioma || _pasos == null || !EsPasoAdicionales()) return;
+
+            try
+            {
+                var elegidos = new List<int>();
+                foreach (CtrlAdicional_GV42 fila in _filasAdicionales[_tramo].Where(f => f.Seleccionado))
+                    elegidos.Add(fila.Tipo.Id);
+                if (_servicioEquipaje != null && _filasEquipaje[_tramo].Any(f => f.Cantidad > 0))
+                    elegidos.Add(_servicioEquipaje.Id);
+                if (_servicioPreferencial != null && AsientosTramo.Values.Any(a => a != null && a.EsPreferencial))
+                    elegidos.Add(_servicioPreferencial.Id);
+
+                OfertasCliente_GV42 ofertas = _ofertas.ObtenerOfertas(DniParaOfertas(), _vuelos[_tramo], elegidos, recargar);
+                _ctrlOfertas.Mostrar(ofertas, IdiomaManager_GV42.T(_esVendedor ? "ofertas.tituloVendedor" : "ofertas.titulo"),
+                                     PuedeAgregarOferta);
+            }
+            catch (Exception)
+            {
+                // Las ofertas son una ayuda: si no se pueden armar se oculta el panel y la reserva sigue igual.
+                _ctrlOfertas.Ocultar();
+            }
+        }
+
+        // Cliente al que pertenecen las ofertas: el que atiende el vendedor, o el titular de la sesión.
+        private string DniParaOfertas()
+        {
+            if (_esVendedor) return _clienteElegido != null ? _clienteElegido.DNI : string.Empty;
+            Usuario_GV42 actual = SessionManager_GV42.Instancia.ObtenerUsuarioActual();
+            return actual != null ? (actual.DNI ?? string.Empty).Trim() : string.Empty;
+        }
+
+        // ¿Se puede agregar con un clic? Sí si el servicio está en la lista de este tramo (o es el
+        // equipaje extra, que se agrega al primer pasajero). La butaca preferencial se elige en el mapa.
+        private bool PuedeAgregarOferta(OfertaCliente_GV42 oferta)
+        {
+            if (oferta.Tipo == null) return false;
+            if (oferta.Tipo.EsEquipajeExtra) return _filasEquipaje[_tramo].Count > 0;
+            return _filasAdicionales[_tramo].Any(f => f.Tipo.Id == oferta.Tipo.Id);
+        }
+
+        private void OfertaAgregada(object sender, OfertaCliente_GV42 oferta)
+        {
+            if (oferta == null || oferta.Tipo == null) return;
+
+            if (oferta.Tipo.EsEquipajeExtra)
+            {
+                // La valija extra queda a nombre de quien la despacha: se suma al primer pasajero.
+                CtrlEquipajePasajero_GV42 fila = _filasEquipaje[_tramo].FirstOrDefault();
+                if (fila != null && fila.Cantidad < 1) fila.Cantidad = 1;
+            }
+            else
+            {
+                CtrlAdicional_GV42 fila = _filasAdicionales[_tramo].FirstOrDefault(f => f.Tipo.Id == oferta.Tipo.Id);
+                if (fila != null) fila.Seleccionar();
+            }
+            RefrescarOfertas(false);
+        }
+
+        #endregion
 
         // Tope de cada servicio en un tramo según la cantidad de pasajeros (lo calcula la BLL:
         // MaxPorPasajero x pasajeros). Antes se podían pedir 20 comidas especiales para 1 pasajero.
