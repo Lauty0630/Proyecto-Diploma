@@ -294,7 +294,7 @@ namespace DAL
         // medio de pago: queda registrado como pendiente en la misma transacción.
         public Reserva_GV42 Cancelar(int idReserva, decimal montoPenalidad, Reembolso_GV42 reembolso)
         {
-            return _acceso.EjecutarEnTransaccion(tx =>
+            DataTable resultado = _acceso.EjecutarEnTransaccion(tx =>
             {
                 DataTable dtRes = _acceso.leer(tx,
                     "SELECT IdVuelo, IdClase, IdVueloVuelta, IdClaseVuelta, ISNULL(CantidadAsientos, CantidadPasajeros) AS CantidadPasajeros, IdEstadoReserva FROM Reserva WHERE Id = @Id",
@@ -361,9 +361,13 @@ namespace DAL
                             new SqlParameter("@IdMedio",   (int)reembolso.MedioPago)
                         });
 
-                DataTable dt = _acceso.leer(tx, SELECT_LISTADO + " WHERE R.Id = @Id", new[] { new SqlParameter("@Id", idReserva) });
-                return MapearListado(dt.Rows[0]);
+                return _acceso.leer(tx, SELECT_LISTADO + " WHERE R.Id = @Id", new[] { new SqlParameter("@Id", idReserva) });
             });
+
+            // Se mapea recién con la transacción cerrada: MapearListado busca el reembolso y el vuelo
+            // de vuelta con consultas propias, y SQL Server no permite ejecutarlas sobre la misma
+            // conexión mientras la transacción sigue abierta.
+            return MapearListado(resultado.Rows[0]);
         }
 
         #region Vencimiento, reembolsos y cambio de vuelo
