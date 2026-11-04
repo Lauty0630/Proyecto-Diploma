@@ -19,6 +19,6 @@
     // Para ocultarlo otra vez: volver a poner false y recompilar. No toca la base de datos.
     public static class Entregas_GV42
     {
-        public static readonly bool ENTREGA_3_ACTIVA = true;
+        public static readonly bool ENTREGA_3_ACTIVA = false;
     }
 }
