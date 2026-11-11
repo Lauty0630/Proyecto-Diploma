@@ -474,6 +474,9 @@ namespace BLL
         // tiene que ser a su mismo nombre y apellido.
         private static void VerificarMismaPersonaQuePasajero(string dni, string nombre, string apellido)
         {
+            // Sin el negocio instalado (base de gestión de usuarios) todavía no existe la tabla de pasajeros.
+            if (!BLLInstalador_GV42.NegocioInstalado()) return;
+
             BE.Pasajero_GV42 pasajero = new DAL.DALPasajero_GV42().BuscarPorDni(dni);
             if (pasajero == null) return;
             if (!Validaciones_GV42.MismoTexto(nombre, pasajero.Nombre) || !Validaciones_GV42.MismoTexto(apellido, pasajero.Apellido))

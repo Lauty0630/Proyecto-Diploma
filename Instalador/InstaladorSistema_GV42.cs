@@ -1,20 +1,34 @@
-﻿using BE;
+using BE;
 using BLL;
 using Microsoft.Win32;
 using Servicios.Instalacion;
 using System;
 using System.Collections.Generic;
+using System.Data.SqlClient;
 using System.IO;
 using System.Reflection;
 
 namespace Instalador
 {
-    // Qué hacer con la base de datos durante la instalación.
+    // Qué hacer con la base de datos durante la instalación (lo que se elige en la pantalla "Datos iniciales").
     public enum OpcionBase_GV42
     {
-        Preparar = 0,        // crearla si no existe, o actualizarla conservando los datos
-        RestaurarBackup = 1, // dejarla como estaba en un archivo .bak
-        ReinstalarLimpia = 2 // borrarla y crearla de nuevo con los datos iniciales
+        CrearSoloUsuarios = 0,       // no hay base: crearla solo con la gestión de usuarios
+        CrearCompleta = 1,           // no hay base: crearla con todo (gestión de usuarios + negocio)
+        AgregarNegocio = 2,          // hay una base solo de usuarios: agrega el negocio sin tocar los datos existentes
+        Mantener = 3,                // hay una base completa: se conserva (se actualiza si hace falta)
+        ReinstalarSoloUsuarios = 4,  // borrarla y crearla de nuevo solo con la gestión de usuarios
+        ReinstalarCompleta = 5,      // borrarla y crearla de nuevo con todo
+        RestaurarBackup = 6          // dejarla como estaba en un archivo .bak
+    }
+
+    // Qué hay en la instancia elegida.
+    public enum EstadoBase_GV42
+    {
+        SinBase,       // todavía no existe la base "Gestion Usuario"
+        SoloUsuarios,  // existe y tiene solo la gestión de usuarios
+        Completa,      // existe y tiene también el negocio
+        Antigua        // existe pero es de una versión muy anterior: no se puede actualizar
     }
 
     // Datos que carga el operador en la pantalla del instalador.
@@ -40,6 +54,14 @@ namespace Instalador
         public const string NOMBRE_SISTEMA = "FLY SAFE";
         public const string CARPETA_ORIGEN = "Sistema";
         public const string EJECUTABLE = "PROYECTO ING DE SOFTWARE.exe";
+
+        // Nombre de la base del sistema (el mismo que usan los scripts).
+        private const string NOMBRE_BD = "Gestion Usuario";
+
+        // Usuario administrador con el que se puede ingresar apenas se instala (se muestra en la pantalla
+        // "Datos iniciales"). Es uno de los administradores que ya vienen en EsquemaBase.sql y EsquemaCompleto.sql.
+        public const string USUARIO_INICIAL = "lautaro212";
+        public const string CLAVE_INICIAL = "lautaro212";
 
         // Dónde queda anotado que el sistema está instalado (por usuario de Windows: no pide
         // permisos de administrador del equipo).
@@ -95,24 +117,98 @@ namespace Instalador
             return DetectorInstancias_GV42.DetectarInstancias();
         }
 
+        // Qué hay en la instancia: lo usa la pantalla para ofrecer solo las opciones que corresponden.
+        // Si no se puede conectar a la instancia lanza una excepción con el motivo.
+        public EstadoBase_GV42 EstadoBase(string instancia)
+        {
+            if (!BLLInstalador_GV42.ExisteBaseDatos(instancia)) return EstadoBase_GV42.SinBase;
+            if (BLLInstalador_GV42.EsBaseUsuarios(instancia)) return EstadoBase_GV42.SoloUsuarios;
+            return BLLInstalador_GV42.ObjetosFaltantes(instancia).Count > 0 ? EstadoBase_GV42.Antigua : EstadoBase_GV42.Completa;
+        }
+
+        // Botón "Probar conexión": devuelve un texto para mostrar (o lanza una excepción si no conecta).
+        public string ProbarConexion(string instancia)
+        {
+            switch (EstadoBase(instancia))
+            {
+                case EstadoBase_GV42.SinBase:
+                    return "Conexión correcta. Todavía no existe la base de datos del sistema: se va a crear.";
+                case EstadoBase_GV42.SoloUsuarios:
+                    return "Conexión correcta. Ya existe la base con la gestión de usuarios (sin el negocio).";
+                case EstadoBase_GV42.Completa:
+                    return "Conexión correcta. Ya existe la base completa del sistema.";
+                default:
+                    return "Conexión correcta. Existe una base de una versión muy anterior.";
+            }
+        }
+
+        // Texto corto de cada opción, para el resumen de "Listo para instalar".
+        public static string TextoOpcion(OpcionBase_GV42 opcion)
+        {
+            switch (opcion)
+            {
+                case OpcionBase_GV42.CrearSoloUsuarios: return "Base solo con gestión de usuarios";
+                case OpcionBase_GV42.CrearCompleta: return "Base completa (gestión de usuarios + negocio)";
+                case OpcionBase_GV42.AgregarNegocio: return "Actualizar: agregar el negocio conservando los datos existentes";
+                case OpcionBase_GV42.Mantener: return "Mantener la base actual";
+                case OpcionBase_GV42.ReinstalarSoloUsuarios: return "Reinstalar solo con gestión de usuarios (se borran los datos)";
+                case OpcionBase_GV42.ReinstalarCompleta: return "Reinstalar completa (se borran los datos)";
+                default: return "Restaurar un backup";
+            }
+        }
+
+        // Las opciones que borran la base actual necesitan la autorización de un administrador.
+        public static bool BorraDatos(OpcionBase_GV42 opcion)
+        {
+            return opcion == OpcionBase_GV42.ReinstalarSoloUsuarios ||
+                   opcion == OpcionBase_GV42.ReinstalarCompleta ||
+                   opcion == OpcionBase_GV42.RestaurarBackup;
+        }
+
+        // Espacio que ocupan los archivos del sistema (en MB), para el texto de la primera pantalla.
+        public double TamanoOrigenMB()
+        {
+            try
+            {
+                long bytes = 0;
+                if (Directory.Exists(CarpetaOrigen))
+                    foreach (string archivo in Directory.GetFiles(CarpetaOrigen, "*", SearchOption.AllDirectories))
+                        bytes += new FileInfo(archivo).Length;
+                return bytes / 1048576.0;
+            }
+            catch { return 0; }
+        }
+
         #endregion
 
         #region Validaciones
+
+        // Pantalla "Carpeta de destino".
+        public void ValidarCarpeta(string carpetaDestino)
+        {
+            if (!Directory.Exists(CarpetaOrigen) || !File.Exists(Path.Combine(CarpetaOrigen, EJECUTABLE)))
+                throw new NegocioException_GV42("No se encontraron los archivos del sistema. La carpeta \"" + CARPETA_ORIGEN +
+                                                "\" tiene que estar junto al instalador.");
+            if (string.IsNullOrWhiteSpace(carpetaDestino) || !Path.IsPathRooted(carpetaDestino))
+                throw new NegocioException_GV42("Indicá la carpeta donde se va a instalar el sistema.");
+            if (MismaCarpeta(carpetaDestino, CarpetaOrigen) || EstaDentro(carpetaDestino, CarpetaOrigen))
+                throw new NegocioException_GV42("La carpeta de destino no puede ser la carpeta del instalador.");
+        }
+
+        // Pantalla "Base de datos".
+        public void ValidarInstancia(string instancia)
+        {
+            if (string.IsNullOrWhiteSpace(instancia))
+                throw new NegocioException_GV42("Elegí la instancia de SQL Server donde va a estar la base de datos.");
+        }
 
         // Lanza NegocioException_GV42 con el motivo si el pedido no se puede ejecutar.
         public void Validar(PedidoInstalacion_GV42 p)
         {
             if (p == null)
                 throw new NegocioException_GV42("Faltan los datos de la instalación.");
-            if (!Directory.Exists(CarpetaOrigen) || !File.Exists(Path.Combine(CarpetaOrigen, EJECUTABLE)))
-                throw new NegocioException_GV42("No se encontraron los archivos del sistema. La carpeta \"" + CARPETA_ORIGEN +
-                                                "\" tiene que estar junto al instalador.");
-            if (string.IsNullOrWhiteSpace(p.CarpetaDestino) || !Path.IsPathRooted(p.CarpetaDestino))
-                throw new NegocioException_GV42("Indicá la carpeta donde se va a instalar el sistema.");
-            if (MismaCarpeta(p.CarpetaDestino, CarpetaOrigen) || EstaDentro(p.CarpetaDestino, CarpetaOrigen))
-                throw new NegocioException_GV42("La carpeta de destino no puede ser la carpeta del instalador.");
-            if (string.IsNullOrWhiteSpace(p.Instancia))
-                throw new NegocioException_GV42("Elegí la instancia de SQL Server donde va a estar la base de datos.");
+            ValidarCarpeta(p.CarpetaDestino);
+            ValidarInstancia(p.Instancia);
 
             if (p.OpcionBase == OpcionBase_GV42.RestaurarBackup)
             {
@@ -127,7 +223,8 @@ namespace Instalador
         // puede leer, lo tiene que autorizar un usuario administrador del sistema.
         public bool RequiereAdministrador(PedidoInstalacion_GV42 p)
         {
-            if (p.OpcionBase == OpcionBase_GV42.Preparar) return false;
+            // Solo las opciones que borran la base actual piden autorización (crear, mantener y agregar el negocio no).
+            if (!BorraDatos(p.OpcionBase)) return false;
             BLLInstalador_GV42.ConfigurarConexion(p.Instancia);
             return new BLLReinstalador_GV42().BaseAccesible();
         }
@@ -182,34 +279,51 @@ namespace Instalador
         {
             string instancia = p.Instancia;
 
-            if (p.OpcionBase == OpcionBase_GV42.RestaurarBackup)
+            switch (p.OpcionBase)
             {
-                avisar("Restaurando el backup (puede tardar)...");
-                BLLInstalador_GV42.ConfigurarConexion(instancia);
-                new BLLReinstalador_GV42().RestaurarBackup(p.RutaBackup);
-                return;
-            }
+                case OpcionBase_GV42.RestaurarBackup:
+                    avisar("Restaurando el backup (puede tardar)...");
+                    BLLInstalador_GV42.ConfigurarConexion(instancia);
+                    new BLLReinstalador_GV42().RestaurarBackup(p.RutaBackup);
+                    return;
 
-            if (p.OpcionBase == OpcionBase_GV42.ReinstalarLimpia)
-            {
-                avisar("Reinstalando la base de datos con los datos iniciales (puede tardar varios minutos)...");
-                BLLInstalador_GV42.ConfigurarConexion(instancia);
-                new BLLReinstalador_GV42().ReinstalarLimpia();
-                return;
-            }
+                case OpcionBase_GV42.ReinstalarCompleta:
+                    avisar("Reinstalando la base de datos completa con los datos iniciales (puede tardar varios minutos)...");
+                    BLLInstalador_GV42.ConfigurarConexion(instancia);
+                    new BLLReinstalador_GV42().ReinstalarLimpia();
+                    return;
 
-            // Preparar: crear la base si no existe, o actualizarla conservando los datos.
-            if (!BLLInstalador_GV42.ExisteBaseDatos(instancia))
-            {
-                avisar("Creando la base de datos (puede tardar varios minutos)...");
-                BLLInstalador_GV42.InstalarBaseDatos(instancia);
-            }
-            else
-            {
-                List<string> faltan = BLLInstalador_GV42.ObjetosFaltantes(instancia);
-                if (faltan.Count > 0)
-                    throw new NegocioException_GV42("La base de datos existente es de una versión muy anterior y no se puede " +
-                                                    "actualizar. Elegí \"Reinstalar la base limpia\" o \"Restaurar un backup\".");
+                case OpcionBase_GV42.ReinstalarSoloUsuarios:
+                    avisar("Borrando la base de datos actual...");
+                    BorrarBase(instancia);
+                    avisar("Creando la base de datos con la gestión de usuarios (puede tardar unos minutos)...");
+                    BLLInstalador_GV42.InstalarBaseUsuarios(instancia);
+                    break;
+
+                case OpcionBase_GV42.CrearSoloUsuarios:
+                    avisar("Creando la base de datos con la gestión de usuarios (puede tardar unos minutos)...");
+                    BLLInstalador_GV42.InstalarBaseUsuarios(instancia);
+                    break;
+
+                case OpcionBase_GV42.CrearCompleta:
+                    avisar("Creando la base de datos completa (puede tardar varios minutos)...");
+                    BLLInstalador_GV42.InstalarBaseDatos(instancia);
+                    break;
+
+                case OpcionBase_GV42.AgregarNegocio:
+                    // Actualización: la base tiene que existir. Agrega las tablas y datos del negocio
+                    // en una sola transacción, sin modificar lo que ya hay.
+                    if (!BLLInstalador_GV42.ExisteBaseDatos(instancia))
+                        throw new NegocioException_GV42("No hay una base de datos en esa instancia para actualizar.");
+                    avisar("Agregando el negocio a la base (conserva los datos existentes)...");
+                    BLLInstalador_GV42.AgregarNegocio(instancia);
+                    break;
+
+                default: // Mantener
+                    if (BLLInstalador_GV42.ObjetosFaltantes(instancia).Count > 0)
+                        throw new NegocioException_GV42("La base de datos existente es de una versión muy anterior y no se puede " +
+                                                        "actualizar. Elegí reinstalarla o restaurar un backup.");
+                    break;
             }
 
             if (BLLInstalador_GV42.NecesitaActualizacion(instancia))
@@ -221,6 +335,9 @@ namespace Instalador
             avisar("Aplicando las tareas pendientes de la base...");
             BLLInstalador_GV42.EjecutarTareasPendientes(instancia);
 
+            // Los vuelos son parte del negocio: en una base solo de usuarios no se generan.
+            if (BLLInstalador_GV42.EsBaseUsuarios(instancia)) return;
+
             // Si falla no se interrumpe la instalación: el sistema lo vuelve a intentar al arrancar.
             try
             {
@@ -231,6 +348,26 @@ namespace Instalador
             {
                 avisar("No se pudieron generar los vuelos ahora (" + ex.Message + "). Se generan al abrir el sistema.");
             }
+        }
+
+        // Borra la base del sistema para crearla de nuevo (solo después de la autorización del administrador).
+        // Es lo único de SQL que tiene el instalador: la creación de la base la hacen los scripts.
+        private static void BorrarBase(string instancia)
+        {
+            string conexion = "Data Source=" + instancia + ";Initial Catalog=master;Integrated Security=True;Connect Timeout=10";
+            using (var conn = new SqlConnection(conexion))
+            {
+                conn.Open();
+                string sql = "IF DB_ID(N'" + NOMBRE_BD + "') IS NOT NULL BEGIN " +
+                             "ALTER DATABASE [" + NOMBRE_BD + "] SET SINGLE_USER WITH ROLLBACK IMMEDIATE; " +
+                             "DROP DATABASE [" + NOMBRE_BD + "]; END";
+                using (var cmd = new SqlCommand(sql, conn))
+                {
+                    cmd.CommandTimeout = 120;
+                    cmd.ExecuteNonQuery();
+                }
+            }
+            SqlConnection.ClearAllPools();
         }
 
         #endregion

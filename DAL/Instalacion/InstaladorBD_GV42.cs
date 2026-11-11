@@ -20,8 +20,21 @@ namespace DAL
         private const string NOMBRE_SCRIPT = "EsquemaCompleto.sql";
         private const string NOMBRE_SCRIPT_ACTUALIZACION = "ActualizacionBD.sql";
 
+        // Instalación por etapas: primero la gestión de usuarios y después, con "Actualizar", el negocio.
+        //  - EsquemaBase.sql crea solo la gestión de usuarios y deja la marca "versión 0" en VersionBD_GV42.
+        //  - ActualizacionNegocio.sql agrega las tablas y datos del negocio sin tocar lo que ya había.
+        private const string NOMBRE_SCRIPT_BASE = "EsquemaBase.sql";
+        private const string NOMBRE_SCRIPT_NEGOCIO = "ActualizacionNegocio.sql";
+
         // Subir este número cuando se agregue un bloque nuevo al final de ActualizacionBD.sql.
         public const int VERSION_ACTUAL = 14;
+
+        // Lo que tiene que existir en una base de gestión de usuarios (sin negocio).
+        private static readonly string[] OBJETOS_BASE =
+        {
+            "Usuario", "Roles", "Patente", "RolPatente", "Familia", "FamiliaPatente", "FamiliaIntegrada",
+            "RolFamilia", "Modulo", "TipoEvento", "EVENTOS", "IntegridadDVH", "IntegridadDVV"
+        };
 
         // Tablas y columnas que necesita esta versión del sistema. Si falta alguna, la base es de
         // una versión muy anterior y no se puede actualizar conservando los datos.
@@ -69,6 +82,59 @@ namespace DAL
             }
         }
 
+        // Instalación inicial por etapas: crea solo la gestión de usuarios (sin el negocio). Igual que
+        // InstalarBaseDatos, si falla a mitad de camino borra la base incompleta.
+        public static void InstalarBaseUsuarios(string instancia)
+        {
+            try
+            {
+                EjecutarScript(instancia, NOMBRE_SCRIPT_BASE);
+            }
+            catch
+            {
+                try { EliminarBaseDatos(instancia); } catch { }
+                throw;
+            }
+        }
+
+        // True si la base es una instalación de gestión de usuarios a la que todavía no se le agregó el
+        // negocio: tiene la marca "versión 0" y ninguna versión posterior.
+        public static bool EsBaseUsuarios(string instancia)
+        {
+            using (var conn = new SqlConnection(ConexionBase(instancia)))
+            {
+                conn.Open();
+                using (var cmd = new SqlCommand(
+                    "IF OBJECT_ID('dbo.VersionBD_GV42', 'U') IS NULL SELECT 0 " +
+                    "ELSE SELECT CASE WHEN EXISTS (SELECT 1 FROM dbo.VersionBD_GV42 WHERE Version = 0) " +
+                    "AND NOT EXISTS (SELECT 1 FROM dbo.VersionBD_GV42 WHERE Version > 0) THEN 1 ELSE 0 END", conn))
+                {
+                    return Convert.ToInt32(cmd.ExecuteScalar()) == 1;
+                }
+            }
+        }
+
+        // Agrega el negocio a una base de gestión de usuarios SIN borrar ni modificar lo que ya tiene
+        // (usuarios, roles, permisos, bitácora). Se puede repetir: si algo falló a mitad de camino, vuelve
+        // a ejecutarse y completa lo que faltaba.
+        //  1) ActualizacionNegocio.sql: tablas y datos del negocio (en una sola transacción: o entra todo o nada).
+        //  2) ActualizacionBD.sql: versiones 1 a 14 (completa el negocio y asigna los permisos de los roles).
+        public static void AgregarNegocio(string instancia)
+        {
+            if (EsBaseUsuarios(instancia))
+                EjecutarScript(instancia, NOMBRE_SCRIPT_NEGOCIO, true);
+            EjecutarScript(instancia, NOMBRE_SCRIPT_ACTUALIZACION);
+        }
+
+        // True si la base a la que está conectado el sistema ya tiene las tablas del negocio. El sistema lo
+        // usa para mostrar u ocultar lo que depende del negocio (por ejemplo "Registrarse" en el login).
+        public static bool NegocioInstaladoEnConexionActual()
+        {
+            object r = Acceso.Instancia.leerEscalar(
+                "SELECT CASE WHEN OBJECT_ID('dbo.Reserva', 'U') IS NULL THEN 0 ELSE 1 END", null);
+            return r != null && r != DBNull.Value && Convert.ToInt32(r) == 1;
+        }
+
         // Versión registrada en dbo.VersionBD_GV42 (0 si la base es anterior a esa tabla).
         public static int ObtenerVersion(string instancia)
         {
@@ -91,7 +157,10 @@ namespace DAL
             using (var conn = new SqlConnection(ConexionBase(instancia)))
             {
                 conn.Open();
-                foreach (string objeto in OBJETOS_REQUERIDOS)
+
+                // Una base de gestión de usuarios (sin negocio) solo necesita las tablas de usuarios.
+                bool soloUsuarios = EsBaseUsuarios(instancia);
+                foreach (string objeto in soloUsuarios ? OBJETOS_BASE : OBJETOS_REQUERIDOS)
                 {
                     string[] partes = objeto.Split('.');
                     string sql = partes.Length == 1
@@ -201,7 +270,9 @@ namespace DAL
         }
 
         // Ejecuta un script .sql que está junto al .exe, lote por lote (separados por GO).
-        private static void EjecutarScript(string instancia, string nombreArchivo)
+        // Con transaccional = true todos los lotes van en una sola transacción: si uno falla se deshace
+        // todo y la base queda como estaba.
+        private static void EjecutarScript(string instancia, string nombreArchivo, bool transaccional = false)
         {
             string ruta = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, nombreArchivo);
             if (!File.Exists(ruta))
@@ -211,23 +282,36 @@ namespace DAL
             using (var conn = new SqlConnection(ConexionMaster(instancia)))
             {
                 conn.Open();
-                string[] lotes = Regex.Split(script, @"^\s*GO\s*$", RegexOptions.Multiline | RegexOptions.IgnoreCase);
-                foreach (string lote in lotes)
+                SqlTransaction tx = transaccional ? conn.BeginTransaction() : null;
+                try
                 {
-                    if (string.IsNullOrWhiteSpace(lote)) continue;
-                    using (var cmd = new SqlCommand(lote, conn))
+                    string[] lotes = Regex.Split(script, @"^\s*GO\s*$", RegexOptions.Multiline | RegexOptions.IgnoreCase);
+                    foreach (string lote in lotes)
                     {
-                        // El lote que genera los vuelos (con sus asientos) puede tardar varios minutos.
-                        cmd.CommandTimeout = 900;
-                        try
+                        if (string.IsNullOrWhiteSpace(lote)) continue;
+                        using (var cmd = new SqlCommand(lote, conn, tx))
                         {
-                            cmd.ExecuteNonQuery();
-                        }
-                        catch (SqlException ex)
-                        {
-                            throw new Exception($"Error al ejecutar {nombreArchivo}: {ex.Message}", ex);
+                            // El lote que genera los vuelos (con sus asientos) puede tardar varios minutos.
+                            cmd.CommandTimeout = 900;
+                            try
+                            {
+                                cmd.ExecuteNonQuery();
+                            }
+                            catch (SqlException ex)
+                            {
+                                throw new Exception($"Error al ejecutar {nombreArchivo}: {ex.Message}", ex);
+                            }
                         }
                     }
+                    if (tx != null) tx.Commit();
+                }
+                catch
+                {
+                    if (tx != null)
+                    {
+                        try { tx.Rollback(); } catch { }
+                    }
+                    throw;
                 }
             }
         }

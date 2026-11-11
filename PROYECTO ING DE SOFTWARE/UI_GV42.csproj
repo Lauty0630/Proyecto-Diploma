@@ -352,6 +352,12 @@
     <Content Include="EsquemaCompleto.sql">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
+    <Content Include="EsquemaBase.sql">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="ActualizacionNegocio.sql">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
     <Content Include="ActualizacionBD.sql">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>

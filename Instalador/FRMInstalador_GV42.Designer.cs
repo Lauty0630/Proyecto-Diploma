@@ -1,4 +1,4 @@
-﻿namespace Instalador
+namespace Instalador
 {
     partial class FRMInstalador_GV42
     {
@@ -15,176 +15,271 @@
 
         #region Windows Form Designer generated code
 
+        // Asistente de varias pantallas (una por panel "pag..."), con la cabecera arriba y los botones abajo.
+        // Solo está acá lo fijo: las opciones de "Datos iniciales" cambian según lo que haya en la instancia
+        // y se crean en tiempo de ejecución (FRMInstalador_GV42.MostrarOpciones).
         private void InitializeComponent()
         {
-            this.lblTitulo = new System.Windows.Forms.Label();
-            this.lblEstado = new System.Windows.Forms.Label();
-            this.grpDestino = new System.Windows.Forms.GroupBox();
+            this.pnlCabecera = new System.Windows.Forms.Panel();
+            this.lblIcono = new System.Windows.Forms.Label();
+            this.lblTituloPagina = new System.Windows.Forms.Label();
+            this.lblSubtituloPagina = new System.Windows.Forms.Label();
+            this.lineaCabecera = new System.Windows.Forms.Panel();
+            this.pnlContenido = new System.Windows.Forms.Panel();
+            this.pagCarpeta = new System.Windows.Forms.Panel();
+            this.lblCarpetaInfo = new System.Windows.Forms.Label();
+            this.lblCarpetaIndicacion = new System.Windows.Forms.Label();
             this.txtCarpeta = new System.Windows.Forms.TextBox();
             this.btnExaminar = new System.Windows.Forms.Button();
-            this.grpBase = new System.Windows.Forms.GroupBox();
+            this.lblEspacio = new System.Windows.Forms.Label();
+            this.pagBase = new System.Windows.Forms.Panel();
             this.lblInstancia = new System.Windows.Forms.Label();
             this.cmbInstancia = new System.Windows.Forms.ComboBox();
             this.btnDetectar = new System.Windows.Forms.Button();
-            this.rbPreparar = new System.Windows.Forms.RadioButton();
-            this.rbRestaurar = new System.Windows.Forms.RadioButton();
+            this.lblNombreBD = new System.Windows.Forms.Label();
+            this.btnProbar = new System.Windows.Forms.Button();
+            this.lblPrueba = new System.Windows.Forms.Label();
+            this.pagDatos = new System.Windows.Forms.Panel();
             this.txtBackup = new System.Windows.Forms.TextBox();
             this.btnBackup = new System.Windows.Forms.Button();
-            this.rbLimpia = new System.Windows.Forms.RadioButton();
             this.grpAdministrador = new System.Windows.Forms.GroupBox();
             this.lblUsuario = new System.Windows.Forms.Label();
             this.txtUsuario = new System.Windows.Forms.TextBox();
             this.lblContrasena = new System.Windows.Forms.Label();
             this.txtContrasena = new System.Windows.Forms.TextBox();
+            this.pagTareas = new System.Windows.Forms.Panel();
+            this.lblTareas = new System.Windows.Forms.Label();
+            this.lblAccesos = new System.Windows.Forms.Label();
             this.chkAccesoDirecto = new System.Windows.Forms.CheckBox();
+            this.pagListo = new System.Windows.Forms.Panel();
+            this.lblListo = new System.Windows.Forms.Label();
+            this.txtResumen = new System.Windows.Forms.TextBox();
+            this.pagProgreso = new System.Windows.Forms.Panel();
+            this.lblProgreso = new System.Windows.Forms.Label();
+            this.pbProgreso = new System.Windows.Forms.ProgressBar();
             this.txtProgreso = new System.Windows.Forms.TextBox();
-            this.btnInstalar = new System.Windows.Forms.Button();
-            this.btnSalir = new System.Windows.Forms.Button();
-            this.grpDestino.SuspendLayout();
-            this.grpBase.SuspendLayout();
+            this.lineaPie = new System.Windows.Forms.Panel();
+            this.pnlPie = new System.Windows.Forms.Panel();
+            this.btnAtras = new System.Windows.Forms.Button();
+            this.btnSiguiente = new System.Windows.Forms.Button();
+            this.btnCancelar = new System.Windows.Forms.Button();
+            this.pnlCabecera.SuspendLayout();
+            this.pnlContenido.SuspendLayout();
+            this.pagCarpeta.SuspendLayout();
+            this.pagBase.SuspendLayout();
+            this.pagDatos.SuspendLayout();
             this.grpAdministrador.SuspendLayout();
+            this.pagTareas.SuspendLayout();
+            this.pagListo.SuspendLayout();
+            this.pagProgreso.SuspendLayout();
+            this.pnlPie.SuspendLayout();
             this.SuspendLayout();
             // 
-            // lblTitulo
+            // pnlCabecera
             // 
-            this.lblTitulo.Location = new System.Drawing.Point(20, 15);
-            this.lblTitulo.Name = "lblTitulo";
-            this.lblTitulo.Size = new System.Drawing.Size(600, 32);
-            this.lblTitulo.TabIndex = 0;
-            this.lblTitulo.Text = "Instalador de FLY SAFE";
-            this.lblTitulo.Font = new System.Drawing.Font("Segoe UI", 16F, System.Drawing.FontStyle.Bold);
+            this.pnlCabecera.BackColor = System.Drawing.Color.White;
+            this.pnlCabecera.Controls.Add(this.lblIcono);
+            this.pnlCabecera.Controls.Add(this.lblTituloPagina);
+            this.pnlCabecera.Controls.Add(this.lblSubtituloPagina);
+            this.pnlCabecera.Location = new System.Drawing.Point(0, 0);
+            this.pnlCabecera.Name = "pnlCabecera";
+            this.pnlCabecera.Size = new System.Drawing.Size(640, 64);
+            this.pnlCabecera.TabIndex = 0;
             // 
-            // lblEstado
+            // lblIcono
             // 
-            this.lblEstado.AutoSize = false;
-            this.lblEstado.Location = new System.Drawing.Point(22, 52);
-            this.lblEstado.Name = "lblEstado";
-            this.lblEstado.Size = new System.Drawing.Size(600, 20);
-            this.lblEstado.TabIndex = 1;
-            this.lblEstado.Text = "Estado";
+            this.lblIcono.Font = new System.Drawing.Font("Segoe UI Symbol", 26F);
+            this.lblIcono.ForeColor = System.Drawing.Color.FromArgb(0, 102, 204);
+            this.lblIcono.Location = new System.Drawing.Point(562, 6);
+            this.lblIcono.Name = "lblIcono";
+            this.lblIcono.Size = new System.Drawing.Size(60, 52);
+            this.lblIcono.TabIndex = 2;
+            this.lblIcono.Text = "✈";
+            this.lblIcono.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
             // 
-            // grpDestino
+            // lblTituloPagina
             // 
-            this.grpDestino.Controls.Add(this.txtCarpeta);
-            this.grpDestino.Controls.Add(this.btnExaminar);
-            this.grpDestino.Location = new System.Drawing.Point(20, 82);
-            this.grpDestino.Name = "grpDestino";
-            this.grpDestino.Size = new System.Drawing.Size(600, 62);
-            this.grpDestino.TabIndex = 2;
-            this.grpDestino.TabStop = false;
-            this.grpDestino.Text = "1. Carpeta de instalación";
+            this.lblTituloPagina.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Bold);
+            this.lblTituloPagina.Location = new System.Drawing.Point(20, 12);
+            this.lblTituloPagina.Name = "lblTituloPagina";
+            this.lblTituloPagina.Size = new System.Drawing.Size(530, 18);
+            this.lblTituloPagina.TabIndex = 0;
+            this.lblTituloPagina.Text = "Título";
+            // 
+            // lblSubtituloPagina
+            // 
+            this.lblSubtituloPagina.Location = new System.Drawing.Point(34, 32);
+            this.lblSubtituloPagina.Name = "lblSubtituloPagina";
+            this.lblSubtituloPagina.Size = new System.Drawing.Size(516, 30);
+            this.lblSubtituloPagina.TabIndex = 1;
+            this.lblSubtituloPagina.Text = "Subtítulo";
+            // 
+            // lineaCabecera
+            // 
+            this.lineaCabecera.BackColor = System.Drawing.SystemColors.ControlDark;
+            this.lineaCabecera.Location = new System.Drawing.Point(0, 64);
+            this.lineaCabecera.Name = "lineaCabecera";
+            this.lineaCabecera.Size = new System.Drawing.Size(640, 1);
+            this.lineaCabecera.TabIndex = 1;
+            // 
+            // pnlContenido
+            // 
+            this.pnlContenido.BackColor = System.Drawing.Color.White;
+            this.pnlContenido.Controls.Add(this.pagCarpeta);
+            this.pnlContenido.Controls.Add(this.pagBase);
+            this.pnlContenido.Controls.Add(this.pagDatos);
+            this.pnlContenido.Controls.Add(this.pagTareas);
+            this.pnlContenido.Controls.Add(this.pagListo);
+            this.pnlContenido.Controls.Add(this.pagProgreso);
+            this.pnlContenido.Location = new System.Drawing.Point(0, 65);
+            this.pnlContenido.Name = "pnlContenido";
+            this.pnlContenido.Size = new System.Drawing.Size(640, 379);
+            this.pnlContenido.TabIndex = 2;
+            // 
+            // pagCarpeta
+            // 
+            this.pagCarpeta.Controls.Add(this.lblCarpetaInfo);
+            this.pagCarpeta.Controls.Add(this.lblCarpetaIndicacion);
+            this.pagCarpeta.Controls.Add(this.txtCarpeta);
+            this.pagCarpeta.Controls.Add(this.btnExaminar);
+            this.pagCarpeta.Controls.Add(this.lblEspacio);
+            this.pagCarpeta.Location = new System.Drawing.Point(0, 0);
+            this.pagCarpeta.Name = "pagCarpeta";
+            this.pagCarpeta.Size = new System.Drawing.Size(640, 379);
+            this.pagCarpeta.TabIndex = 0;
+            // 
+            // lblCarpetaInfo
+            // 
+            this.lblCarpetaInfo.Location = new System.Drawing.Point(30, 24);
+            this.lblCarpetaInfo.Name = "lblCarpetaInfo";
+            this.lblCarpetaInfo.Size = new System.Drawing.Size(580, 20);
+            this.lblCarpetaInfo.TabIndex = 0;
+            this.lblCarpetaInfo.Text = "El programa instalará FLY SAFE en la siguiente carpeta.";
+            // 
+            // lblCarpetaIndicacion
+            // 
+            this.lblCarpetaIndicacion.Location = new System.Drawing.Point(30, 64);
+            this.lblCarpetaIndicacion.Name = "lblCarpetaIndicacion";
+            this.lblCarpetaIndicacion.Size = new System.Drawing.Size(580, 36);
+            this.lblCarpetaIndicacion.TabIndex = 1;
+            this.lblCarpetaIndicacion.Text = "Para continuar, haga clic en Siguiente. Si desea seleccionar una carpeta diferente, haga clic en Examinar.";
             // 
             // txtCarpeta
             // 
-            this.txtCarpeta.Location = new System.Drawing.Point(15, 25);
+            this.txtCarpeta.Location = new System.Drawing.Point(30, 108);
             this.txtCarpeta.Name = "txtCarpeta";
-            this.txtCarpeta.Size = new System.Drawing.Size(460, 23);
-            this.txtCarpeta.TabIndex = 3;
+            this.txtCarpeta.Size = new System.Drawing.Size(450, 23);
+            this.txtCarpeta.TabIndex = 2;
             // 
             // btnExaminar
             // 
-            this.btnExaminar.Location = new System.Drawing.Point(485, 23);
+            this.btnExaminar.Location = new System.Drawing.Point(490, 106);
             this.btnExaminar.Name = "btnExaminar";
-            this.btnExaminar.Size = new System.Drawing.Size(100, 27);
-            this.btnExaminar.TabIndex = 4;
+            this.btnExaminar.Size = new System.Drawing.Size(90, 27);
+            this.btnExaminar.TabIndex = 3;
             this.btnExaminar.Text = "Examinar...";
             this.btnExaminar.UseVisualStyleBackColor = true;
             this.btnExaminar.Click += new System.EventHandler(this.btnExaminar_Click);
             // 
-            // grpBase
+            // lblEspacio
             // 
-            this.grpBase.Controls.Add(this.lblInstancia);
-            this.grpBase.Controls.Add(this.cmbInstancia);
-            this.grpBase.Controls.Add(this.btnDetectar);
-            this.grpBase.Controls.Add(this.rbPreparar);
-            this.grpBase.Controls.Add(this.rbRestaurar);
-            this.grpBase.Controls.Add(this.txtBackup);
-            this.grpBase.Controls.Add(this.btnBackup);
-            this.grpBase.Controls.Add(this.rbLimpia);
-            this.grpBase.Controls.Add(this.grpAdministrador);
-            this.grpBase.Location = new System.Drawing.Point(20, 152);
-            this.grpBase.Name = "grpBase";
-            this.grpBase.Size = new System.Drawing.Size(600, 270);
-            this.grpBase.TabIndex = 5;
-            this.grpBase.TabStop = false;
-            this.grpBase.Text = "2. Base de datos";
+            this.lblEspacio.Location = new System.Drawing.Point(30, 340);
+            this.lblEspacio.Name = "lblEspacio";
+            this.lblEspacio.Size = new System.Drawing.Size(580, 20);
+            this.lblEspacio.TabIndex = 4;
+            // 
+            // pagBase
+            // 
+            this.pagBase.Controls.Add(this.lblInstancia);
+            this.pagBase.Controls.Add(this.cmbInstancia);
+            this.pagBase.Controls.Add(this.btnDetectar);
+            this.pagBase.Controls.Add(this.lblNombreBD);
+            this.pagBase.Controls.Add(this.btnProbar);
+            this.pagBase.Controls.Add(this.lblPrueba);
+            this.pagBase.Location = new System.Drawing.Point(0, 0);
+            this.pagBase.Name = "pagBase";
+            this.pagBase.Size = new System.Drawing.Size(640, 379);
+            this.pagBase.TabIndex = 1;
+            this.pagBase.Visible = false;
             // 
             // lblInstancia
             // 
-            this.lblInstancia.AutoSize = false;
-            this.lblInstancia.Location = new System.Drawing.Point(15, 28);
+            this.lblInstancia.Location = new System.Drawing.Point(30, 24);
             this.lblInstancia.Name = "lblInstancia";
-            this.lblInstancia.Size = new System.Drawing.Size(150, 20);
-            this.lblInstancia.TabIndex = 6;
-            this.lblInstancia.Text = "Instancia de SQL Server:";
+            this.lblInstancia.Size = new System.Drawing.Size(500, 18);
+            this.lblInstancia.TabIndex = 0;
+            this.lblInstancia.Text = "Servidor / instancia de SQL Server:";
             // 
             // cmbInstancia
             // 
-            this.cmbInstancia.Location = new System.Drawing.Point(170, 25);
+            this.cmbInstancia.Location = new System.Drawing.Point(30, 46);
             this.cmbInstancia.Name = "cmbInstancia";
-            this.cmbInstancia.Size = new System.Drawing.Size(305, 23);
-            this.cmbInstancia.TabIndex = 7;
+            this.cmbInstancia.Size = new System.Drawing.Size(430, 23);
+            this.cmbInstancia.TabIndex = 1;
             // 
             // btnDetectar
             // 
-            this.btnDetectar.Location = new System.Drawing.Point(485, 23);
+            this.btnDetectar.Location = new System.Drawing.Point(470, 44);
             this.btnDetectar.Name = "btnDetectar";
-            this.btnDetectar.Size = new System.Drawing.Size(100, 27);
-            this.btnDetectar.TabIndex = 8;
+            this.btnDetectar.Size = new System.Drawing.Size(90, 27);
+            this.btnDetectar.TabIndex = 2;
             this.btnDetectar.Text = "Detectar";
             this.btnDetectar.UseVisualStyleBackColor = true;
             this.btnDetectar.Click += new System.EventHandler(this.btnDetectar_Click);
             // 
-            // rbPreparar
+            // lblNombreBD
             // 
-            this.rbPreparar.AutoSize = true;
-            this.rbPreparar.Location = new System.Drawing.Point(18, 62);
-            this.rbPreparar.Name = "rbPreparar";
-            this.rbPreparar.Size = new System.Drawing.Size(560, 22);
-            this.rbPreparar.TabIndex = 9;
-            this.rbPreparar.Text = "Preparar la base: crearla si no existe, o actualizarla conservando los datos";
-            this.rbPreparar.UseVisualStyleBackColor = true;
-            this.rbPreparar.CheckedChanged += new System.EventHandler(this.rbOpcion_CheckedChanged);
+            this.lblNombreBD.Location = new System.Drawing.Point(30, 90);
+            this.lblNombreBD.Name = "lblNombreBD";
+            this.lblNombreBD.Size = new System.Drawing.Size(530, 18);
+            this.lblNombreBD.TabIndex = 3;
+            this.lblNombreBD.Text = "Nombre de la base de datos: Gestion Usuario (autenticación de Windows)";
             // 
-            // rbRestaurar
+            // btnProbar
             // 
-            this.rbRestaurar.AutoSize = true;
-            this.rbRestaurar.Location = new System.Drawing.Point(18, 90);
-            this.rbRestaurar.Name = "rbRestaurar";
-            this.rbRestaurar.Size = new System.Drawing.Size(560, 22);
-            this.rbRestaurar.TabIndex = 10;
-            this.rbRestaurar.Text = "Restaurar un backup (.bak)";
-            this.rbRestaurar.UseVisualStyleBackColor = true;
-            this.rbRestaurar.CheckedChanged += new System.EventHandler(this.rbOpcion_CheckedChanged);
+            this.btnProbar.Location = new System.Drawing.Point(30, 125);
+            this.btnProbar.Name = "btnProbar";
+            this.btnProbar.Size = new System.Drawing.Size(130, 27);
+            this.btnProbar.TabIndex = 4;
+            this.btnProbar.Text = "Probar conexión";
+            this.btnProbar.UseVisualStyleBackColor = true;
+            this.btnProbar.Click += new System.EventHandler(this.btnProbar_Click);
+            // 
+            // lblPrueba
+            // 
+            this.lblPrueba.Location = new System.Drawing.Point(30, 162);
+            this.lblPrueba.Name = "lblPrueba";
+            this.lblPrueba.Size = new System.Drawing.Size(580, 54);
+            this.lblPrueba.TabIndex = 5;
+            // 
+            // pagDatos
+            // 
+            this.pagDatos.Controls.Add(this.txtBackup);
+            this.pagDatos.Controls.Add(this.btnBackup);
+            this.pagDatos.Controls.Add(this.grpAdministrador);
+            this.pagDatos.Location = new System.Drawing.Point(0, 0);
+            this.pagDatos.Name = "pagDatos";
+            this.pagDatos.Size = new System.Drawing.Size(640, 379);
+            this.pagDatos.TabIndex = 2;
+            this.pagDatos.Visible = false;
             // 
             // txtBackup
             // 
-            this.txtBackup.Location = new System.Drawing.Point(38, 116);
+            this.txtBackup.Location = new System.Drawing.Point(50, 0);
             this.txtBackup.Name = "txtBackup";
-            this.txtBackup.Size = new System.Drawing.Size(437, 23);
-            this.txtBackup.TabIndex = 11;
             this.txtBackup.ReadOnly = true;
+            this.txtBackup.Size = new System.Drawing.Size(450, 23);
+            this.txtBackup.TabIndex = 0;
             // 
             // btnBackup
             // 
-            this.btnBackup.Location = new System.Drawing.Point(485, 114);
+            this.btnBackup.Location = new System.Drawing.Point(510, 0);
             this.btnBackup.Name = "btnBackup";
-            this.btnBackup.Size = new System.Drawing.Size(100, 27);
-            this.btnBackup.TabIndex = 12;
+            this.btnBackup.Size = new System.Drawing.Size(90, 25);
+            this.btnBackup.TabIndex = 1;
             this.btnBackup.Text = "Elegir...";
             this.btnBackup.UseVisualStyleBackColor = true;
             this.btnBackup.Click += new System.EventHandler(this.btnBackup_Click);
-            // 
-            // rbLimpia
-            // 
-            this.rbLimpia.AutoSize = true;
-            this.rbLimpia.Location = new System.Drawing.Point(18, 148);
-            this.rbLimpia.Name = "rbLimpia";
-            this.rbLimpia.Size = new System.Drawing.Size(560, 22);
-            this.rbLimpia.TabIndex = 13;
-            this.rbLimpia.Text = "Reinstalar la base limpia (se borran todos los datos)";
-            this.rbLimpia.UseVisualStyleBackColor = true;
-            this.rbLimpia.CheckedChanged += new System.EventHandler(this.rbOpcion_CheckedChanged);
             // 
             // grpAdministrador
             // 
@@ -192,145 +287,285 @@
             this.grpAdministrador.Controls.Add(this.txtUsuario);
             this.grpAdministrador.Controls.Add(this.lblContrasena);
             this.grpAdministrador.Controls.Add(this.txtContrasena);
-            this.grpAdministrador.Location = new System.Drawing.Point(18, 178);
+            this.grpAdministrador.Location = new System.Drawing.Point(30, 300);
             this.grpAdministrador.Name = "grpAdministrador";
-            this.grpAdministrador.Size = new System.Drawing.Size(567, 80);
-            this.grpAdministrador.TabIndex = 14;
+            this.grpAdministrador.Size = new System.Drawing.Size(580, 68);
+            this.grpAdministrador.TabIndex = 2;
             this.grpAdministrador.TabStop = false;
-            this.grpAdministrador.Text = "Autorización de un administrador del sistema (si la base actual se puede leer)";
+            this.grpAdministrador.Text = "Autorización de un administrador del sistema (se borran datos)";
+            this.grpAdministrador.Visible = false;
             // 
             // lblUsuario
             // 
-            this.lblUsuario.AutoSize = false;
-            this.lblUsuario.Location = new System.Drawing.Point(15, 35);
+            this.lblUsuario.Location = new System.Drawing.Point(15, 32);
             this.lblUsuario.Name = "lblUsuario";
             this.lblUsuario.Size = new System.Drawing.Size(60, 20);
-            this.lblUsuario.TabIndex = 15;
+            this.lblUsuario.TabIndex = 0;
             this.lblUsuario.Text = "Usuario:";
             // 
             // txtUsuario
             // 
-            this.txtUsuario.Location = new System.Drawing.Point(80, 32);
+            this.txtUsuario.Location = new System.Drawing.Point(80, 29);
+            this.txtUsuario.MaxLength = 50;
             this.txtUsuario.Name = "txtUsuario";
             this.txtUsuario.Size = new System.Drawing.Size(170, 23);
-            this.txtUsuario.TabIndex = 16;
-            this.txtUsuario.MaxLength = 50;
+            this.txtUsuario.TabIndex = 1;
             // 
             // lblContrasena
             // 
-            this.lblContrasena.AutoSize = false;
-            this.lblContrasena.Location = new System.Drawing.Point(275, 35);
+            this.lblContrasena.Location = new System.Drawing.Point(285, 32);
             this.lblContrasena.Name = "lblContrasena";
             this.lblContrasena.Size = new System.Drawing.Size(80, 20);
-            this.lblContrasena.TabIndex = 17;
+            this.lblContrasena.TabIndex = 2;
             this.lblContrasena.Text = "Contraseña:";
             // 
             // txtContrasena
             // 
-            this.txtContrasena.Location = new System.Drawing.Point(360, 32);
-            this.txtContrasena.Name = "txtContrasena";
-            this.txtContrasena.Size = new System.Drawing.Size(170, 23);
-            this.txtContrasena.TabIndex = 18;
+            this.txtContrasena.Location = new System.Drawing.Point(370, 29);
             this.txtContrasena.MaxLength = 50;
+            this.txtContrasena.Name = "txtContrasena";
+            this.txtContrasena.Size = new System.Drawing.Size(180, 23);
+            this.txtContrasena.TabIndex = 3;
             this.txtContrasena.UseSystemPasswordChar = true;
+            // 
+            // pagTareas
+            // 
+            this.pagTareas.Controls.Add(this.lblTareas);
+            this.pagTareas.Controls.Add(this.lblAccesos);
+            this.pagTareas.Controls.Add(this.chkAccesoDirecto);
+            this.pagTareas.Location = new System.Drawing.Point(0, 0);
+            this.pagTareas.Name = "pagTareas";
+            this.pagTareas.Size = new System.Drawing.Size(640, 379);
+            this.pagTareas.TabIndex = 3;
+            this.pagTareas.Visible = false;
+            // 
+            // lblTareas
+            // 
+            this.lblTareas.Location = new System.Drawing.Point(30, 24);
+            this.lblTareas.Name = "lblTareas";
+            this.lblTareas.Size = new System.Drawing.Size(580, 36);
+            this.lblTareas.TabIndex = 0;
+            this.lblTareas.Text = "Seleccione las tareas adicionales que desea que se realicen durante la instalación de FLY SAFE y haga clic en Siguiente.";
+            // 
+            // lblAccesos
+            // 
+            this.lblAccesos.Location = new System.Drawing.Point(30, 78);
+            this.lblAccesos.Name = "lblAccesos";
+            this.lblAccesos.Size = new System.Drawing.Size(580, 18);
+            this.lblAccesos.TabIndex = 1;
+            this.lblAccesos.Text = "Accesos directos adicionales:";
             // 
             // chkAccesoDirecto
             // 
             this.chkAccesoDirecto.AutoSize = true;
-            this.chkAccesoDirecto.Location = new System.Drawing.Point(22, 432);
-            this.chkAccesoDirecto.Name = "chkAccesoDirecto";
-            this.chkAccesoDirecto.Size = new System.Drawing.Size(400, 22);
-            this.chkAccesoDirecto.TabIndex = 19;
-            this.chkAccesoDirecto.Text = "Crear un acceso directo en el escritorio";
-            this.chkAccesoDirecto.UseVisualStyleBackColor = true;
             this.chkAccesoDirecto.Checked = true;
             this.chkAccesoDirecto.CheckState = System.Windows.Forms.CheckState.Checked;
+            this.chkAccesoDirecto.Location = new System.Drawing.Point(45, 102);
+            this.chkAccesoDirecto.Name = "chkAccesoDirecto";
+            this.chkAccesoDirecto.Size = new System.Drawing.Size(250, 19);
+            this.chkAccesoDirecto.TabIndex = 2;
+            this.chkAccesoDirecto.Text = "Crear un acceso directo en el escritorio";
+            this.chkAccesoDirecto.UseVisualStyleBackColor = true;
+            // 
+            // pagListo
+            // 
+            this.pagListo.Controls.Add(this.lblListo);
+            this.pagListo.Controls.Add(this.txtResumen);
+            this.pagListo.Location = new System.Drawing.Point(0, 0);
+            this.pagListo.Name = "pagListo";
+            this.pagListo.Size = new System.Drawing.Size(640, 379);
+            this.pagListo.TabIndex = 4;
+            this.pagListo.Visible = false;
+            // 
+            // lblListo
+            // 
+            this.lblListo.Location = new System.Drawing.Point(30, 16);
+            this.lblListo.Name = "lblListo";
+            this.lblListo.Size = new System.Drawing.Size(580, 36);
+            this.lblListo.TabIndex = 0;
+            this.lblListo.Text = "Haga clic en Instalar para continuar, o en Atrás si desea revisar o cambiar la configuración.";
+            // 
+            // txtResumen
+            // 
+            this.txtResumen.BackColor = System.Drawing.SystemColors.Control;
+            this.txtResumen.Location = new System.Drawing.Point(30, 62);
+            this.txtResumen.Multiline = true;
+            this.txtResumen.Name = "txtResumen";
+            this.txtResumen.ReadOnly = true;
+            this.txtResumen.ScrollBars = System.Windows.Forms.ScrollBars.Vertical;
+            this.txtResumen.Size = new System.Drawing.Size(580, 300);
+            this.txtResumen.TabIndex = 1;
+            // 
+            // pagProgreso
+            // 
+            this.pagProgreso.Controls.Add(this.lblProgreso);
+            this.pagProgreso.Controls.Add(this.pbProgreso);
+            this.pagProgreso.Controls.Add(this.txtProgreso);
+            this.pagProgreso.Location = new System.Drawing.Point(0, 0);
+            this.pagProgreso.Name = "pagProgreso";
+            this.pagProgreso.Size = new System.Drawing.Size(640, 379);
+            this.pagProgreso.TabIndex = 5;
+            this.pagProgreso.Visible = false;
+            // 
+            // lblProgreso
+            // 
+            this.lblProgreso.Location = new System.Drawing.Point(30, 16);
+            this.lblProgreso.Name = "lblProgreso";
+            this.lblProgreso.Size = new System.Drawing.Size(580, 20);
+            this.lblProgreso.TabIndex = 0;
+            this.lblProgreso.Text = "Por favor espere mientras se instala FLY SAFE en su sistema.";
+            // 
+            // pbProgreso
+            // 
+            this.pbProgreso.Location = new System.Drawing.Point(30, 44);
+            this.pbProgreso.MarqueeAnimationSpeed = 30;
+            this.pbProgreso.Name = "pbProgreso";
+            this.pbProgreso.Size = new System.Drawing.Size(580, 18);
+            this.pbProgreso.Style = System.Windows.Forms.ProgressBarStyle.Marquee;
+            this.pbProgreso.TabIndex = 1;
             // 
             // txtProgreso
             // 
-            this.txtProgreso.Location = new System.Drawing.Point(20, 462);
-            this.txtProgreso.Name = "txtProgreso";
-            this.txtProgreso.Size = new System.Drawing.Size(600, 130);
-            this.txtProgreso.TabIndex = 20;
+            this.txtProgreso.Location = new System.Drawing.Point(30, 76);
             this.txtProgreso.Multiline = true;
+            this.txtProgreso.Name = "txtProgreso";
             this.txtProgreso.ReadOnly = true;
             this.txtProgreso.ScrollBars = System.Windows.Forms.ScrollBars.Vertical;
+            this.txtProgreso.Size = new System.Drawing.Size(580, 286);
+            this.txtProgreso.TabIndex = 2;
             // 
-            // btnInstalar
+            // lineaPie
             // 
-            this.btnInstalar.Location = new System.Drawing.Point(380, 604);
-            this.btnInstalar.Name = "btnInstalar";
-            this.btnInstalar.Size = new System.Drawing.Size(115, 32);
-            this.btnInstalar.TabIndex = 21;
-            this.btnInstalar.Text = "Instalar";
-            this.btnInstalar.UseVisualStyleBackColor = true;
-            this.btnInstalar.Click += new System.EventHandler(this.btnInstalar_Click);
+            this.lineaPie.BackColor = System.Drawing.SystemColors.ControlDark;
+            this.lineaPie.Location = new System.Drawing.Point(0, 444);
+            this.lineaPie.Name = "lineaPie";
+            this.lineaPie.Size = new System.Drawing.Size(640, 1);
+            this.lineaPie.TabIndex = 3;
             // 
-            // btnSalir
+            // pnlPie
             // 
-            this.btnSalir.Location = new System.Drawing.Point(505, 604);
-            this.btnSalir.Name = "btnSalir";
-            this.btnSalir.Size = new System.Drawing.Size(115, 32);
-            this.btnSalir.TabIndex = 22;
-            this.btnSalir.Text = "Salir";
-            this.btnSalir.UseVisualStyleBackColor = true;
-            this.btnSalir.Click += new System.EventHandler(this.btnSalir_Click);
+            this.pnlPie.BackColor = System.Drawing.SystemColors.Control;
+            this.pnlPie.Controls.Add(this.btnAtras);
+            this.pnlPie.Controls.Add(this.btnSiguiente);
+            this.pnlPie.Controls.Add(this.btnCancelar);
+            this.pnlPie.Location = new System.Drawing.Point(0, 445);
+            this.pnlPie.Name = "pnlPie";
+            this.pnlPie.Size = new System.Drawing.Size(640, 55);
+            this.pnlPie.TabIndex = 4;
+            // 
+            // btnAtras
+            // 
+            this.btnAtras.Location = new System.Drawing.Point(360, 14);
+            this.btnAtras.Name = "btnAtras";
+            this.btnAtras.Size = new System.Drawing.Size(80, 27);
+            this.btnAtras.TabIndex = 0;
+            this.btnAtras.Text = "< Atrás";
+            this.btnAtras.UseVisualStyleBackColor = true;
+            this.btnAtras.Click += new System.EventHandler(this.btnAtras_Click);
+            // 
+            // btnSiguiente
+            // 
+            this.btnSiguiente.Location = new System.Drawing.Point(450, 14);
+            this.btnSiguiente.Name = "btnSiguiente";
+            this.btnSiguiente.Size = new System.Drawing.Size(80, 27);
+            this.btnSiguiente.TabIndex = 1;
+            this.btnSiguiente.Text = "Siguiente >";
+            this.btnSiguiente.UseVisualStyleBackColor = true;
+            this.btnSiguiente.Click += new System.EventHandler(this.btnSiguiente_Click);
+            // 
+            // btnCancelar
+            // 
+            this.btnCancelar.Location = new System.Drawing.Point(540, 14);
+            this.btnCancelar.Name = "btnCancelar";
+            this.btnCancelar.Size = new System.Drawing.Size(80, 27);
+            this.btnCancelar.TabIndex = 2;
+            this.btnCancelar.Text = "Cancelar";
+            this.btnCancelar.UseVisualStyleBackColor = true;
+            this.btnCancelar.Click += new System.EventHandler(this.btnCancelar_Click);
             // 
             // FRMInstalador_GV42
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 15F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(640, 650);
-            this.Controls.Add(this.lblTitulo);
-            this.Controls.Add(this.lblEstado);
-            this.Controls.Add(this.grpDestino);
-            this.Controls.Add(this.grpBase);
-            this.Controls.Add(this.chkAccesoDirecto);
-            this.Controls.Add(this.txtProgreso);
-            this.Controls.Add(this.btnInstalar);
-            this.Controls.Add(this.btnSalir);
+            this.BackColor = System.Drawing.Color.White;
+            this.ClientSize = new System.Drawing.Size(640, 500);
+            this.Controls.Add(this.pnlCabecera);
+            this.Controls.Add(this.lineaCabecera);
+            this.Controls.Add(this.pnlContenido);
+            this.Controls.Add(this.lineaPie);
+            this.Controls.Add(this.pnlPie);
             this.Font = new System.Drawing.Font("Segoe UI", 9F);
             this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedSingle;
             this.MaximizeBox = false;
             this.Name = "FRMInstalador_GV42";
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
-            this.Text = "FLY SAFE - Instalación";
+            this.Text = "Instalar - FLY SAFE";
             this.Load += new System.EventHandler(this.FRMInstalador_GV42_Load);
-            this.grpDestino.ResumeLayout(false);
-            this.grpDestino.PerformLayout();
-            this.grpBase.ResumeLayout(false);
-            this.grpBase.PerformLayout();
+            this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.FRMInstalador_GV42_FormClosing);
+            this.pnlCabecera.ResumeLayout(false);
+            this.pnlContenido.ResumeLayout(false);
+            this.pagCarpeta.ResumeLayout(false);
+            this.pagCarpeta.PerformLayout();
+            this.pagBase.ResumeLayout(false);
+            this.pagDatos.ResumeLayout(false);
+            this.pagDatos.PerformLayout();
             this.grpAdministrador.ResumeLayout(false);
             this.grpAdministrador.PerformLayout();
+            this.pagTareas.ResumeLayout(false);
+            this.pagTareas.PerformLayout();
+            this.pagListo.ResumeLayout(false);
+            this.pagListo.PerformLayout();
+            this.pagProgreso.ResumeLayout(false);
+            this.pagProgreso.PerformLayout();
+            this.pnlPie.ResumeLayout(false);
             this.ResumeLayout(false);
-            this.PerformLayout();
 
         }
 
         #endregion
 
-        private System.Windows.Forms.Label lblTitulo;
-        private System.Windows.Forms.Label lblEstado;
-        private System.Windows.Forms.GroupBox grpDestino;
+        private System.Windows.Forms.Panel pnlCabecera;
+        private System.Windows.Forms.Label lblIcono;
+        private System.Windows.Forms.Label lblTituloPagina;
+        private System.Windows.Forms.Label lblSubtituloPagina;
+        private System.Windows.Forms.Panel lineaCabecera;
+        private System.Windows.Forms.Panel pnlContenido;
+        private System.Windows.Forms.Panel pagCarpeta;
+        private System.Windows.Forms.Label lblCarpetaInfo;
+        private System.Windows.Forms.Label lblCarpetaIndicacion;
         private System.Windows.Forms.TextBox txtCarpeta;
         private System.Windows.Forms.Button btnExaminar;
-        private System.Windows.Forms.GroupBox grpBase;
+        private System.Windows.Forms.Label lblEspacio;
+        private System.Windows.Forms.Panel pagBase;
         private System.Windows.Forms.Label lblInstancia;
         private System.Windows.Forms.ComboBox cmbInstancia;
         private System.Windows.Forms.Button btnDetectar;
-        private System.Windows.Forms.RadioButton rbPreparar;
-        private System.Windows.Forms.RadioButton rbRestaurar;
+        private System.Windows.Forms.Label lblNombreBD;
+        private System.Windows.Forms.Button btnProbar;
+        private System.Windows.Forms.Label lblPrueba;
+        private System.Windows.Forms.Panel pagDatos;
         private System.Windows.Forms.TextBox txtBackup;
         private System.Windows.Forms.Button btnBackup;
-        private System.Windows.Forms.RadioButton rbLimpia;
         private System.Windows.Forms.GroupBox grpAdministrador;
         private System.Windows.Forms.Label lblUsuario;
         private System.Windows.Forms.TextBox txtUsuario;
         private System.Windows.Forms.Label lblContrasena;
         private System.Windows.Forms.TextBox txtContrasena;
+        private System.Windows.Forms.Panel pagTareas;
+        private System.Windows.Forms.Label lblTareas;
+        private System.Windows.Forms.Label lblAccesos;
         private System.Windows.Forms.CheckBox chkAccesoDirecto;
+        private System.Windows.Forms.Panel pagListo;
+        private System.Windows.Forms.Label lblListo;
+        private System.Windows.Forms.TextBox txtResumen;
+        private System.Windows.Forms.Panel pagProgreso;
+        private System.Windows.Forms.Label lblProgreso;
+        private System.Windows.Forms.ProgressBar pbProgreso;
         private System.Windows.Forms.TextBox txtProgreso;
-        private System.Windows.Forms.Button btnInstalar;
-        private System.Windows.Forms.Button btnSalir;
+        private System.Windows.Forms.Panel lineaPie;
+        private System.Windows.Forms.Panel pnlPie;
+        private System.Windows.Forms.Button btnAtras;
+        private System.Windows.Forms.Button btnSiguiente;
+        private System.Windows.Forms.Button btnCancelar;
     }
 }

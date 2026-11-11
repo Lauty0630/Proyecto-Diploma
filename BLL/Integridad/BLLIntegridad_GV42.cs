@@ -76,7 +76,7 @@ namespace BLL
                 return resultado;
             }
 
-            foreach (var tabla in DALIntegridad_GV42.TABLAS_PROTEGIDAS)
+            foreach (var tabla in _dal.TablasProtegidasExistentes())
             {
                 Dictionary<string, string> dvhsAhora = _dal.CalcularDVHsTabla(tabla);
                 Dictionary<string, string> dvhsBd = _dal.ObtenerDVHsAlmacenados(tabla);
@@ -139,7 +139,7 @@ namespace BLL
 
         public void Recalcular()
         {
-            foreach (var tabla in DALIntegridad_GV42.TABLAS_PROTEGIDAS)
+            foreach (var tabla in _dal.TablasProtegidasExistentes())
                 RecalcularTabla(tabla);
             IntegridadConocidamenteRota = false;
         }

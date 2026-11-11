@@ -48,6 +48,11 @@ namespace PROYECTO_ING_DE_SOFTWARE
             btnIngresar.Text = IdiomaManager_GV42.T("login.btnIngresar");
             lnkRegistro.Text = IdiomaManager_GV42.T("login.registrarse");
 
+            // El alta de clientes es parte del negocio: en una base de gestión de usuarios (sin el
+            // negocio todavía) no se ofrece. Si no se puede saber, se deja como estaba.
+            try { tlpRegistro.Visible = BLLInstalador_GV42.NegocioInstalado(); }
+            catch { tlpRegistro.Visible = true; }
+
             // 3ra entrega: el acceso al reinstalador solo se muestra con el interruptor activo.
             lnkReinstalador.Text = IdiomaManager_GV42.T("reinstalador.titulo");
             lnkReinstalador.Visible = Entregas_GV42.ENTREGA_3_ACTIVA;

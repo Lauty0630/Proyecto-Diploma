@@ -41,6 +41,19 @@ namespace DAL
 
         #region Métodos públicos
 
+        // Las tablas protegidas que existen en la base. En una base de gestión de usuarios (sin negocio)
+        // no están Reserva ni Pago: esas no se verifican hasta que se agregue el negocio.
+        public List<string> TablasProtegidasExistentes()
+        {
+            var lista = new List<string>();
+            foreach (string tabla in TABLAS_PROTEGIDAS)
+            {
+                object r = _acceso.leerEscalar("SELECT OBJECT_ID(@n, 'U')", new[] { new SqlParameter("@n", "dbo." + tabla) });
+                if (r != null && r != DBNull.Value) lista.Add(tabla);
+            }
+            return lista;
+        }
+
         public Dictionary<string, string> CalcularDVHsTabla(string nombreTabla)
         {
             switch (nombreTabla)

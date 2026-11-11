@@ -1324,6 +1324,11 @@ GO
 
    Usuarios: los que tenían un rol de prueba no se borran. Si a un rol del sistema le falta un
    usuario activo, se le asigna uno de esos; los demás quedan inactivos con el rol Cliente.
+
+   Base de gestión de usuarios (EsquemaBase.sql, marcada con la versión 0): al agregarle el negocio
+   NO se borra ni se reasigna nada. Los pasos 2 a 5 (limpieza de roles de prueba y reasignación de
+   usuarios) solo se hacen en la instalación completa; en la actualización se agregan los roles que
+   faltan y los permisos del negocio, y se conservan los roles, usuarios y permisos que ya había.
    ===================================================================================== */
 IF NOT EXISTS (SELECT 1 FROM dbo.VersionBD_GV42 WHERE Version = 14)
 BEGIN
@@ -1340,6 +1345,10 @@ BEGIN
     WHERE NOT EXISTS (SELECT 1 FROM dbo.Roles R WHERE R.Nombre = F.Nombre);
 
     DECLARE @IdCliente INT = (SELECT Id FROM dbo.Roles WHERE Nombre = N'Cliente');
+
+    -- Pasos 2 a 5: solo en la instalación completa (una base de gestión de usuarios, versión 0, se conserva tal cual).
+    IF NOT EXISTS (SELECT 1 FROM dbo.VersionBD_GV42 WHERE Version = 0)
+    BEGIN
 
     -- 2) "Client" era un duplicado de "Cliente": sus usuarios pasan a Cliente y siguen activos.
     UPDATE U SET U.IdRol = @IdCliente
@@ -1379,6 +1388,8 @@ BEGIN
     DELETE FROM dbo.RolPatente;
     DELETE FROM dbo.RolFamilia;
     DELETE FROM dbo.Roles WHERE Nombre NOT IN (SELECT Nombre FROM @Finales);
+
+    END -- fin de los pasos 2 a 5 (solo instalación completa)
 
     -- 6) Permisos de cada rol.
     DECLARE @Permisos TABLE (Rol NVARCHAR(50), DataKey NVARCHAR(100));
@@ -1432,11 +1443,14 @@ BEGIN
         (N'Cliente', N'Pagos.RegistrarPropio'),
         (N'Cliente', N'CheckIn.RealizarPropio');
 
+    -- Solo agrega los permisos que falten (en la instalación completa la tabla quedó vacía; en la
+    -- actualización de una base de usuarios, el Admin ya tiene los permisos de gestión de usuarios).
     INSERT INTO dbo.RolPatente (IdRol, IdPatente)
     SELECT DISTINCT R.Id, P.Id
     FROM @Permisos X
     INNER JOIN dbo.Roles R ON R.Nombre = X.Rol
-    INNER JOIN dbo.Patente P ON P.DataKey = X.DataKey;
+    INNER JOIN dbo.Patente P ON P.DataKey = X.DataKey
+    WHERE NOT EXISTS (SELECT 1 FROM dbo.RolPatente E WHERE E.IdRol = R.Id AND E.IdPatente = P.Id);
 
     -- 7) Los dígitos verificadores de las tablas tocadas los recalcula el sistema al arrancar.
     INSERT INTO dbo.TareaPendiente_GV42 (Nombre)
