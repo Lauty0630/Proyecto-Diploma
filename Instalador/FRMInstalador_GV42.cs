@@ -39,6 +39,7 @@ namespace Instalador
         private bool _ejecutando;
         private bool _terminado;
         private int _pagina;
+        private string _carpetaInstalada; // dónde quedó instalado (para ejecutar el sistema al finalizar)
 
         #endregion
 
@@ -171,7 +172,7 @@ namespace Instalador
                         Instalar();
                         break;
                     default: // Finalizar
-                        Close();
+                        Finalizar();
                         break;
                 }
             }
@@ -482,6 +483,7 @@ namespace Instalador
             }
 
             txtProgreso.Clear();
+            chkEjecutar.Visible = false;
             IrA(PAG_PROGRESO);
             pbProgreso.Style = ProgressBarStyle.Marquee;
             btnCancelar.Enabled = false;
@@ -498,6 +500,8 @@ namespace Instalador
                 lblProgreso.Text = "La instalación terminó. Haga clic en Finalizar para salir.";
                 pbProgreso.Style = ProgressBarStyle.Continuous;
                 pbProgreso.Value = pbProgreso.Maximum;
+                _carpetaInstalada = pedido.CarpetaDestino;
+                chkEjecutar.Visible = true;
                 btnSiguiente.Enabled = true; // "Finalizar"
             }
             catch (Exception ex)
@@ -520,6 +524,29 @@ namespace Instalador
                 _ejecutando = false;
                 Cursor = Cursors.Default;
             }
+        }
+
+        // "Finalizar": si quedó tildado, abre el sistema recién instalado y cierra el instalador.
+        private void Finalizar()
+        {
+            if (_terminado && chkEjecutar.Checked && !string.IsNullOrEmpty(_carpetaInstalada))
+            {
+                try
+                {
+                    string exe = System.IO.Path.Combine(_carpetaInstalada, InstaladorSistema_GV42.EJECUTABLE);
+                    System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(exe)
+                    {
+                        WorkingDirectory = _carpetaInstalada,
+                        UseShellExecute = true
+                    });
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show(this, "El sistema se instaló bien, pero no se pudo abrir:\n\n" + ex.Message, Text,
+                                    MessageBoxButtons.OK, MessageBoxIcon.Information);
+                }
+            }
+            Close();
         }
 
         // Agrega una línea al cuadro de avance y refresca la pantalla (la instalación corre en el

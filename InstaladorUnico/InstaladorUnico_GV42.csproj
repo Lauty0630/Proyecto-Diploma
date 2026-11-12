@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{9A3D5E71-4C28-4B6F-8E15-2F7B0C9D4A63}</ProjectGuid>
+    <OutputType>WinExe</OutputType>
+    <RootNamespace>InstaladorUnico</RootNamespace>
+    <AssemblyName>Instalar FLY SAFE</AssemblyName>
+    <TargetFrameworkVersion>v4.7.2</TargetFrameworkVersion>
+    <FileAlignment>512</FileAlignment>
+    <Deterministic>true</Deterministic>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <DebugType>none</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <DebugType>none</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="System" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.IO.Compression" />
+    <Reference Include="System.IO.Compression.FileSystem" />
+    <Reference Include="System.Windows.Forms" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Program.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="app.manifest" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- Se compila primero el instalador (que a su vez copia el sistema a su carpeta "Sistema").
+         No se usa su código: solo se necesita que termine de compilarse. -->
+    <ProjectReference Include="..\Instalador\Instalador_GV42.csproj">
+      <Project>{7C1F0A52-3B64-4E0E-9A41-5D2B8F6C1E37}</Project>
+      <Name>Instalador_GV42</Name>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <!-- Antes de compilar este proyecto: comprime la carpeta de salida del instalador (el instalador, sus
+       bibliotecas, "Sistema", los .sql e "Idiomas") y la incluye adentro del .exe como recurso "carga.zip". -->
+  <Target Name="EmpaquetarCarga" DependsOnTargets="ResolveProjectReferences" BeforeTargets="AssignTargetPaths">
+    <PropertyGroup>
+      <CarpetaInstalador>$(MSBuildProjectDirectory)\..\Instalador\bin\$(Configuration)</CarpetaInstalador>
+      <CargaZip>$(MSBuildProjectDirectory)\$(IntermediateOutputPath)carga.zip</CargaZip>
+    </PropertyGroup>
+    <MakeDir Directories="$(MSBuildProjectDirectory)\$(IntermediateOutputPath)" />
+    <Delete Files="$(CargaZip)" />
+    <ZipDirectory SourceDirectory="$(CarpetaInstalador)" DestinationFile="$(CargaZip)" />
+    <ItemGroup>
+      <EmbeddedResource Include="$(CargaZip)">
+        <LogicalName>carga.zip</LogicalName>
+      </EmbeddedResource>
+    </ItemGroup>
+  </Target>
+</Project>

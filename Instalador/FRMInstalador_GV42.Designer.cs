@@ -58,6 +58,7 @@ namespace Instalador
             this.lblProgreso = new System.Windows.Forms.Label();
             this.pbProgreso = new System.Windows.Forms.ProgressBar();
             this.txtProgreso = new System.Windows.Forms.TextBox();
+            this.chkEjecutar = new System.Windows.Forms.CheckBox();
             this.lineaPie = new System.Windows.Forms.Panel();
             this.pnlPie = new System.Windows.Forms.Panel();
             this.btnAtras = new System.Windows.Forms.Button();
@@ -401,6 +402,7 @@ namespace Instalador
             this.pagProgreso.Controls.Add(this.lblProgreso);
             this.pagProgreso.Controls.Add(this.pbProgreso);
             this.pagProgreso.Controls.Add(this.txtProgreso);
+            this.pagProgreso.Controls.Add(this.chkEjecutar);
             this.pagProgreso.Location = new System.Drawing.Point(0, 0);
             this.pagProgreso.Name = "pagProgreso";
             this.pagProgreso.Size = new System.Drawing.Size(640, 379);
@@ -431,8 +433,21 @@ namespace Instalador
             this.txtProgreso.Name = "txtProgreso";
             this.txtProgreso.ReadOnly = true;
             this.txtProgreso.ScrollBars = System.Windows.Forms.ScrollBars.Vertical;
-            this.txtProgreso.Size = new System.Drawing.Size(580, 286);
+            this.txtProgreso.Size = new System.Drawing.Size(580, 254);
             this.txtProgreso.TabIndex = 2;
+            // 
+            // chkEjecutar
+            // 
+            this.chkEjecutar.AutoSize = true;
+            this.chkEjecutar.Checked = true;
+            this.chkEjecutar.CheckState = System.Windows.Forms.CheckState.Checked;
+            this.chkEjecutar.Location = new System.Drawing.Point(30, 342);
+            this.chkEjecutar.Name = "chkEjecutar";
+            this.chkEjecutar.Size = new System.Drawing.Size(250, 19);
+            this.chkEjecutar.TabIndex = 3;
+            this.chkEjecutar.Text = "Ejecutar FLY SAFE al finalizar";
+            this.chkEjecutar.UseVisualStyleBackColor = true;
+            this.chkEjecutar.Visible = false;
             // 
             // lineaPie
             // 
@@ -562,6 +577,7 @@ namespace Instalador
         private System.Windows.Forms.Label lblProgreso;
         private System.Windows.Forms.ProgressBar pbProgreso;
         private System.Windows.Forms.TextBox txtProgreso;
+        private System.Windows.Forms.CheckBox chkEjecutar;
         private System.Windows.Forms.Panel lineaPie;
         private System.Windows.Forms.Panel pnlPie;
         private System.Windows.Forms.Button btnAtras;
