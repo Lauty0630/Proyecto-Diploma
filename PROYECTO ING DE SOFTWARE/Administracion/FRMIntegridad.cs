@@ -40,8 +40,10 @@ namespace PROYECTO_ING_DE_SOFTWARE
             // ActualizarIdioma también arma la lista de tablas / registros afectados.
             ActualizarIdioma();
 
-            btnRestore.Visible = puedeRecalcular;
-            btnBackup.Visible = puedeRestaurar;
+            // btnRecalcular acepta los datos actuales como válidos; btnRestaurar restaura un backup
+            // (antes se llamaban btnRestore y btnBackup, al revés de lo que hacía cada uno).
+            btnRecalcular.Visible = puedeRecalcular;
+            btnRestaurar.Visible = puedeRestaurar;
         }
 
         #endregion
@@ -57,8 +59,8 @@ namespace PROYECTO_ING_DE_SOFTWARE
             lblTablas.Text = (_resultado?.Detalles != null && _resultado.Detalles.Count > 0)
                 ? IdiomaManager_GV42.T("integridad.detallesTitulo")
                 : IdiomaManager_GV42.T("integridad.tablasAfectadas");
-            btnRestore.Text = IdiomaManager_GV42.T("integridad.botonRestore");
-            btnBackup.Text = IdiomaManager_GV42.T("integridad.botonBackup");
+            btnRecalcular.Text = IdiomaManager_GV42.T("integridad.botonRestore");
+            btnRestaurar.Text = IdiomaManager_GV42.T("integridad.botonBackup");
             btnCancelar.Text = IdiomaManager_GV42.T("general.cancelar");
 
             CargarTablas();
@@ -103,7 +105,7 @@ namespace PROYECTO_ING_DE_SOFTWARE
 
         #region Eventos
 
-        private void btnRestore_Click(object sender, EventArgs e)
+        private void btnRecalcular_Click(object sender, EventArgs e)
         {
             DialogResult r = MessageBox.Show(
                 IdiomaManager_GV42.T("integridad.confirmRestore"),
@@ -128,7 +130,7 @@ namespace PROYECTO_ING_DE_SOFTWARE
             }
         }
 
-        private void btnBackup_Click(object sender, EventArgs e)
+        private void btnRestaurar_Click(object sender, EventArgs e)
         {
             string rutaSeleccionada;
 
@@ -159,7 +161,9 @@ namespace PROYECTO_ING_DE_SOFTWARE
 
             try
             {
-                _bll.RestaurarBackupDesdeRuta(rutaSeleccionada);
+                // RestaurarBackupManual vuelve a exigir la patente "Integridad.Restore" en la BLL
+                // (antes el control estaba solo en esta pantalla).
+                _bll.RestaurarBackupManual(rutaSeleccionada);
                 SeRestauroBackup = true;
                 MessageBox.Show(IdiomaManager_GV42.T("integridad.backupOk"),
                                 IdiomaManager_GV42.T("general.exito"),

@@ -47,7 +47,6 @@
     <Reference Include="System.Xml"/>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Comunes\Class1.cs" />
     <Compile Include="Reservas\AdicionalReserva_GV42.cs" />
     <Compile Include="Vuelos\Aerolinea_GV42.cs" />
     <Compile Include="Vuelos\Aeropuerto_GV42.cs" />

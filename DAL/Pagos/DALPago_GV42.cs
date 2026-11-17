@@ -1,4 +1,5 @@
 ﻿using BE;
+using Servicios;
 using System;
 using System.Data;
 using System.Data.SqlClient;
@@ -47,7 +48,7 @@ namespace DAL
                         });
 
                     if (filas == 0)
-                        throw new NegocioException_GV42("La reserva no está pendiente de pago, venció el plazo para pagarla o el vuelo ya salió.");
+                        throw new NegocioException_GV42(IdiomaManager_GV42.T("dal.pago.noPendiente"));
 
                     object idObj = _acceso.leerEscalar(tx,
                         "INSERT INTO Pago (IdReserva, ImporteTotalAbonado, IdMedioPago, NumeroTransaccion, LoginVendedor) " +
@@ -89,7 +90,7 @@ namespace DAL
             {
                 // 2601 / 2627: violación de índice o clave única (número de transacción repetido).
                 if (ex.Number == 2601 || ex.Number == 2627)
-                    throw new NegocioException_GV42("Ya existe un pago registrado con ese número de transacción.", ex);
+                    throw new NegocioException_GV42(IdiomaManager_GV42.T("dal.pago.transaccionRepetida"), ex);
                 throw;
             }
         }

@@ -95,7 +95,7 @@ namespace DAL
                 new SqlParameter("@UserName", login)
             };
             _acceso.escribir(query, parametros);
-            RecalcularIntegridadUsuario();
+            RecalcularIntegridadUsuario(DniDeLogin(login));
         }
 
         public void Desbloquear(string dni, string contrasenaCifrada)
@@ -113,7 +113,7 @@ namespace DAL
                 new SqlParameter("@DNI", dni)
             };
             _acceso.escribir(query, p);
-            RecalcularIntegridadUsuario();
+            RecalcularIntegridadUsuario(dni);
         }
 
         public void ActivarDesactivar(string dni, bool activo)
@@ -124,7 +124,7 @@ namespace DAL
                 new SqlParameter("@DNI",    dni)
             };
             _acceso.escribir(query, p);
-            RecalcularIntegridadUsuario();
+            RecalcularIntegridadUsuario(dni);
         }
 
         public void ModificarEmail(string dni, string email)
@@ -137,7 +137,7 @@ namespace DAL
                 new SqlParameter("@DNI",   dni)
             };
             _acceso.escribir(query, p);
-            RecalcularIntegridadUsuario();
+            RecalcularIntegridadUsuario(dni);
         }
 
         public void ModificarRol(string dni, int idRol)
@@ -148,7 +148,7 @@ namespace DAL
                 new SqlParameter("@DNI",   dni)
             };
             _acceso.escribir(query, p);
-            RecalcularIntegridadUsuario();
+            RecalcularIntegridadUsuario(dni);
         }
 
         public void CambiarContrasena(string login, string contrasenaCifrada)
@@ -163,7 +163,19 @@ namespace DAL
                 new SqlParameter("@Login", login)
             };
             _acceso.escribir(query, p);
-            RecalcularIntegridadUsuario();
+            RecalcularIntegridadUsuario(DniDeLogin(login));
+        }
+
+        // Reemplaza un hash del formato viejo (SHA-256 sin sal) por el nuevo (PBKDF2 con sal). Se hace
+        // en el login, que es el único momento en que se conoce la contraseña en texto plano.
+        public void ActualizarHashContrasena(string login, string contrasenaCifrada)
+        {
+            _acceso.escribir("UPDATE Usuario SET Contrasena = @Contrasena WHERE UserName = @Login",
+                new[] {
+                    new SqlParameter("@Contrasena", contrasenaCifrada),
+                    new SqlParameter("@Login", login)
+                });
+            RecalcularIntegridadUsuario(DniDeLogin(login));
         }
 
         public void ActualizarIntentosFallidos(string login, int nuevosIntentos, DateTime momentoIntento)
@@ -179,7 +191,7 @@ namespace DAL
                 new SqlParameter("@Login",    login)
             };
             _acceso.escribir(query, p);
-            RecalcularIntegridadUsuario();
+            RecalcularIntegridadUsuario(DniDeLogin(login));
         }
 
         public void GuardarIdioma(string login, string idioma)
@@ -190,7 +202,7 @@ namespace DAL
                 new SqlParameter("@Login",  login)
             };
             _acceso.escribir(query, p);
-            RecalcularIntegridadUsuario();
+            RecalcularIntegridadUsuario(DniDeLogin(login));
         }
 
         public void ResetearIntentosFallidos(string login)
@@ -202,7 +214,7 @@ namespace DAL
                 "WHERE UserName = @Login";
             SqlParameter[] p = { new SqlParameter("@Login", login) };
             _acceso.escribir(query, p);
-            RecalcularIntegridadUsuario();
+            RecalcularIntegridadUsuario(DniDeLogin(login));
         }
 
         public int AgregarUsuario(Usuario_GV42 usuario)
@@ -223,7 +235,7 @@ namespace DAL
                 new SqlParameter("@Email", EncriptadorReversible_GV42.Instancia.Encriptar(usuario.Email))
             };
             int filas = _acceso.escribir(query, p);
-            RecalcularIntegridadUsuario();
+            RecalcularIntegridadUsuario(usuario.DNI);
             return filas;
         }
 
@@ -247,7 +259,7 @@ namespace DAL
                 new SqlParameter("@Email", EncriptadorReversible_GV42.Instancia.Encriptar(usuario.Email))
             };
             int filas = _acceso.escribir(query, p);
-            RecalcularIntegridadUsuario();
+            RecalcularIntegridadUsuario(usuario.DNI);
             return filas;
         }
 
@@ -287,10 +299,19 @@ namespace DAL
 
         #region Métodos privados
 
-        private void RecalcularIntegridadUsuario()
+        // Actualiza el dígito verificador SOLO de la fila de ese usuario (antes se recalculaba la tabla
+        // entera y eso "aprobaba" cualquier cambio hecho directamente en la base en otras filas).
+        private void RecalcularIntegridadUsuario(string dni)
         {
-            if (DALIntegridad_GV42.IntegridadConocidamenteRota) return;
-            try { _dalIntegridad.RecalcularTabla("Usuario"); } catch { }
+            if (string.IsNullOrEmpty(dni)) return;
+            try { _dalIntegridad.ActualizarDVHRegistro("Usuario", dni); } catch { }
+        }
+
+        private string DniDeLogin(string login)
+        {
+            object r = _acceso.leerEscalar("SELECT DNI FROM Usuario WHERE UserName = @Login",
+                                           new[] { new SqlParameter("@Login", login) });
+            return r == null || r == DBNull.Value ? null : r.ToString();
         }
 
         private List<Usuario_GV42> MapearLista(DataTable dt)

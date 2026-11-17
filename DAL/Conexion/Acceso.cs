@@ -10,22 +10,28 @@ using System.Configuration;
 namespace DAL
 {
 
+    // Acceso a la base. Cada operación abre su propia SqlConnection y la cierra al terminar
+    // (el pool de conexiones de ADO.NET reutiliza las conexiones físicas, así que no es más lento).
+    //
+    // Antes había UNA sola SqlConnection compartida por toda la aplicación. El backup programado corre
+    // en otro hilo (System.Threading.Timer) y usaba esa misma conexión al mismo tiempo que la pantalla:
+    // uno podía cerrarle la conexión al otro en medio de una transacción. Además los errores de
+    // conexión y de COMMIT se escribían en la consola y se seguía como si nada (escribir devolvía las
+    // filas afectadas aunque el commit hubiera fallado). Ahora todos esos errores se relanzan.
     public class Acceso
     {
         #region Campos
 
-        private static Acceso _instancia;
+        private static readonly Acceso _instancia = new Acceso();
 
-        protected SqlConnection conexion = null;
+        private const string CADENA_POR_DEFECTO =
+            @"Data Source=(localdb)\MSSQLLocalDB;Initial Catalog=""Gestion Usuario"";Integrated Security=True";
 
         #endregion
 
         #region Constructor
 
-        private Acceso()
-        {
-            conexion = new SqlConnection();
-        }
+        private Acceso() { }
 
         #endregion
 
@@ -36,117 +42,77 @@ namespace DAL
 
         public static Acceso Instancia
         {
-            get
-            {
-                if (_instancia == null)
-                {
-                    _instancia = new Acceso();
-                }
-                return _instancia;
-            }
+            get { return _instancia; }
         }
 
         #endregion
 
         #region Métodos públicos
 
-        public void conectar()
-        {
-            try
-            {
-                if (conexion.State == System.Data.ConnectionState.Closed)
-                {
-                    string cs = ConnectionString;
-                    if (string.IsNullOrEmpty(cs))
-                        cs = @"Data Source=(localdb)\MSSQLLocalDB;Initial Catalog=""Gestion Usuario"";Integrated Security=True";
-                    conexion.ConnectionString = cs;
-                    conexion.Open();
-                    Console.WriteLine("Conexión exitosa");
-                }
-            }
-            catch (SqlException ex)
-            {
-                Console.WriteLine("Error de conexión" + ex.Message);
-            }
-        }
-
-        public void desconectar()
-        {
-            try
-            {
-                if (conexion.State == System.Data.ConnectionState.Open)
-                {
-                    conexion.Close();
-                    Console.WriteLine("Desconexión exitosa.");
-                }
-            }
-            catch (SqlException ex)
-            {
-                Console.WriteLine("Error al desconectar: " + ex.Message);
-            }
-        }
-
+        // Abre una transacción sobre una conexión nueva. Se termina con ConfirmarTransaccion o
+        // CancelarTransaccion, que además cierran la conexión.
         public SqlTransaction IniciarTransaccion()
         {
-            conectar();
-            return conexion.BeginTransaction();
+            SqlConnection conexion = AbrirConexion();
+            try
+            {
+                return conexion.BeginTransaction();
+            }
+            catch
+            {
+                conexion.Dispose();
+                throw;
+            }
         }
 
         public void ConfirmarTransaccion(SqlTransaction tx)
         {
+            if (tx == null) return;
+            SqlConnection conexion = tx.Connection;   // después del Commit tx.Connection queda en null
             try
             {
-                if (tx != null)
-                {
-                    tx.Commit();
-                }
+                tx.Commit();
             }
             catch (SqlException ex)
             {
-                Console.WriteLine("Error al confirmar la transacción: " + ex.Message);
+                throw new Exception("Error al confirmar la transacción: " + ex.Message, ex);
             }
             finally
             {
-                desconectar();
+                conexion?.Dispose();
             }
         }
 
         public void CancelarTransaccion(SqlTransaction tx)
         {
+            if (tx == null) return;
+            SqlConnection conexion = tx.Connection;
             try
             {
-                if (tx != null)
-                {
-                    tx.Rollback();
-                }
+                tx.Rollback();
             }
-            catch (SqlException ex)
+            catch (Exception)
             {
-                Console.WriteLine("Error al cancelar la transacción: " + ex.Message);
+                // Si la transacción ya se había deshecho (por ejemplo, la conexión se cortó), no hay
+                // nada más que hacer: el error que importa es el original, que relanza quien llamó.
+            }
+            finally
+            {
+                conexion?.Dispose();
             }
         }
 
         public int escribir(string query, SqlParameter[] parametro)
         {
             SqlTransaction tx = null;
-            int filasAfectadas = 0;
-            SqlCommand comando = new SqlCommand();
             try
             {
-                comando.Parameters.Clear();
                 tx = IniciarTransaccion();
-                comando.Connection = tx.Connection;
-                comando.Transaction = tx;
-                comando.CommandText = query;
-                if (parametro != null)
-                {
-                    foreach (SqlParameter param in parametro)
-                    {
-                        comando.Parameters.AddWithValue(param.ParameterName, param.Value);
-                    }
-                }
-                filasAfectadas = comando.ExecuteNonQuery();
+                int filasAfectadas;
+                using (SqlCommand comando = CrearComando(tx.Connection, tx, query, parametro))
+                    filasAfectadas = comando.ExecuteNonQuery();
                 ConfirmarTransaccion(tx);
+                tx = null;
                 return filasAfectadas;
             }
             catch (Exception ex)
@@ -158,52 +124,32 @@ namespace DAL
 
         public DataTable leer(string query, SqlParameter[] parametro)
         {
-            SqlCommand comando = new SqlCommand();
             DataTable dt = new DataTable();
-            SqlDataAdapter adaptador = new SqlDataAdapter();
             try
             {
-                conectar();
-                comando.Connection = conexion;
-                comando.CommandText = query;
-                if (parametro != null)
+                using (SqlConnection conexion = AbrirConexion())
+                using (SqlCommand comando = CrearComando(conexion, null, query, parametro))
+                using (SqlDataAdapter adaptador = new SqlDataAdapter(comando))
                 {
-                    foreach (SqlParameter param in parametro)
-                    {
-                        comando.Parameters.AddWithValue(param.ParameterName, param.Value);
-                    }
+                    adaptador.Fill(dt);
                 }
-
-                adaptador.SelectCommand = comando;
-                adaptador.Fill(dt);
             }
             catch (SqlException ex)
             {
-                throw new Exception("Error en Leer: " + ex.Message);
-            }
-            finally
-            {
-                desconectar();
+                throw new Exception("Error en Leer: " + ex.Message, ex);
             }
             return dt;
         }
 
         public object leerEscalar(string query, SqlParameter[] parametro)
         {
-            SqlCommand comando = new SqlCommand();
-            object resultado = null;
             try
             {
-                conectar();
-                comando.Connection = conexion;
-                comando.CommandText = query;
-
-                if (parametro != null)
+                using (SqlConnection conexion = AbrirConexion())
+                using (SqlCommand comando = CrearComando(conexion, null, query, parametro))
                 {
-                    comando.Parameters.Clear();
-                    comando.Parameters.AddRange(parametro);
+                    return comando.ExecuteScalar();
                 }
-                resultado = comando.ExecuteScalar();
             }
             catch (SqlException ex)
             {
@@ -211,47 +157,35 @@ namespace DAL
                 // false ante un error de base y se salteaba el control de duplicados.
                 throw new Exception("Error en LeerEscalar: " + ex.Message, ex);
             }
-            finally
-            {
-                comando.Parameters.Clear();
-                desconectar();
-            }
-            return resultado;
         }
 
         // Soporte para operaciones de negocio que escriben en varias tablas.
-
 
         // Ejecuta 'trabajo' dentro de una única transacción. Si algo falla hace rollback
         // y relanza la excepción; si termina bien hace commit.
         public T EjecutarEnTransaccion<T>(Func<SqlTransaction, T> trabajo)
         {
-            SqlTransaction tx = null;
-            try
+            using (SqlConnection conexion = AbrirConexion())
+            using (SqlTransaction tx = conexion.BeginTransaction())
             {
-                tx = IniciarTransaccion();
-                T resultado = trabajo(tx);
-                tx.Commit();
-                return resultado;
-            }
-            catch
-            {
-                if (tx != null)
+                try
+                {
+                    T resultado = trabajo(tx);
+                    tx.Commit();
+                    return resultado;
+                }
+                catch
                 {
                     try { tx.Rollback(); } catch { }
+                    throw;
                 }
-                throw;
-            }
-            finally
-            {
-                desconectar();
             }
         }
 
         // Las tres sobrecargas siguientes usan la transacción recibida y NO cierran la conexión.
         public int escribir(SqlTransaction tx, string query, SqlParameter[] parametro)
         {
-            using (SqlCommand comando = CrearComando(tx, query, parametro))
+            using (SqlCommand comando = CrearComando(tx.Connection, tx, query, parametro))
             {
                 return comando.ExecuteNonQuery();
             }
@@ -259,7 +193,7 @@ namespace DAL
 
         public object leerEscalar(SqlTransaction tx, string query, SqlParameter[] parametro)
         {
-            using (SqlCommand comando = CrearComando(tx, query, parametro))
+            using (SqlCommand comando = CrearComando(tx.Connection, tx, query, parametro))
             {
                 return comando.ExecuteScalar();
             }
@@ -268,7 +202,7 @@ namespace DAL
         public DataTable leer(SqlTransaction tx, string query, SqlParameter[] parametro)
         {
             DataTable dt = new DataTable();
-            using (SqlCommand comando = CrearComando(tx, query, parametro))
+            using (SqlCommand comando = CrearComando(tx.Connection, tx, query, parametro))
             using (SqlDataAdapter adaptador = new SqlDataAdapter(comando))
             {
                 adaptador.Fill(dt);
@@ -280,14 +214,36 @@ namespace DAL
 
         #region Métodos privados
 
-        private SqlCommand CrearComando(SqlTransaction tx, string query, SqlParameter[] parametro)
+        private static SqlConnection AbrirConexion()
         {
-            SqlCommand comando = new SqlCommand(query, tx.Connection, tx);
+            string cs = string.IsNullOrEmpty(ConnectionString) ? CADENA_POR_DEFECTO : ConnectionString;
+            var conexion = new SqlConnection(cs);
+            try
+            {
+                conexion.Open();
+                return conexion;
+            }
+            catch (SqlException ex)
+            {
+                conexion.Dispose();
+                // Antes el error se escribía en la consola y después fallaba la consulta con un mensaje
+                // confuso ("la conexión no está abierta"). Ahora se informa el problema real.
+                throw new Exception("No se pudo conectar con la base de datos: " + ex.Message, ex);
+            }
+        }
+
+        // Los parámetros se clonan: así el mismo SqlParameter[] se puede reutilizar en otra consulta
+        // (un SqlParameter no puede pertenecer a dos comandos) y se conserva el tipo si se indicó.
+        private static SqlCommand CrearComando(SqlConnection conexion, SqlTransaction tx, string query, SqlParameter[] parametro)
+        {
+            SqlCommand comando = new SqlCommand(query, conexion, tx);
             if (parametro != null)
             {
                 foreach (SqlParameter param in parametro)
                 {
-                    comando.Parameters.AddWithValue(param.ParameterName, param.Value ?? DBNull.Value);
+                    var copia = (SqlParameter)((ICloneable)param).Clone();
+                    if (copia.Value == null) copia.Value = DBNull.Value;
+                    comando.Parameters.Add(copia);
                 }
             }
             return comando;

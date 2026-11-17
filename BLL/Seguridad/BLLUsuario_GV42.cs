@@ -21,7 +21,6 @@ namespace BLL
         #region Campos
 
         private readonly DALUsuario_GV42 _DALUsuario;
-        private readonly BLLIntegridad_GV42 _bllIntegridad;
         private static readonly TimeSpan VENTANA_INTENTOS = TimeSpan.FromHours(1);
 
         #endregion
@@ -31,7 +30,6 @@ namespace BLL
         public BLLUsuario_GV42()
         {
             _DALUsuario = new DALUsuario_GV42();
-            _bllIntegridad = new BLLIntegridad_GV42();
         }
 
         #endregion
@@ -74,8 +72,7 @@ namespace BLL
                     return ResultadoLogin.UsuarioInactivo;
                 }
 
-                string contrasenaCifrada = Encriptador_GV42.Instancia.EncriptarContrasena(contrasena);
-                if (usuario.Contrasena != contrasenaCifrada)
+                if (!Encriptador_GV42.Instancia.VerificarContrasena(contrasena, usuario.Contrasena))
                 {
 
                     int nuevosIntentos = CalcularNuevosIntentos(usuario);
@@ -98,6 +95,20 @@ namespace BLL
                 }
 
                 _DALUsuario.ResetearIntentosFallidos(login);
+
+                // Usuarios con el hash viejo (SHA-256 sin sal): se pasa al formato nuevo ahora que se
+                // conoce la contraseña. Si falla, el usuario igual entra (se reintenta en el próximo login).
+                if (Encriptador_GV42.Instancia.EsHashLegado(usuario.Contrasena))
+                {
+                    try
+                    {
+                        string nuevoHash = Encriptador_GV42.Instancia.EncriptarContrasena(contrasena);
+                        _DALUsuario.ActualizarHashContrasena(login, nuevoHash);
+                        usuario.Contrasena = nuevoHash;
+                    }
+                    catch { }
+                }
+
                 BLLPermisos_GV42 bllPermisos = new BLLPermisos_GV42();
                 if (usuario.Rol != null)
                 {
@@ -174,15 +185,14 @@ namespace BLL
             BLLNegocioUtil_GV42.ExigirPatente("Usuarios.Desbloquear", IdiomaManager_GV42.T("neg.usuario.sinPermisoDesbloquear"));
             Usuario_GV42 usuario = _DALUsuario.BuscarPorLogin(login);
             if (usuario == null || usuario.DNI != dni)
-                throw new Exception(IdiomaManager_GV42.T("neg.usuario.noExiste"));
+                throw new BE.NegocioException_GV42(IdiomaManager_GV42.T("neg.usuario.noExiste"));
             if (!usuario.Bloqueo)
-                throw new Exception(IdiomaManager_GV42.T("neg.usuario.noBloqueado", login));
+                throw new BE.NegocioException_GV42(IdiomaManager_GV42.T("neg.usuario.noBloqueado", login));
 
             string contrasenaPlana = CredencialInicial(usuario.Nombre, dni);
             string contrasenaCifrada = Encriptador_GV42.Instancia.EncriptarContrasena(contrasenaPlana);
             _DALUsuario.Desbloquear(dni, contrasenaCifrada);
             Auditar(LoginSesion(), "Admin", "Usuario desbloqueado", $"Usuario {login} desbloqueado y contraseña reseteada", "Media");
-            RecalcularUsuario();
             return contrasenaPlana;
         }
 
@@ -193,14 +203,13 @@ namespace BLL
             {
                 Usuario_GV42 actual = SessionManager_GV42.Instancia.ObtenerUsuarioActual();
                 if (actual != null && actual.DNI == dni)
-                    throw new Exception(IdiomaManager_GV42.T("neg.usuario.desactivarPropio"));
+                    throw new BE.NegocioException_GV42(IdiomaManager_GV42.T("neg.usuario.desactivarPropio"));
                 if (!new BLLPermisos_GV42().QuedaAlgunAdministrador(dniExcluido: dni))
-                    throw new Exception(IdiomaManager_GV42.T("neg.usuario.ultimoAdminDesactivar"));
+                    throw new BE.NegocioException_GV42(IdiomaManager_GV42.T("neg.usuario.ultimoAdminDesactivar"));
             }
             _DALUsuario.ActivarDesactivar(dni, activo);
             string accion = activo ? "Usuario activado" : "Usuario desactivado";
             Auditar(LoginSesion(), "Admin", accion, $"DNI: {dni}", "Media");
-            RecalcularUsuario();
         }
 
         public void ModificarEmail(string dni, string email)
@@ -208,26 +217,24 @@ namespace BLL
             BLLNegocioUtil_GV42.ExigirPatente("Usuarios.Modificar", IdiomaManager_GV42.T("neg.usuario.sinPermisoModificar"));
             email = (email ?? string.Empty).Trim();
             if (!Validaciones_GV42.EsEmailValido(email))
-                throw new Exception(Validaciones_GV42.MENSAJE_EMAIL);
+                throw new BE.NegocioException_GV42(Validaciones_GV42.MENSAJE_EMAIL);
             if (_DALUsuario.ExisteEmail(email, dni))
-                throw new Exception(IdiomaManager_GV42.T("neg.usuario.emailEnUso", email));
+                throw new BE.NegocioException_GV42(IdiomaManager_GV42.T("neg.usuario.emailEnUso", email));
             _DALUsuario.ModificarEmail(dni, email);
             Auditar(LoginSesion(), "Admin", "Email modificado", $"DNI: {dni}", "Media");
-            RecalcularUsuario();
         }
 
         public void ModificarRol(string dni, Rol_GV42 rol)
         {
             BLLNegocioUtil_GV42.ExigirPatente("Usuarios.Modificar", IdiomaManager_GV42.T("neg.usuario.sinPermisoModificar"));
-            if (rol == null) throw new Exception(IdiomaManager_GV42.T("err.rolValido"));
+            if (rol == null) throw new BE.NegocioException_GV42(IdiomaManager_GV42.T("err.rolValido"));
             Usuario_GV42 actual = SessionManager_GV42.Instancia.ObtenerUsuarioActual();
             if (actual != null && actual.DNI == dni && (actual.Rol == null || actual.Rol.Id != rol.Id))
-                throw new Exception(IdiomaManager_GV42.T("neg.usuario.cambiarPropioRol"));
+                throw new BE.NegocioException_GV42(IdiomaManager_GV42.T("neg.usuario.cambiarPropioRol"));
             if (!new BLLPermisos_GV42().QuedaAlgunAdministrador(dniConNuevoRol: dni, nuevoRolId: rol.Id))
-                throw new Exception(IdiomaManager_GV42.T("neg.usuario.ultimoAdminRol"));
+                throw new BE.NegocioException_GV42(IdiomaManager_GV42.T("neg.usuario.ultimoAdminRol"));
             _DALUsuario.ModificarRol(dni, rol.Id);
             Auditar(LoginSesion(), "Admin", "Rol modificado", $"DNI {dni} -> rol {rol.Nombre}", "Media");
-            RecalcularUsuario();
         }
 
         // Devuelve el login generado (la contraseña inicial es la misma y se pide cambiarla al entrar).
@@ -235,31 +242,30 @@ namespace BLL
         {
             BLLNegocioUtil_GV42.ExigirPatente("Usuarios.Crear", IdiomaManager_GV42.T("neg.usuario.sinPermisoCrear"));
             if (rol == null)
-                throw new Exception(IdiomaManager_GV42.T("err.rolSeleccionar"));
+                throw new BE.NegocioException_GV42(IdiomaManager_GV42.T("err.rolSeleccionar"));
 
             ValidarDatosPersonales(ref dni, ref nombre, ref apellido, ref email);
 
             if (_DALUsuario.ExisteDNI(dni))
-                throw new Exception(string.Format(IdiomaManager_GV42.T("err.dniDuplicado"), dni));
+                throw new BE.NegocioException_GV42(string.Format(IdiomaManager_GV42.T("err.dniDuplicado"), dni));
             if (_DALUsuario.ExisteEmail(email, dni))
-                throw new Exception(IdiomaManager_GV42.T("neg.usuario.emailEnUso", email));
+                throw new BE.NegocioException_GV42(IdiomaManager_GV42.T("neg.usuario.emailEnUso", email));
 
             VerificarMismaPersonaQuePasajero(dni, nombre, apellido);
 
             string contrasenaPlana = CredencialInicial(nombre, dni);
-            string contrasenaCifrada = Encriptador_GV42.Instancia.EncriptarContrasena(contrasenaPlana);
 
             // Si dos personas generan el mismo login (mismo nombre y mismos 3 últimos dígitos del DNI),
             // antes el alta fallaba sin remedio; ahora se agrega un número: juan678, juan6782, juan6783...
             string login = contrasenaPlana;
             for (int n = 2; _DALUsuario.BuscarPorLogin(login) != null; n++)
             {
-                if (n > 99) throw new Exception(string.Format(IdiomaManager_GV42.T("err.usuarioLoginDuplicado"), contrasenaPlana));
+                if (n > 99) throw new BE.NegocioException_GV42(string.Format(IdiomaManager_GV42.T("err.usuarioLoginDuplicado"), contrasenaPlana));
                 login = contrasenaPlana + n;
             }
             // La contraseña inicial es igual al login (también cuando se le agregó un número).
             contrasenaPlana = login;
-            contrasenaCifrada = Encriptador_GV42.Instancia.EncriptarContrasena(contrasenaPlana);
+            string contrasenaCifrada = Encriptador_GV42.Instancia.EncriptarContrasena(contrasenaPlana);
 
             Usuario_GV42 u = new Usuario_GV42
             {
@@ -274,9 +280,8 @@ namespace BLL
 
             int filas = _DALUsuario.AgregarUsuario(u);
             if (filas == 0)
-                throw new Exception(IdiomaManager_GV42.T("err.insertFallido"));
+                throw new BE.NegocioException_GV42(IdiomaManager_GV42.T("err.insertFallido"));
             Auditar(LoginSesion(), "Admin", "Usuario creado", $"Login: {login}", "Baja");
-            RecalcularUsuario();
             return login;
         }
 
@@ -288,21 +293,21 @@ namespace BLL
         {
             Rol_GV42 rolCliente = _DALUsuario.BuscarPorNombre("Cliente");
             if (rolCliente == null)
-                throw new Exception(IdiomaManager_GV42.T("neg.usuario.sinRolCliente"));
+                throw new BE.NegocioException_GV42(IdiomaManager_GV42.T("neg.usuario.sinRolCliente"));
 
             login = (login ?? string.Empty).Trim();
             if (!Validaciones_GV42.EsLoginValido(login))
-                throw new Exception(Validaciones_GV42.MENSAJE_LOGIN);
+                throw new BE.NegocioException_GV42(Validaciones_GV42.MENSAJE_LOGIN);
             if (!Validaciones_GV42.EsContrasenaValida(contrasenaPlana))
-                throw new Exception(Validaciones_GV42.MENSAJE_CONTRASENA);
+                throw new BE.NegocioException_GV42(Validaciones_GV42.MENSAJE_CONTRASENA);
             ValidarDatosPersonales(ref dni, ref nombre, ref apellido, ref email);
             if (_DALUsuario.ExisteEmail(email, dni))
-                throw new Exception(IdiomaManager_GV42.T("neg.usuario.emailEnUso", email));
+                throw new BE.NegocioException_GV42(IdiomaManager_GV42.T("neg.usuario.emailEnUso", email));
 
             if (_DALUsuario.ExisteDNI(dni))
-                throw new Exception(string.Format(IdiomaManager_GV42.T("err.dniDuplicado"), dni));
+                throw new BE.NegocioException_GV42(string.Format(IdiomaManager_GV42.T("err.dniDuplicado"), dni));
             if (_DALUsuario.BuscarPorLogin(login) != null)
-                throw new Exception(string.Format(IdiomaManager_GV42.T("err.usuarioLoginDuplicado"), login));
+                throw new BE.NegocioException_GV42(string.Format(IdiomaManager_GV42.T("err.usuarioLoginDuplicado"), login));
 
             nombre = Validaciones_GV42.NormalizarEspacios(nombre);
             apellido = Validaciones_GV42.NormalizarEspacios(apellido);
@@ -323,10 +328,9 @@ namespace BLL
 
             int filas = _DALUsuario.AgregarUsuarioAutogestionado(u);
             if (filas == 0)
-                throw new Exception(IdiomaManager_GV42.T("err.insertFallido"));
+                throw new BE.NegocioException_GV42(IdiomaManager_GV42.T("err.insertFallido"));
 
             Auditar(login, "Reservas", "Cliente autogestionado registrado", "Login: " + login, "Media");
-            RecalcularUsuario();
 
             u.Rol = rolCliente;
             return u;
@@ -336,10 +340,18 @@ namespace BLL
 
         #region Contraseña
 
+        // El login tiene que ser el de la sesión: antes la BLL aceptaba cualquier login (solo la pantalla
+        // lo bloqueaba) y la contraseña actual se podía probar sin límite. Ahora los intentos con la
+        // contraseña actual equivocada cuentan igual que en el login y, al tercero, el usuario se bloquea.
         public ResultadoCambioContrasena CambiarContrasena(string login, string contrasenaActual, string nuevaContrasena, string confirmarContrasena)
         {
             try
             {
+                Usuario_GV42 sesion = SessionManager_GV42.Instancia.ObtenerUsuarioActual();
+                if (sesion == null || !string.Equals(sesion.Login, (login ?? string.Empty).Trim(), StringComparison.OrdinalIgnoreCase))
+                    return ResultadoCambioContrasena.UsuarioInexistente;
+                login = sesion.Login;
+
                 if (nuevaContrasena != confirmarContrasena)
                     return ResultadoCambioContrasena.ContrasenasNoCoinciden;
                 if (nuevaContrasena == contrasenaActual)
@@ -351,15 +363,28 @@ namespace BLL
                 if (usuario == null)
                     return ResultadoCambioContrasena.UsuarioInexistente;
 
-                string contrasenaActualCifrada = Encriptador_GV42.Instancia.EncriptarContrasena(contrasenaActual);
-                if (usuario.Contrasena != contrasenaActualCifrada)
+                if (!Encriptador_GV42.Instancia.VerificarContrasena(contrasenaActual, usuario.Contrasena))
+                {
+                    int nuevosIntentos = CalcularNuevosIntentos(usuario);
+                    _DALUsuario.ActualizarIntentosFallidos(login, nuevosIntentos, DateTime.Now);
+                    if (nuevosIntentos >= MAX_INTENTOS)
+                    {
+                        _DALUsuario.Bloquear(login);
+                        Auditar(login, "Usuario", "Usuario bloqueado por intentos fallidos",
+                                $"{MAX_INTENTOS} intentos fallidos con la contraseña actual al cambiarla", "Alta");
+                        return ResultadoCambioContrasena.BloqueadoPorIntentos;
+                    }
+                    Auditar(login, "Usuario", "Contraseña incorrecta", $"Cambio de contraseña - intento {nuevosIntentos}/{MAX_INTENTOS}", "Media");
                     return ResultadoCambioContrasena.ContrasenaActualIncorrecta;
+                }
 
-                string nuevaContrasenaCifrada = Encriptador_GV42.Instancia.EncriptarContrasena(nuevaContrasena);
-                if (usuario.Contrasena == nuevaContrasenaCifrada)
+                if (Encriptador_GV42.Instancia.VerificarContrasena(nuevaContrasena, usuario.Contrasena))
                     return ResultadoCambioContrasena.NuevaIgualActual;
 
+                string nuevaContrasenaCifrada = Encriptador_GV42.Instancia.EncriptarContrasena(nuevaContrasena);
                 _DALUsuario.CambiarContrasena(login, nuevaContrasenaCifrada);
+                if (usuario.IntentosFallidos > 0)
+                    _DALUsuario.ResetearIntentosFallidos(login);
 
                 Auditar(login, "Usuario", "Contraseña cambiada exitosamente", "Cambio de contraseña", "Baja");
                 return ResultadoCambioContrasena.Exitoso;
@@ -397,11 +422,6 @@ namespace BLL
 
         #region Métodos privados
 
-        private void RecalcularUsuario()
-        {
-            try { _bllIntegridad.RecalcularTabla("Usuario"); } catch { }
-        }
-
         // La bitácora nunca interrumpe la operación: antes, si fallaba al registrar (por ejemplo un login
         // inexistente), el login devolvía "Error" o el alta decía "error" aunque el usuario se había creado.
         private void Auditar(string login, string modulo, string tipoEvento, string detalle, string criticidad)
@@ -428,10 +448,10 @@ namespace BLL
             apellido = Validaciones_GV42.NormalizarEspacios(apellido);
             email = (email ?? string.Empty).Trim();
 
-            if (!Validaciones_GV42.EsDniValido(dni)) throw new Exception(Validaciones_GV42.MENSAJE_DNI);
-            if (!Validaciones_GV42.EsNombreValido(nombre)) throw new Exception(Validaciones_GV42.MENSAJE_NOMBRE);
-            if (!Validaciones_GV42.EsApellidoValido(apellido)) throw new Exception(Validaciones_GV42.MENSAJE_APELLIDO);
-            if (!Validaciones_GV42.EsEmailValido(email)) throw new Exception(Validaciones_GV42.MENSAJE_EMAIL);
+            if (!Validaciones_GV42.EsDniValido(dni)) throw new BE.NegocioException_GV42(Validaciones_GV42.MENSAJE_DNI);
+            if (!Validaciones_GV42.EsNombreValido(nombre)) throw new BE.NegocioException_GV42(Validaciones_GV42.MENSAJE_NOMBRE);
+            if (!Validaciones_GV42.EsApellidoValido(apellido)) throw new BE.NegocioException_GV42(Validaciones_GV42.MENSAJE_APELLIDO);
+            if (!Validaciones_GV42.EsEmailValido(email)) throw new BE.NegocioException_GV42(Validaciones_GV42.MENSAJE_EMAIL);
         }
 
         private int CalcularNuevosIntentos(Usuario_GV42 usuario)
@@ -449,7 +469,7 @@ namespace BLL
                 else
                     return 1;
             }
-            catch { throw new Exception(IdiomaManager_GV42.T("err.errorGenerico")); }
+            catch { throw new BE.NegocioException_GV42(IdiomaManager_GV42.T("err.errorGenerico")); }
 
         }
 
@@ -480,7 +500,7 @@ namespace BLL
             BE.Pasajero_GV42 pasajero = new DAL.DALPasajero_GV42().BuscarPorDni(dni);
             if (pasajero == null) return;
             if (!Validaciones_GV42.MismoTexto(nombre, pasajero.Nombre) || !Validaciones_GV42.MismoTexto(apellido, pasajero.Apellido))
-                throw new Exception(IdiomaManager_GV42.T("neg.usuario.dniComoPasajero", dni, pasajero.Nombre, pasajero.Apellido));
+                throw new BE.NegocioException_GV42(IdiomaManager_GV42.T("neg.usuario.dniComoPasajero", dni, pasajero.Nombre, pasajero.Apellido));
         }
 
         #endregion
@@ -506,7 +526,8 @@ namespace BLL
             ContrasenasNoCoinciden,
             UsuarioInexistente,
             NuevaIgualActual,
-            NoCumplePolitica
+            NoCumplePolitica,
+            BloqueadoPorIntentos
         }
 
         #endregion

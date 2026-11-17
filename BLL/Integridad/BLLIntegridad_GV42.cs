@@ -67,12 +67,15 @@ namespace BLL
         {
             var resultado = new ResultadoIntegridad();
 
+            // Sin ningún DVV guardado. Antes se tomaba como "primera vez" y se recalculaba todo
+            // automáticamente: borrando la tabla IntegridadDVV se borraba cualquier adulteración.
+            // Los dígitos iniciales los deja el instalador (tareas "RecalcularDV:..."), así que una base
+            // sin DVV se informa como comprometida y solo el administrador puede recalcularla.
             if (!_dal.ExisteAlgunDVV())
             {
-                Recalcular();
-                resultado.EsBootstrap = true;
-                resultado.EsIntegra = true;
-                IntegridadConocidamenteRota = false;
+                resultado.TablasComprometidas.AddRange(_dal.TablasProtegidasExistentes());
+                resultado.EsIntegra = resultado.TablasComprometidas.Count == 0;
+                IntegridadConocidamenteRota = !resultado.EsIntegra;
                 return resultado;
             }
 
@@ -137,19 +140,33 @@ namespace BLL
             return resultado;
         }
 
+        // El administrador acepta los datos actuales como válidos (después de revisar el detalle).
         public void Recalcular()
         {
+            BLLNegocioUtil_GV42.ExigirPatente("Integridad.Recalcular", IdiomaManager_GV42.T("neg.integridad.sinPermisoRecalcular"));
             foreach (var tabla in _dal.TablasProtegidasExistentes())
-                RecalcularTabla(tabla);
+                _dal.RecalcularTabla(tabla);
             IntegridadConocidamenteRota = false;
         }
 
-        public void RecalcularTabla(string nombreTabla)
+        // Recalcula una tabla entera. Solo para las tareas que deja el instalador (datos iniciales o una
+        // fórmula de DVH nueva): no pide sesión porque se ejecuta antes del login.
+        internal void RecalcularTabla(string nombreTabla)
         {
-            Dictionary<string, string> dvhs = _dal.CalcularDVHsTabla(nombreTabla);
-            _dal.GuardarDVHs(nombreTabla, dvhs);
-            string dvv = CalculadorIntegridad_GV42.CalcularDVV(dvhs.Values);
-            _dal.GuardarDVV(nombreTabla, dvv);
+            _dal.RecalcularTabla(nombreTabla);
+        }
+
+        // Lo que usan las operaciones normales: actualiza solo los registros que modificaron.
+        // Nunca interrumpe la operación (ya está hecha); si falla, la próxima verificación lo informa.
+        internal void ActualizarRegistro(string nombreTabla, string idRegistro)
+        {
+            if (string.IsNullOrEmpty(idRegistro)) return;
+            try { _dal.ActualizarDVHRegistro(nombreTabla, idRegistro); } catch { }
+        }
+
+        internal void ActualizarRegistros(string nombreTabla, Func<string, bool> esAfectado)
+        {
+            try { _dal.ActualizarDVHRegistros(nombreTabla, esAfectado); } catch { }
         }
 
         #endregion
@@ -217,6 +234,7 @@ namespace BLL
 
         public void RestaurarUltimoBackup()
         {
+            BLLNegocioUtil_GV42.ExigirPatente("Integridad.Restore", IdiomaManager_GV42.T("neg.integridad.sinPermisoRestore"));
             string ruta = ObtenerUltimoBackup();
             if (string.IsNullOrEmpty(ruta))
                 throw new Exception(IdiomaManager_GV42.T("err.backupSinDisponibles"));
@@ -225,6 +243,7 @@ namespace BLL
 
         public void HacerBackupEnRuta(string rutaArchivoBak)
         {
+            BLLNegocioUtil_GV42.ExigirPatente("Backup.Crear", IdiomaManager_GV42.T("neg.integridad.sinPermisoBackup"));
             if (string.IsNullOrWhiteSpace(rutaArchivoBak))
                 throw new Exception(IdiomaManager_GV42.T("err.backupRutaObligatoria"));
 
@@ -237,7 +256,10 @@ namespace BLL
             BLLNegocioUtil_GV42.Auditar("Admin", "Backup manual generado", $"Ruta: {rutaArchivoBak}", "Media");
         }
 
-        public void RestaurarBackupDesdeRuta(string rutaArchivoBak)
+        // Sin control de permisos: solo para RestaurarBackupManual (que exige la patente) y para el
+        // reinstalador (que antes valida las credenciales de un administrador). Antes era público y
+        // cualquier pantalla podía restaurar sin permiso.
+        internal void RestaurarBackupDesdeRuta(string rutaArchivoBak)
         {
             if (string.IsNullOrWhiteSpace(rutaArchivoBak))
                 throw new Exception(IdiomaManager_GV42.T("err.backupRutaObligatoria"));

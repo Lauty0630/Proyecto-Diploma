@@ -1,6 +1,7 @@
 ﻿using DAL;
 using Servicios.Instalacion;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace BLL
 {
@@ -100,11 +101,15 @@ namespace BLL
 
             ConfigurarConexion(instancia);
             var integridad = new BLLIntegridad_GV42();
-            foreach (string tarea in tareas)
+            const string RECALCULAR = "RecalcularDV:";
+            // Primero las tareas que cambian datos y al final los recálculos de dígitos verificadores
+            // (si no, el DVH quedaría calculado con los datos de antes del cambio).
+            foreach (string tarea in tareas.OrderBy(t => t.StartsWith(RECALCULAR) ? 1 : 0))
             {
-                const string RECALCULAR = "RecalcularDV:";
                 if (tarea.StartsWith(RECALCULAR))
                     integridad.RecalcularTabla(tarea.Substring(RECALCULAR.Length));
+                else if (tarea == "CifrarEmailsPlanos")
+                    InstaladorBD_GV42.CifrarEmailsPlanos(instancia);
                 InstaladorBD_GV42.QuitarTarea(instancia, tarea);
             }
         }

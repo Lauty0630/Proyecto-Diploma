@@ -554,6 +554,14 @@ INSERT [dbo].[RolPatente] ([IdRol], [IdPatente]) VALUES (1, 16)
 INSERT [dbo].[RolPatente] ([IdRol], [IdPatente]) VALUES (1, 17)
 INSERT [dbo].[RolPatente] ([IdRol], [IdPatente]) VALUES (1, 18)
 GO
+/* ---------- Usuarios iniciales: si la contraseña es igual al nombre de usuario, la tienen que cambiar al entrar ---------- */
+UPDATE dbo.Usuario
+   SET DebeCambiarContrasena = 1
+ WHERE LOWER(Contrasena) = LOWER(CONVERT(VARCHAR(64), HASHBYTES('SHA2_256', CONVERT(VARCHAR(250), UserName)), 2));
+GO
+INSERT INTO dbo.TareaPendiente_GV42 (Nombre)
+SELECT N'CifrarEmailsPlanos' WHERE NOT EXISTS (SELECT 1 FROM dbo.TareaPendiente_GV42 WHERE Nombre = N'CifrarEmailsPlanos');
+GO
 /* ---------- Dígitos verificadores: los calcula el sistema al terminar la instalación ---------- */
 INSERT INTO dbo.TareaPendiente_GV42 (Nombre)
 SELECT X.T FROM (VALUES (N'RecalcularDV:Usuario'), (N'RecalcularDV:Roles'), (N'RecalcularDV:Familia'), (N'RecalcularDV:Patente'), (N'RecalcularDV:FamiliaPatente'), (N'RecalcularDV:FamiliaIntegrada'), (N'RecalcularDV:RolPatente'), (N'RecalcularDV:RolFamilia'), (N'RecalcularDV:Modulo'), (N'RecalcularDV:TipoEvento')) AS X(T)

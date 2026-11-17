@@ -41,8 +41,8 @@
             this.pnlBotones = new System.Windows.Forms.Panel();
             this.flpBotones = new System.Windows.Forms.FlowLayoutPanel();
             this.btnCancelar = new PROYECTO_ING_DE_SOFTWARE.BotonModerno_GV42();
-            this.btnBackup = new PROYECTO_ING_DE_SOFTWARE.BotonModerno_GV42();
-            this.btnRestore = new PROYECTO_ING_DE_SOFTWARE.BotonModerno_GV42();
+            this.btnRestaurar = new PROYECTO_ING_DE_SOFTWARE.BotonModerno_GV42();
+            this.btnRecalcular = new PROYECTO_ING_DE_SOFTWARE.BotonModerno_GV42();
             this.pnlEncabezado.SuspendLayout();
             this.pnlIcono.SuspendLayout();
             this.pnlContenido.SuspendLayout();
@@ -189,8 +189,8 @@
             // flpBotones
             //
             this.flpBotones.Controls.Add(this.btnCancelar);
-            this.flpBotones.Controls.Add(this.btnBackup);
-            this.flpBotones.Controls.Add(this.btnRestore);
+            this.flpBotones.Controls.Add(this.btnRestaurar);
+            this.flpBotones.Controls.Add(this.btnRecalcular);
             this.flpBotones.Dock = System.Windows.Forms.DockStyle.Fill;
             this.flpBotones.FlowDirection = System.Windows.Forms.FlowDirection.RightToLeft;
             this.flpBotones.Location = new System.Drawing.Point(16, 8);
@@ -214,34 +214,34 @@
             this.btnCancelar.UseVisualStyleBackColor = false;
             this.btnCancelar.Click += new System.EventHandler(this.btnCancelar_Click);
             //
-            // btnBackup
+            // btnRestaurar
             //
-            this.btnBackup.FlatAppearance.BorderSize = 0;
-            this.btnBackup.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.btnBackup.Font = new System.Drawing.Font("Segoe UI Semibold", 10F, System.Drawing.FontStyle.Bold);
-            this.btnBackup.Location = new System.Drawing.Point(278, 3);
-            this.btnBackup.Margin = new System.Windows.Forms.Padding(10, 3, 3, 3);
-            this.btnBackup.Name = "btnBackup";
-            this.btnBackup.Size = new System.Drawing.Size(167, 40);
-            this.btnBackup.TabIndex = 1;
-            this.btnBackup.Text = "Restore";
-            this.btnBackup.UseVisualStyleBackColor = false;
-            this.btnBackup.Click += new System.EventHandler(this.btnBackup_Click);
+            this.btnRestaurar.FlatAppearance.BorderSize = 0;
+            this.btnRestaurar.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.btnRestaurar.Font = new System.Drawing.Font("Segoe UI Semibold", 10F, System.Drawing.FontStyle.Bold);
+            this.btnRestaurar.Location = new System.Drawing.Point(278, 3);
+            this.btnRestaurar.Margin = new System.Windows.Forms.Padding(10, 3, 3, 3);
+            this.btnRestaurar.Name = "btnRestaurar";
+            this.btnRestaurar.Size = new System.Drawing.Size(167, 40);
+            this.btnRestaurar.TabIndex = 1;
+            this.btnRestaurar.Text = "Restore";
+            this.btnRestaurar.UseVisualStyleBackColor = false;
+            this.btnRestaurar.Click += new System.EventHandler(this.btnRestaurar_Click);
             //
-            // btnRestore
+            // btnRecalcular
             //
-            this.btnRestore.Estilo = PROYECTO_ING_DE_SOFTWARE.EstiloBoton_GV42.Advertencia;
-            this.btnRestore.FlatAppearance.BorderSize = 0;
-            this.btnRestore.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.btnRestore.Font = new System.Drawing.Font("Segoe UI Semibold", 10F, System.Drawing.FontStyle.Bold);
-            this.btnRestore.Location = new System.Drawing.Point(98, 3);
-            this.btnRestore.Margin = new System.Windows.Forms.Padding(10, 3, 3, 3);
-            this.btnRestore.Name = "btnRestore";
-            this.btnRestore.Size = new System.Drawing.Size(167, 40);
-            this.btnRestore.TabIndex = 0;
-            this.btnRestore.Text = "Recalcular";
-            this.btnRestore.UseVisualStyleBackColor = false;
-            this.btnRestore.Click += new System.EventHandler(this.btnRestore_Click);
+            this.btnRecalcular.Estilo = PROYECTO_ING_DE_SOFTWARE.EstiloBoton_GV42.Advertencia;
+            this.btnRecalcular.FlatAppearance.BorderSize = 0;
+            this.btnRecalcular.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.btnRecalcular.Font = new System.Drawing.Font("Segoe UI Semibold", 10F, System.Drawing.FontStyle.Bold);
+            this.btnRecalcular.Location = new System.Drawing.Point(98, 3);
+            this.btnRecalcular.Margin = new System.Windows.Forms.Padding(10, 3, 3, 3);
+            this.btnRecalcular.Name = "btnRecalcular";
+            this.btnRecalcular.Size = new System.Drawing.Size(167, 40);
+            this.btnRecalcular.TabIndex = 0;
+            this.btnRecalcular.Text = "Recalcular";
+            this.btnRecalcular.UseVisualStyleBackColor = false;
+            this.btnRecalcular.Click += new System.EventHandler(this.btnRecalcular_Click);
             //
             // FRMIntegridad
             //
@@ -287,7 +287,7 @@
         private System.Windows.Forms.Panel pnlBotones;
         private System.Windows.Forms.FlowLayoutPanel flpBotones;
         private PROYECTO_ING_DE_SOFTWARE.BotonModerno_GV42 btnCancelar;
-        private PROYECTO_ING_DE_SOFTWARE.BotonModerno_GV42 btnBackup;
-        private PROYECTO_ING_DE_SOFTWARE.BotonModerno_GV42 btnRestore;
+        private PROYECTO_ING_DE_SOFTWARE.BotonModerno_GV42 btnRestaurar;
+        private PROYECTO_ING_DE_SOFTWARE.BotonModerno_GV42 btnRecalcular;
     }
 }

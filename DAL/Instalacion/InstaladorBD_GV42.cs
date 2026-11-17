@@ -27,7 +27,7 @@ namespace DAL
         private const string NOMBRE_SCRIPT_NEGOCIO = "ActualizacionNegocio.sql";
 
         // Subir este número cuando se agregue un bloque nuevo al final de ActualizacionBD.sql.
-        public const int VERSION_ACTUAL = 14;
+        public const int VERSION_ACTUAL = 15;
 
         // Lo que tiene que existir en una base de gestión de usuarios (sin negocio).
         private static readonly string[] OBJETOS_BASE =
@@ -225,6 +225,48 @@ namespace DAL
                     while (rd.Read()) tareas.Add(rd.GetString(0));
             }
             return tareas;
+        }
+
+        // Cifra los emails que quedaron en texto plano (datos iniciales o filas viejas). Un email cifrado
+        // es Base64 y nunca tiene "@", así que se reconocen fácil. Devuelve cuántos se cifraron.
+        // Si una fila no se puede actualizar (por ejemplo, el mismo email ya existe cifrado en otro
+        // usuario y choca con el índice único), se deja como estaba y se sigue con las demás.
+        public static int CifrarEmailsPlanos(string instancia)
+        {
+            int cifrados = 0;
+            using (var conn = new SqlConnection(ConexionBase(instancia)))
+            {
+                conn.Open();
+                foreach (string tabla in new[] { "Usuario", "Pasajero" })
+                {
+                    using (var existe = new SqlCommand("SELECT OBJECT_ID(@t, 'U')", conn))
+                    {
+                        existe.Parameters.AddWithValue("@t", "dbo." + tabla);
+                        if (existe.ExecuteScalar() == DBNull.Value) continue;
+                    }
+
+                    var planos = new List<KeyValuePair<string, string>>();
+                    using (var cmd = new SqlCommand("SELECT DNI, Email FROM dbo." + tabla + " WHERE Email LIKE '%@%'", conn))
+                    using (var rd = cmd.ExecuteReader())
+                        while (rd.Read())
+                            planos.Add(new KeyValuePair<string, string>(rd.GetString(0), rd.GetString(1)));
+
+                    foreach (var fila in planos)
+                    {
+                        try
+                        {
+                            using (var upd = new SqlCommand("UPDATE dbo." + tabla + " SET Email = @e WHERE DNI = @d", conn))
+                            {
+                                upd.Parameters.AddWithValue("@e", Servicios.EncriptadorReversible_GV42.Instancia.Encriptar(fila.Value.Trim()));
+                                upd.Parameters.AddWithValue("@d", fila.Key);
+                                cifrados += upd.ExecuteNonQuery();
+                            }
+                        }
+                        catch (SqlException) { }
+                    }
+                }
+            }
+            return cifrados;
         }
 
         public static void QuitarTarea(string instancia, string nombre)

@@ -161,7 +161,7 @@ namespace Servicios
             int seis = d.Length >= 6 ? int.Parse(d.Substring(0, 6)) : 0;
 
             if (dos == 34 || dos == 37) return "American Express";
-            if (seis >= 589562 && seis <= 589562) return "Naranja";
+            if (seis == 589562) return "Naranja";
             if (seis >= 604201 && seis <= 604219) return "Cabal";
             if (d[0] == '4') return "Visa";
             if ((dos >= 51 && dos <= 55) || (cuatro >= 2221 && cuatro <= 2720)) return "Mastercard";

@@ -134,7 +134,10 @@ namespace BLL
 
         // Valida los datos de una persona (cliente o pasajero) y les quita los espacios sobrantes.
         // 'rol' ya llega traducido (por ejemplo T("neg.rol.pasajeroN", 1) = "Pasajero 1").
-        public static void ValidarPersona(Persona_GV42 p, string rol)
+        // 'contactoObligatorio': el email y el teléfono se exigen al cliente (titular de la reserva, el que
+        // recibe los avisos). Para los demás pasajeros (por ejemplo, un bebé o un chico) son opcionales,
+        // pero si se cargan tienen que tener un formato válido.
+        public static void ValidarPersona(Persona_GV42 p, string rol, bool contactoObligatorio = true)
         {
             if (p == null)
                 throw new NegocioException_GV42(IdiomaManager_GV42.T("neg.persona.faltanDatos", rol));
@@ -151,9 +154,9 @@ namespace BLL
                 throw new NegocioException_GV42(rol + ": " + Validaciones_GV42.MENSAJE_NOMBRE);
             if (!Validaciones_GV42.EsApellidoValido(p.Apellido))
                 throw new NegocioException_GV42(rol + ": " + Validaciones_GV42.MENSAJE_APELLIDO);
-            if (!Validaciones_GV42.EsEmailValido(p.Email))
+            if ((contactoObligatorio || p.Email.Length > 0) && !Validaciones_GV42.EsEmailValido(p.Email))
                 throw new NegocioException_GV42(rol + ": " + Validaciones_GV42.MENSAJE_EMAIL);
-            if (!Validaciones_GV42.EsTelefonoValido(p.Telefono))
+            if ((contactoObligatorio || p.Telefono.Length > 0) && !Validaciones_GV42.EsTelefonoValido(p.Telefono))
                 throw new NegocioException_GV42(rol + ": " + Validaciones_GV42.MENSAJE_TELEFONO);
         }
 

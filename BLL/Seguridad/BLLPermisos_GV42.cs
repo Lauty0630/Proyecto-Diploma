@@ -54,8 +54,11 @@ namespace BLL
         // ¿Queda al menos un usuario activo, no bloqueado y con patentes de administrador?
         // Permite simular el cambio antes de hacerlo: excluir un usuario, cambiarle el rol a uno,
         // o reemplazar las patentes efectivas de un rol.
+        // 'simularRol': para cambios que afectan a varios roles a la vez (modificar una familia), devuelve
+        // las patentes efectivas que tendría cada rol después del cambio.
         public bool QuedaAlgunAdministrador(string dniExcluido = null, string dniConNuevoRol = null, int nuevoRolId = 0,
-                                            int rolSimuladoId = 0, HashSet<string> clavesRolSimulado = null)
+                                            int rolSimuladoId = 0, HashSet<string> clavesRolSimulado = null,
+                                            Func<int, HashSet<string>> simularRol = null)
         {
             var cache = new Dictionary<int, bool>();
             foreach (Usuario_GV42 u in new DALUsuario_GV42().ListarTodos())
@@ -69,6 +72,8 @@ namespace BLL
                 {
                     if (clavesRolSimulado != null && idRol == rolSimuladoId)
                         esAdmin = EsAdministrador(clavesRolSimulado.Contains);
+                    else if (simularRol != null)
+                        esAdmin = EsAdministrador(simularRol(idRol).Contains);
                     else
                     {
                         Rol_GV42 arbol = _dalRol.ObtenerArbol(idRol);
@@ -79,6 +84,35 @@ namespace BLL
                 if (esAdmin) return true;
             }
             return false;
+        }
+
+        // Patentes efectivas que tendría un rol si la familia 'idFamilia' pasara a tener 'clavesFamilia'.
+        private HashSet<string> ClavesRolConFamiliaSimulada(int idRol, int idFamilia, HashSet<string> clavesFamilia)
+        {
+            var claves = new HashSet<string>();
+            Rol_GV42 arbol = _dalRol.ObtenerArbol(idRol);
+            if (arbol != null)
+                foreach (var hijo in arbol.Hijos)
+                    AgregarClavesSimuladas(hijo, idFamilia, clavesFamilia, claves);
+            return claves;
+        }
+
+        private static void AgregarClavesSimuladas(IComponentePermiso_GV42 componente, int idFamilia,
+                                                   HashSet<string> clavesFamilia, HashSet<string> destino)
+        {
+            if (componente is Familia_GV42 f)
+            {
+                if (f.Id == idFamilia)
+                    destino.UnionWith(clavesFamilia);
+                else
+                    foreach (var hijo in f.Hijos)
+                        AgregarClavesSimuladas(hijo, idFamilia, clavesFamilia, destino);
+            }
+            else
+            {
+                foreach (var p in componente.ObtenerPatentes())
+                    destino.Add(p.DataKey ?? "");
+            }
         }
 
         private HashSet<string> ClavesDePatentes(IEnumerable<int> idsPatentes)
@@ -135,7 +169,7 @@ namespace BLL
             Auditar("Familia creada",
                     $"Nombre: '{nombre}', Patentes: {idsPatentes.Count}, Subfamilias: {idsSubfamilias.Count}",
                     "Media");
-            RecalcularFamilias();
+            RecalcularFamilia(idCreada);
             return idCreada;
         }
 
@@ -179,23 +213,19 @@ namespace BLL
                 throw new Exception(string.Format(IdiomaManager_GV42.T("err.familiaOtraComposicionDuplicada"), equivalente.Nombre));
 
 
-            // Composición anterior, para volver atrás si el cambio deja al sistema sin administradores
-            // (la familia puede estar dentro del rol Admin, directa o indirectamente).
-            Familia_GV42 anterior = _dalFamilia.ObtenerArbol(idFamilia);
+            // ¿El cambio deja al sistema sin administradores? (la familia puede estar dentro del rol Admin,
+            // directa o indirectamente). Se simula ANTES de guardar: antes se guardaba, se controlaba y,
+            // si no quedaba ningún administrador, se volvía atrás con otra escritura; si esa segunda
+            // escritura fallaba, el sistema quedaba sin administradores.
+            HashSet<string> clavesNuevas = ClavesDePatentes(patentesEfectivasNueva);
+            if (!QuedaAlgunAdministrador(simularRol: idRol => ClavesRolConFamiliaSimulada(idRol, idFamilia, clavesNuevas)))
+                throw new Exception(IdiomaManager_GV42.T("neg.permisos.sinAdminFamilia", PATENTE_ADMIN_ROLES, PATENTE_ADMIN_USUARIOS));
 
             _dalFamilia.Modificar(idFamilia, nombre, idsPatentes, idsSubfamilias);
-
-            if (anterior != null && !QuedaAlgunAdministrador())
-            {
-                _dalFamilia.Modificar(idFamilia, anterior.Nombre,
-                    anterior.Hijos.OfType<Patente_GV42>().Select(h => h.Id).ToList(),
-                    anterior.Hijos.OfType<Familia_GV42>().Select(h => h.Id).ToList());
-                throw new Exception(IdiomaManager_GV42.T("neg.permisos.sinAdminFamilia", PATENTE_ADMIN_ROLES, PATENTE_ADMIN_USUARIOS));
-            }
             Auditar("Familia modificada",
                     $"IdFamilia: {idFamilia}, Nombre: '{nombre}', Patentes: {idsPatentes.Count}, Subfamilias: {idsSubfamilias.Count}",
                     "Media");
-            RecalcularFamilias();
+            RecalcularFamilia(idFamilia);
         }
 
         public void EliminarFamilia(int idFamilia)
@@ -219,7 +249,7 @@ namespace BLL
 
             _dalFamilia.Eliminar(idFamilia);
             Auditar("Familia eliminada", $"IdFamilia: {idFamilia}", "Alta");
-            RecalcularFamilias();
+            RecalcularFamilia(idFamilia);
         }
 
         private void ValidarRedundanciaPatentesYSubfamilias(List<int> idsPatentes, List<int> idsSubfamilias)
@@ -407,7 +437,7 @@ namespace BLL
             Auditar("Rol creado",
                     $"Nombre: '{nombre}', Patentes: {idsPatentes.Count}, Familias: {idsFamilias.Count}",
                     "Media");
-            RecalcularRoles();
+            RecalcularRol(idCreado);
             return idCreado;
         }
 
@@ -448,7 +478,7 @@ namespace BLL
             Auditar("Rol modificado",
                     $"IdRol: {idRol}, Nombre: '{nombre}', Patentes: {idsPatentes.Count}, Familias: {idsFamilias.Count}",
                     "Media");
-            RecalcularRoles();
+            RecalcularRol(idRol);
         }
 
         public void EliminarRol(int idRol)
@@ -468,7 +498,7 @@ namespace BLL
 
             _dalRol.Eliminar(idRol);
             Auditar("Rol eliminado", $"IdRol: {idRol}", "Alta");
-            RecalcularRoles();
+            RecalcularRol(idRol);
         }
 
         private void ValidarRedundanciaPatentesYFamilias(List<int> idsPatentes, List<int> idsFamilias)
@@ -546,28 +576,26 @@ namespace BLL
 
         #region Métodos privados
 
-        private void RecalcularFamilias()
+        // Actualiza los dígitos verificadores SOLO de la familia indicada y de sus relaciones (antes se
+        // recalculaban las tablas enteras y eso "aprobaba" cualquier cambio hecho directamente en la base).
+        private void RecalcularFamilia(int idFamilia)
         {
-            if (BLLIntegridad_GV42.IntegridadConocidamenteRota) return;
-            try
-            {
-                _bllIntegridad.RecalcularTabla("Familia");
-                _bllIntegridad.RecalcularTabla("FamiliaPatente");
-                _bllIntegridad.RecalcularTabla("FamiliaIntegrada");
-            }
-            catch { }
+            string id = idFamilia.ToString();
+            string prefijo = id + "_";
+            string sufijo = "_" + id;
+            _bllIntegridad.ActualizarRegistro("Familia", id);
+            _bllIntegridad.ActualizarRegistros("FamiliaPatente", k => k.StartsWith(prefijo, StringComparison.Ordinal));
+            _bllIntegridad.ActualizarRegistros("FamiliaIntegrada",
+                k => k.StartsWith(prefijo, StringComparison.Ordinal) || k.EndsWith(sufijo, StringComparison.Ordinal));
         }
 
-        private void RecalcularRoles()
+        private void RecalcularRol(int idRol)
         {
-            if (BLLIntegridad_GV42.IntegridadConocidamenteRota) return;
-            try
-            {
-                _bllIntegridad.RecalcularTabla("Roles");
-                _bllIntegridad.RecalcularTabla("RolPatente");
-                _bllIntegridad.RecalcularTabla("RolFamilia");
-            }
-            catch { }
+            string id = idRol.ToString();
+            string prefijo = id + "_";
+            _bllIntegridad.ActualizarRegistro("Roles", id);
+            _bllIntegridad.ActualizarRegistros("RolPatente", k => k.StartsWith(prefijo, StringComparison.Ordinal));
+            _bllIntegridad.ActualizarRegistros("RolFamilia", k => k.StartsWith(prefijo, StringComparison.Ordinal));
         }
 
         private void Auditar(string tipoEvento, string detalle, string criticidad)

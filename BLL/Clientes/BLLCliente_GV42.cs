@@ -48,6 +48,15 @@ namespace BLL
             if (_dal.ExisteDni(cliente.DNI))
                 throw new NegocioException_GV42(IdiomaManager_GV42.T("neg.cliente.dniDuplicado", cliente.DNI));
 
+            // Un DNI es una sola persona en todo el sistema: si ya tiene cuenta de usuario, el cliente tiene
+            // que tener el mismo nombre y apellido (la misma regla que al registrar un pasajero en una
+            // reserva; antes desde el maestro de clientes se podía cargar ese DNI con otro nombre).
+            Pasajero_GV42 cuenta = new DALPasajero_GV42().BuscarDatosEnUsuario(cliente.DNI);
+            if (cuenta != null &&
+                (!Validaciones_GV42.MismoTexto(cliente.Nombre, cuenta.Nombre) || !Validaciones_GV42.MismoTexto(cliente.Apellido, cuenta.Apellido)))
+                throw new NegocioException_GV42(IdiomaManager_GV42.T("neg.reserva.dniOtroNombre",
+                    IdiomaManager_GV42.T("neg.rol.cliente"), cliente.DNI, cuenta.Nombre, cuenta.Apellido));
+
             _dal.Insertar(cliente);
             BLLNegocioUtil_GV42.Auditar(BLLNegocioUtil_GV42.MODULO_RESERVAS, "Cliente registrado",
                 "DNI " + cliente.DNI + " - " + cliente.NombreCompleto, "Baja");

@@ -64,6 +64,15 @@ namespace PROYECTO_ING_DE_SOFTWARE
 
         #region Navegación
 
+        private void VolverAlLogin()
+        {
+            try { BLLUsuario_GV42.CerrarSesión(); } catch { }
+            // Embebido en el menú principal se cierra el menú; en el primer ingreso, este formulario.
+            Form raiz = this.TopLevel ? this : (this.TopLevelControl as Form);
+            new FRMIniciarSesion().Show();
+            (raiz ?? this).Close();
+        }
+
         private void AbrirMenuPrincipalSegunRol()
         {
             Form menu = new FRMMenuPrincipalAdmin();
@@ -146,6 +155,14 @@ namespace PROYECTO_ING_DE_SOFTWARE
                                     IdiomaManager_GV42.T("general.advertencia"),
                                     MessageBoxButtons.OK, MessageBoxIcon.Warning);
                     txtNuevaconstrasenia.Focus();
+                    break;
+                case ResultadoCambioContrasena.BloqueadoPorIntentos:
+                    // Tres intentos con la contraseña actual equivocada: el usuario queda bloqueado
+                    // (igual que en el login) y se vuelve a la pantalla de inicio de sesión.
+                    MessageBox.Show(IdiomaManager_GV42.T("login.bloqueado"),
+                                    IdiomaManager_GV42.T("general.accesoDenegado"),
+                                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    VolverAlLogin();
                     break;
                 case ResultadoCambioContrasena.UsuarioInexistente:
                     MessageBox.Show(IdiomaManager_GV42.T("cambiarClave.usuarioInexistente"),

@@ -91,48 +91,71 @@ namespace DAL
             return (res == null || res == DBNull.Value) ? null : res.ToString();
         }
 
+        // Recalcula TODOS los dígitos de una tabla. Solo para el administrador (acepta los cambios
+        // externos como válidos) y para las tareas del instalador (fórmula nueva o datos iniciales).
+        // Las operaciones normales usan ActualizarDVHRegistros, que no toca las demás filas.
         public void RecalcularTabla(string nombreTabla)
         {
             Dictionary<string, string> dvhs = CalcularDVHsTabla(nombreTabla);
-            GuardarDVHs(nombreTabla, dvhs);
-            string dvv = CalculadorIntegridad_GV42.CalcularDVV(dvhs.Values);
-            GuardarDVV(nombreTabla, dvv);
+            _acceso.EjecutarEnTransaccion(tx =>
+            {
+                BloquearTabla(tx, nombreTabla);
+                _acceso.escribir(tx, "DELETE FROM IntegridadDVH WHERE NombreTabla = @T",
+                    new[] { new SqlParameter("@T", nombreTabla) });
+                foreach (var kv in dvhs)
+                    InsertarDVH(tx, nombreTabla, kv.Key, kv.Value);
+                GuardarDVV(tx, nombreTabla, CalculadorIntegridad_GV42.CalcularDVV(dvhs.Values));
+                return true;
+            });
         }
 
-        public void GuardarDVHs(string nombreTabla, Dictionary<string, string> dvhs)
+        // Actualiza el DVH solo de los registros que modificó (o insertó o borró) la operación, y el DVV
+        // a partir de los DVH GUARDADOS. Las demás filas conservan el DVH que tenían.
+        //
+        // Antes, cada operación recalculaba la tabla entera: si alguien cambiaba una fila directamente
+        // en la base (por ejemplo, el hash o el rol de un usuario) y después cualquiera se equivocaba
+        // de contraseña, la adulteración quedaba "aprobada" y la verificación ya no la detectaba.
+        public void ActualizarDVHRegistros(string nombreTabla, Func<string, bool> esAfectado)
         {
-            _acceso.escribir(
-                "DELETE FROM IntegridadDVH WHERE NombreTabla = @T",
-                new[] { new SqlParameter("@T", nombreTabla) });
-            foreach (var kv in dvhs)
+            // Si la última verificación encontró adulteraciones, no se toca nada: si la operación
+            // modificó justo la fila adulterada (por ejemplo, un login fallido sobre un usuario cuyo
+            // hash se cambió en la base), recalcular su DVH borraría la evidencia. Queda para que el
+            // administrador revise y decida (recalcular o restaurar un backup).
+            if (IntegridadConocidamenteRota) return;
+
+            Dictionary<string, string> actuales = CalcularDVHsTabla(nombreTabla);
+
+            _acceso.EjecutarEnTransaccion(tx =>
             {
-                _acceso.escribir(
-                    "INSERT INTO IntegridadDVH (NombreTabla, IdRegistro, DVH) VALUES (@T, @I, @D)",
-                    new[] {
-                        new SqlParameter("@T", nombreTabla),
-                        new SqlParameter("@I", kv.Key),
-                        new SqlParameter("@D", kv.Value)
-                    });
-            }
+                // Dos operaciones simultáneas sobre la misma tabla se hacen de a una (si no, una
+                // podría guardar un DVV calculado sin el cambio de la otra).
+                BloquearTabla(tx, nombreTabla);
+
+                Dictionary<string, string> guardados = LeerDVHs(tx, nombreTabla);
+                var claves = new HashSet<string>(actuales.Keys.Where(esAfectado));
+                claves.UnionWith(guardados.Keys.Where(esAfectado));
+
+                foreach (string clave in claves)
+                {
+                    _acceso.escribir(tx, "DELETE FROM IntegridadDVH WHERE NombreTabla = @T AND IdRegistro = @I",
+                        new[] { new SqlParameter("@T", nombreTabla), new SqlParameter("@I", clave) });
+                    guardados.Remove(clave);
+
+                    if (actuales.TryGetValue(clave, out string dvh))
+                    {
+                        InsertarDVH(tx, nombreTabla, clave, dvh);
+                        guardados[clave] = dvh;
+                    }
+                }
+
+                GuardarDVV(tx, nombreTabla, CalculadorIntegridad_GV42.CalcularDVV(guardados.Values));
+                return true;
+            });
         }
 
-        public void GuardarDVV(string nombreTabla, string dvv)
+        public void ActualizarDVHRegistro(string nombreTabla, string idRegistro)
         {
-            string existeQ = "SELECT COUNT(1) FROM IntegridadDVV WHERE NombreTabla = @T";
-            object res = _acceso.leerEscalar(existeQ, new[] { new SqlParameter("@T", nombreTabla) });
-            int existe = Convert.ToInt32(res);
-            if (existe > 0)
-            {
-                _acceso.escribir(
-                    "UPDATE IntegridadDVV SET DVV = @D, FechaCalculo = GETDATE() WHERE NombreTabla = @T",
-                    new[] { new SqlParameter("@D", dvv), new SqlParameter("@T", nombreTabla) });
-            }
-            else
-            {
-                _acceso.escribir(
-                    "INSERT INTO IntegridadDVV (NombreTabla, DVV) VALUES (@T, @D)",
-                    new[] { new SqlParameter("@T", nombreTabla), new SqlParameter("@D", dvv) });
-            }
+            ActualizarDVHRegistros(nombreTabla, id => id == idRegistro);
         }
 
         public bool ExisteAlgunDVV()
@@ -179,6 +202,44 @@ namespace DAL
         #endregion
 
         #region Métodos privados
+
+        private void BloquearTabla(SqlTransaction tx, string nombreTabla)
+        {
+            _acceso.leer(tx, "SELECT NombreTabla FROM IntegridadDVV WITH (UPDLOCK, HOLDLOCK) WHERE NombreTabla = @T",
+                new[] { new SqlParameter("@T", nombreTabla) });
+        }
+
+        private Dictionary<string, string> LeerDVHs(SqlTransaction tx, string nombreTabla)
+        {
+            DataTable dt = _acceso.leer(tx, "SELECT IdRegistro, DVH FROM IntegridadDVH WHERE NombreTabla = @T",
+                new[] { new SqlParameter("@T", nombreTabla) });
+            var dict = new Dictionary<string, string>();
+            foreach (DataRow r in dt.Rows)
+                dict[r["IdRegistro"].ToString()] = r["DVH"].ToString();
+            return dict;
+        }
+
+        private void InsertarDVH(SqlTransaction tx, string nombreTabla, string idRegistro, string dvh)
+        {
+            _acceso.escribir(tx,
+                "INSERT INTO IntegridadDVH (NombreTabla, IdRegistro, DVH) VALUES (@T, @I, @D)",
+                new[] {
+                    new SqlParameter("@T", nombreTabla),
+                    new SqlParameter("@I", idRegistro),
+                    new SqlParameter("@D", dvh)
+                });
+        }
+
+        private void GuardarDVV(SqlTransaction tx, string nombreTabla, string dvv)
+        {
+            int filas = _acceso.escribir(tx,
+                "UPDATE IntegridadDVV SET DVV = @D, FechaCalculo = GETDATE() WHERE NombreTabla = @T",
+                new[] { new SqlParameter("@D", dvv), new SqlParameter("@T", nombreTabla) });
+            if (filas == 0)
+                _acceso.escribir(tx,
+                    "INSERT INTO IntegridadDVV (NombreTabla, DVV) VALUES (@T, @D)",
+                    new[] { new SqlParameter("@T", nombreTabla), new SqlParameter("@D", dvv) });
+        }
 
         private Dictionary<string, string> DVHsModulo()
         {

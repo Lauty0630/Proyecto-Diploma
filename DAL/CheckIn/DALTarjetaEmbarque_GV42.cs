@@ -1,4 +1,5 @@
 ﻿using BE;
+using Servicios;
 using System;
 using System.Data;
 using System.Data.SqlClient;
@@ -39,7 +40,7 @@ namespace DAL
                 });
 
             if (filas == 0)
-                throw new NegocioException_GV42("No se puede generar la tarjeta de embarque: el check-in no tiene asiento asignado o ya fue realizado.");
+                throw new NegocioException_GV42(IdiomaManager_GV42.T("dal.tarjetaEmbarque.noSePuede"));
 
             return BuscarPorCheckIn(idCheckIn);
         }

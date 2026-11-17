@@ -55,7 +55,7 @@ namespace BLL
 
             Usuario_GV42 usuario = new DALUsuario_GV42().BuscarPorLogin(login);
             if (usuario == null || usuario.Bloqueo || !usuario.Activo ||
-                usuario.Contrasena != Encriptador_GV42.Instancia.EncriptarContrasena(contrasena))
+                !Encriptador_GV42.Instancia.VerificarContrasena(contrasena, usuario.Contrasena))
                 throw new NegocioException_GV42(IdiomaManager_GV42.T("neg.reinstalador.credencialesInvalidas"));
 
             Rol_GV42 rol = usuario.Rol != null ? new BLLPermisos_GV42().ObtenerArbolRol(usuario.Rol.Id) : null;

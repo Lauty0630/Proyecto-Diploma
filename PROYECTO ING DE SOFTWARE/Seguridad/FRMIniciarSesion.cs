@@ -232,13 +232,12 @@ namespace PROYECTO_ING_DE_SOFTWARE
                                     IdiomaManager_GV42.T("general.accesoDenegado"),
                                     MessageBoxButtons.OK, MessageBoxIcon.Warning);
                     break;
+                // Mismo mensaje para "usuario inexistente" y "contraseña incorrecta": si fueran distintos,
+                // cualquiera podría averiguar qué nombres de usuario existen probando. La bitácora sí
+                // registra el motivo real de cada intento.
                 case ResultadoLogin.ContrasenaIncorrecta:
-                    MessageBox.Show(IdiomaManager_GV42.T("login.contrasenaIncorrecta"),
-                                    IdiomaManager_GV42.T("general.error"),
-                                    MessageBoxButtons.OK, MessageBoxIcon.Error);
-                    break;
                 case ResultadoLogin.UsuarioInexistente:
-                    MessageBox.Show(IdiomaManager_GV42.T("login.usuarioInexistente"),
+                    MessageBox.Show(IdiomaManager_GV42.T("login.credencialesInvalidas"),
                                     IdiomaManager_GV42.T("general.error"),
                                     MessageBoxButtons.OK, MessageBoxIcon.Error);
                     break;

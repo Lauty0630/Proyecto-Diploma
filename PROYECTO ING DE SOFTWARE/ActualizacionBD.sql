@@ -1045,7 +1045,9 @@ BEGIN
 
     COMMIT TRANSACTION;
 
-    SELECT @Cantidad AS Cantidad;
+    -- Se devuelven los Id (no solo la cantidad): el sistema actualiza el dígito verificador solo de
+    -- esas reservas, sin recalcular la tabla entera.
+    SELECT Id FROM @Vencidas;
 END
 GO
 
@@ -1466,6 +1468,38 @@ END
 GO
 
 /* =====================================================================================
+   VERSIÓN 15 – Seguridad de las cuentas
+     1) Los usuarios cuya contraseña es igual a su nombre de usuario (los datos iniciales y las
+        cuentas creadas por el administrador que nunca la cambiaron) quedan obligados a cambiarla
+        en el próximo ingreso. Las contraseñas se pasan solas al formato nuevo (PBKDF2 con sal)
+        la próxima vez que cada usuario inicia sesión.
+     2) El sistema cifra los emails que quedaron en texto plano (tarea "CifrarEmailsPlanos") y
+        después recalcula el dígito verificador de Usuario.
+     3) Índice único sobre Usuario.Email (antes solo lo controlaba la aplicación).
+   ===================================================================================== */
+IF NOT EXISTS (SELECT 1 FROM dbo.VersionBD_GV42 WHERE Version = 15)
+BEGIN
+    UPDATE dbo.Usuario
+       SET DebeCambiarContrasena = 1
+     WHERE LOWER(Contrasena) = LOWER(CONVERT(VARCHAR(64), HASHBYTES('SHA2_256', CONVERT(VARCHAR(250), UserName)), 2));
+
+    INSERT INTO dbo.TareaPendiente_GV42 (Nombre)
+    SELECT X.T FROM (VALUES (N'CifrarEmailsPlanos'), (N'RecalcularDV:Usuario')) AS X(T)
+    WHERE NOT EXISTS (SELECT 1 FROM dbo.TareaPendiente_GV42 P WHERE P.Nombre = X.T);
+
+    INSERT INTO dbo.VersionBD_GV42 (Version, Descripcion)
+    VALUES (15, N'Seguridad: cambio de contraseña obligatorio, emails cifrados y email único');
+END
+GO
+
+-- Si ya hubiera dos usuarios con el mismo email, el índice no se crea (habría que corregirlos antes);
+-- el control de la aplicación sigue funcionando igual.
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'UX_Usuario_Email' AND object_id = OBJECT_ID(N'dbo.Usuario'))
+   AND NOT EXISTS (SELECT Email FROM dbo.Usuario GROUP BY Email HAVING COUNT(1) > 1)
+    CREATE UNIQUE NONCLUSTERED INDEX UX_Usuario_Email ON dbo.Usuario (Email);
+GO
+
+/* =====================================================================================
    3ra ENTREGA (TODAVÍA NO SE APLICA) – Reporte de millas
    Este bloque está comentado a propósito: mientras siga así, la base no cambia y en Gestión de
    permisos no aparece nada nuevo. El reporte de millas, la ayuda y el reinstalador funcionan sin
@@ -1473,7 +1507,7 @@ GO
 
    Para la 3ra entrega, si se quiere que el reporte de millas tenga patentes y eventos propios:
      1) quitar los "--" del principio de cada línea de este bloque;
-     2) subir VERSION_ACTUAL a 15 en DAL/Instalacion/InstaladorBD_GV42.cs;
+     2) subir VERSION_ACTUAL a 16 en DAL/Instalacion/InstaladorBD_GV42.cs;
      3) en BLL/Reportes/BLLReporteMillas_GV42.cs cambiar PATENTE_VER por "Reportes.Millas" y
         PATENTE_EXPORTAR por "Reportes.MillasExportarPDF".
    ===================================================================================== */
@@ -1499,13 +1533,13 @@ GO
 -- WHERE NOT EXISTS (SELECT 1 FROM dbo.TipoEvento X WHERE X.Nombre = E.Nombre);
 -- GO
 --
--- IF NOT EXISTS (SELECT 1 FROM dbo.VersionBD_GV42 WHERE Version = 15)
+-- IF NOT EXISTS (SELECT 1 FROM dbo.VersionBD_GV42 WHERE Version = 16)
 -- BEGIN
 --     INSERT INTO dbo.TareaPendiente_GV42 (Nombre)
 --     SELECT X.T FROM (VALUES (N'RecalcularDV:Patente'), (N'RecalcularDV:RolPatente'), (N'RecalcularDV:TipoEvento')) AS X(T)
 --     WHERE NOT EXISTS (SELECT 1 FROM dbo.TareaPendiente_GV42 P WHERE P.Nombre = X.T);
 --
 --     INSERT INTO dbo.VersionBD_GV42 (Version, Descripcion)
---     VALUES (15, N'Reporte de millas: patentes y eventos de bitácora');
+--     VALUES (16, N'Reporte de millas: patentes y eventos de bitácora');
 -- END
 -- GO

@@ -1,4 +1,5 @@
 ﻿using BE;
+using Servicios;
 using System;
 using System.Collections.Generic;
 using System.Data;
@@ -111,7 +112,7 @@ namespace DAL
                     "SELECT IdVuelo, CodigoVuelo, BorradoLogico, Act FROM Vuelo_C WHERE Id = @Id",
                     new[] { new SqlParameter("@Id", idCambio) });
                 if (dt.Rows.Count == 0)
-                    throw new NegocioException_GV42("El registro seleccionado no existe.");
+                    throw new NegocioException_GV42(IdiomaManager_GV42.T("dal.vueloHistorial.noExiste"));
 
                 DataRow fila = dt.Rows[0];
                 int idVuelo = DALUtil_GV42.Int(fila, "IdVuelo");
@@ -119,13 +120,13 @@ namespace DAL
                 bool baja = Convert.ToBoolean(fila["BorradoLogico"]);
 
                 if (Convert.ToBoolean(fila["Act"]))
-                    throw new NegocioException_GV42("Ese registro ya es el activo del vuelo " + codigo + ".");
+                    throw new NegocioException_GV42(IdiomaManager_GV42.T("dal.vueloHistorial.yaActivo", codigo));
 
                 object otro = _acceso.leerEscalar(tx,
                     "SELECT COUNT(1) FROM Vuelo WHERE CodigoVuelo = @Cod AND Id <> @IdVuelo",
                     new[] { new SqlParameter("@Cod", codigo), new SqlParameter("@IdVuelo", idVuelo) });
                 if (otro != null && Convert.ToInt32(otro) > 0)
-                    throw new NegocioException_GV42("No se puede activar: otro vuelo ya usa el código " + codigo + ".");
+                    throw new NegocioException_GV42(IdiomaManager_GV42.T("dal.vueloHistorial.codigoEnUso", codigo));
 
                 if (baja)
                 {
@@ -133,7 +134,7 @@ namespace DAL
                         "SELECT COUNT(1) FROM Reserva WHERE (IdVuelo = @IdVuelo OR IdVueloVuelta = @IdVuelo) AND IdEstadoReserva <> @Cancelada",
                         new[] { new SqlParameter("@IdVuelo", idVuelo), new SqlParameter("@Cancelada", (int)EstadoReserva_GV42.Cancelada) });
                     if (vigentes != null && Convert.ToInt32(vigentes) > 0)
-                        throw new NegocioException_GV42("Esa versión da de baja el vuelo " + codigo + ", pero tiene reservas vigentes.");
+                        throw new NegocioException_GV42(IdiomaManager_GV42.T("dal.vueloHistorial.bajaConReservas", codigo));
                 }
 
                 // Una sola sentencia: el registro elegido pasa a Act = 1 y el que estaba activo a 0

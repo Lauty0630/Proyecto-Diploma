@@ -1,4 +1,5 @@
 ﻿using BE;
+using Servicios;
 using System;
 using System.Collections.Generic;
 using System.Data;
@@ -66,8 +67,7 @@ namespace DAL
                         });
 
                     if (filas == 0)
-                        throw new NegocioException_GV42("No se pudo reservar: no hay asientos suficientes en esa clase, " +
-                                                        "o el vuelo ya salió o fue dado de baja.");
+                        throw new NegocioException_GV42(IdiomaManager_GV42.T("dal.reserva.sinCupoIda"));
 
                     // 1.b) Ida y vuelta: se reserva también el cupo del vuelo de regreso.
                     if (r.TieneVuelta)
@@ -83,8 +83,7 @@ namespace DAL
                             new SqlParameter("@IdClase", (int)r.VueloClaseVuelta.Clase)
                             });
                         if (filas == 0)
-                            throw new NegocioException_GV42("No se pudo reservar: el vuelo de regreso no tiene asientos suficientes " +
-                                                            "en esa clase, ya salió o fue dado de baja.");
+                            throw new NegocioException_GV42(IdiomaManager_GV42.T("dal.reserva.sinCupoVuelta"));
                     }
 
                     // 2) Cabecera de la reserva.
@@ -193,11 +192,11 @@ namespace DAL
             catch (SqlException ex)
             {
                 if ((ex.Number == 2601 || ex.Number == 2627) && ex.Message.Contains("UX_ReservaPasajero_Asiento"))
-                    throw new NegocioException_GV42("Uno de los asientos elegidos ya fue tomado por otro pasajero. Volvé a elegir el asiento.", ex);
+                    throw new NegocioException_GV42(IdiomaManager_GV42.T("dal.reserva.asientoTomado"), ex);
                 if (ex.Number == 2601 || ex.Number == 2627)
-                    throw new NegocioException_GV42("Otro usuario registró al mismo tiempo a uno de los pasajeros. Volvé a confirmar la reserva.", ex);
+                    throw new NegocioException_GV42(IdiomaManager_GV42.T("dal.reserva.pasajeroSimultaneo"), ex);
                 if (ex.Number == 547)
-                    throw new NegocioException_GV42("Los datos de la reserva no cumplen una regla de la base (cupo, importes o vuelo). Revisalos y volvé a intentar.", ex);
+                    throw new NegocioException_GV42(IdiomaManager_GV42.T("dal.reserva.reglaBase"), ex);
                 throw;
             }
         }
@@ -300,9 +299,9 @@ namespace DAL
                     "SELECT IdVuelo, IdClase, IdVueloVuelta, IdClaseVuelta, ISNULL(CantidadAsientos, CantidadPasajeros) AS CantidadPasajeros, IdEstadoReserva FROM Reserva WHERE Id = @Id",
                     new[] { new SqlParameter("@Id", idReserva) });
                 if (dtRes.Rows.Count == 0)
-                    throw new NegocioException_GV42("La reserva no existe.");
+                    throw new NegocioException_GV42(IdiomaManager_GV42.T("dal.reserva.noExiste"));
                 if (DALUtil_GV42.Int(dtRes.Rows[0], "IdEstadoReserva") == (int)EstadoReserva_GV42.Cancelada)
-                    throw new NegocioException_GV42("La reserva ya estaba cancelada.");
+                    throw new NegocioException_GV42(IdiomaManager_GV42.T("dal.reserva.yaCancelada"));
 
                 int idVuelo = DALUtil_GV42.Int(dtRes.Rows[0], "IdVuelo");
                 int idClase = DALUtil_GV42.Int(dtRes.Rows[0], "IdClase");
@@ -320,7 +319,7 @@ namespace DAL
                         new SqlParameter("@EstadoLeido", DALUtil_GV42.Int(dtRes.Rows[0], "IdEstadoReserva"))
                     });
                 if (filas == 0)
-                    throw new NegocioException_GV42("La reserva cambió de estado mientras se cancelaba. Volvé a consultarla.");
+                    throw new NegocioException_GV42(IdiomaManager_GV42.T("dal.reserva.cambioEstadoCancelar"));
 
                 // Libera los asientos que tenían los pasajeros de esta reserva (también los del check-in).
                 _acceso.escribir(tx,
@@ -375,10 +374,17 @@ namespace DAL
         // Cancela las reservas pendientes cuyo plazo de pago ya pasó (libera asientos y cupo) y
         // devuelve cuántas vencieron. Se llama dentro de cada operación que consulta disponibilidad o
         // reservas: así el vencimiento rige desde la hora exacta, sin depender de un proceso programado.
-        public int LiberarVencidas()
+        // Devuelve los Id de las reservas que vencieron (para actualizar solo sus dígitos verificadores).
+        public List<int> LiberarVencidas()
         {
-            object r = _acceso.leerEscalar("EXEC dbo.LiberarReservasVencidas_GV42", null);
-            return r == null || r == DBNull.Value ? 0 : Convert.ToInt32(r);
+            DataTable dt = _acceso.leer("EXEC dbo.LiberarReservasVencidas_GV42", null);
+            var ids = new List<int>();
+            // Una base todavía no actualizada tiene la versión anterior del procedimiento (devuelve
+            // solo la cantidad): en ese caso no hay Id para informar.
+            if (!dt.Columns.Contains("Id")) return ids;
+            foreach (DataRow r in dt.Rows)
+                ids.Add(Convert.ToInt32(r["Id"]));
+            return ids;
         }
 
         public Reembolso_GV42 BuscarReembolso(int idReserva)
@@ -446,7 +452,7 @@ namespace DAL
                             new SqlParameter("@IdClase", (int)nuevo.Clase)
                         });
                     if (filas == 0)
-                        throw new NegocioException_GV42("No se pudo cambiar: el vuelo nuevo no tiene asientos suficientes en esa clase, ya salió o fue dado de baja.");
+                        throw new NegocioException_GV42(IdiomaManager_GV42.T("dal.reserva.sinCupoCambio"));
 
                     // 2) La reserva pasa al vuelo nuevo. Condicional: tiene que seguir confirmada y en el vuelo que se leyó.
                     filas = _acceso.escribir(tx,
@@ -468,7 +474,7 @@ namespace DAL
                             new SqlParameter("@IdVueloAnterior", anterior.Vuelo.Id)
                         });
                     if (filas == 0)
-                        throw new NegocioException_GV42("La reserva cambió mientras se hacía el cambio de vuelo. Volvé a consultarla.");
+                        throw new NegocioException_GV42(IdiomaManager_GV42.T("dal.reserva.cambioEstadoCambiar"));
 
                     // 3) Se devuelve el cupo del vuelo anterior.
                     _acceso.escribir(tx,
@@ -527,7 +533,7 @@ namespace DAL
             catch (SqlException ex)
             {
                 if ((ex.Number == 2601 || ex.Number == 2627) && (ex.Message.Contains("UX_ReservaPasajero_Asiento") || ex.Message.Contains("UX_CheckIn_Asiento")))
-                    throw new NegocioException_GV42("Uno de los asientos elegidos ya fue tomado por otro pasajero. Volvé a elegir el asiento.", ex);
+                    throw new NegocioException_GV42(IdiomaManager_GV42.T("dal.reserva.asientoTomado"), ex);
                 throw;
             }
         }

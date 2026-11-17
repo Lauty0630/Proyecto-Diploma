@@ -340,7 +340,11 @@ namespace BLL
             if (yaEraPasajero)
             {
                 Pasajero_GV42 registrado = _dalPasajero.BuscarPorDni(cliente.DNI);
-                if (registrado != null && !string.IsNullOrWhiteSpace(registrado.Email) &&
+                // Sin email registrado no hay con qué comprobar que es la misma persona (antes se dejaba
+                // pasar: alcanzaba con saber DNI, nombre y apellido para quedarse con la cuenta de otro).
+                if (registrado != null && string.IsNullOrWhiteSpace(registrado.Email))
+                    throw new NegocioException_GV42(IdiomaManager_GV42.T("neg.reserva.dniSinEmailRegistro", cliente.DNI));
+                if (registrado != null &&
                     !string.Equals(registrado.Email.Trim(), (cliente.Email ?? "").Trim(), StringComparison.OrdinalIgnoreCase))
                     throw new NegocioException_GV42(IdiomaManager_GV42.T("neg.reserva.dniConReservasEmail", cliente.DNI));
             }
@@ -626,7 +630,7 @@ namespace BLL
             borrador.ImporteTotal = borrador.ImporteBase + borrador.SubtotalAdicionales + borrador.Impuestos;
 
             Reserva_GV42 creada = _dalReserva.Crear(borrador);
-            RecalcularIntegridad("Reserva");
+            RecalcularIntegridad("Reserva", creada.Id);
 
             string asientosTexto = string.Join(", ", creada.AsientosPorPasajero.Where(a => a.Asiento != null).Select(a => a.Asiento.NumeroAsiento));
             BLLNegocioUtil_GV42.Auditar(BLLNegocioUtil_GV42.MODULO_RESERVAS, "Reserva generada",
@@ -821,7 +825,7 @@ namespace BLL
                 throw new NegocioException_GV42(IdiomaManager_GV42.T("neg.reserva.maximoPasajeros", MAX_PASAJEROS_POR_RESERVA));
 
             for (int i = 0; i < pasajeros.Count; i++)
-                BLLNegocioUtil_GV42.ValidarPersona(pasajeros[i], IdiomaManager_GV42.T("neg.rol.pasajeroN", i + 1));
+                BLLNegocioUtil_GV42.ValidarPersona(pasajeros[i], IdiomaManager_GV42.T("neg.rol.pasajeroN", i + 1), contactoObligatorio: false);
 
             var repetido = pasajeros.GroupBy(p => p.DNI).FirstOrDefault(g => g.Count() > 1);
             if (repetido != null)
@@ -1062,8 +1066,8 @@ namespace BLL
             };
 
             Pago_GV42 registrado = _dalPago.RegistrarPagoYConfirmar(pago);
-            RecalcularIntegridad("Pago");
-            RecalcularIntegridad("Reserva");
+            RecalcularIntegridad("Pago", registrado.Id);
+            RecalcularIntegridad("Reserva", reserva.Id);
 
             BLLNegocioUtil_GV42.Auditar(BLLNegocioUtil_GV42.MODULO_RESERVAS, "Pago registrado",
                 reserva.NumeroReserva + " - " + medioPago.ToString() + " - " + BLLNegocioUtil_GV42.Dinero(registrado.ImporteTotalAbonado), "Media");
@@ -1137,7 +1141,7 @@ namespace BLL
             }
 
             Reserva_GV42 cancelada = _dalReserva.Cancelar(reserva.Id, monto, reembolso);
-            RecalcularIntegridad("Reserva");
+            RecalcularIntegridad("Reserva", reserva.Id);
 
             if (reembolso != null)
                 BLLNegocioUtil_GV42.Auditar(BLLNegocioUtil_GV42.MODULO_RESERVAS, "Reembolso generado",
@@ -1380,7 +1384,7 @@ namespace BLL
             }
 
             _dalReserva.CambiarVuelo(reserva, tramo, nuevo, nuevos, cotizacion, medioPago, numeroTransaccion, login);
-            RecalcularIntegridad("Reserva");
+            RecalcularIntegridad("Reserva", reserva.Id);
 
             BLLNegocioUtil_GV42.Auditar(BLLNegocioUtil_GV42.MODULO_RESERVAS, "Vuelo cambiado",
                 reserva.NumeroReserva + " - " + (tramo == Reserva_GV42.TRAMO_VUELTA ? "vuelta" : "ida") + ": " +
@@ -1399,12 +1403,14 @@ namespace BLL
         // (LocalDB no tiene SQL Server Agent) ni de que alguien tenga el sistema abierto.
         private void AplicarVencimientos()
         {
-            int vencidas;
-            try { vencidas = _dalReserva.LiberarVencidas(); }
+            List<int> idsVencidas;
+            try { idsVencidas = _dalReserva.LiberarVencidas(); }
             catch { return; }   // no impide la operación principal; el pago igual controla la fecha de vencimiento
+            int vencidas = idsVencidas.Count;
             if (vencidas <= 0) return;
 
-            RecalcularIntegridad("Reserva");
+            var afectadas = new HashSet<string>(idsVencidas.Select(i => i.ToString()));
+            _bllIntegridad.ActualizarRegistros("Reserva", afectadas.Contains);
             try
             {
                 BLLNegocioUtil_GV42.Auditar(BLLNegocioUtil_GV42.MODULO_RESERVAS, "Reservas vencidas",
@@ -1413,12 +1419,12 @@ namespace BLL
             catch { }
         }
 
-        // Recalcula el dígito verificador de una tabla de negocio protegida. Nunca interrumpe la
-        // operación si falla (igual criterio que BLLUsuario_GV42 con la tabla Usuario).
-        private void RecalcularIntegridad(string tabla)
+        // Actualiza el dígito verificador SOLO del registro que modificó la operación (antes se
+        // recalculaba la tabla entera y eso "aprobaba" cualquier importe cambiado directamente en la
+        // base). Nunca interrumpe la operación si falla.
+        private void RecalcularIntegridad(string tabla, int id)
         {
-            if (BLLIntegridad_GV42.IntegridadConocidamenteRota) return;
-            try { _bllIntegridad.RecalcularTabla(tabla); } catch { }
+            _bllIntegridad.ActualizarRegistro(tabla, id.ToString());
         }
 
         #endregion
