@@ -30,6 +30,18 @@ namespace PROYECTO_ING_DE_SOFTWARE
             txtUsuario.MaxLength = Validaciones_GV42.MAX_LOGIN;
             txtContrasena.MaxLength = Validaciones_GV42.MAX_CONTRASENA;
 
+            // "Restaurar un backup" solo se ofrece si el sistema ya generó alguno, y viene cargado con el último.
+            string ultimoBackup = BLLIntegridad_GV42.UltimoBackupDisponible();
+            if (ultimoBackup != null)
+            {
+                txtArchivo.Text = ultimoBackup;
+            }
+            else
+            {
+                rbRestaurar.Visible = txtArchivo.Visible = btnElegirArchivo.Visible = false;
+                rbReinstalar.Checked = true;
+            }
+
             IdiomaManager_GV42.Instancia.Suscribir(this);
             FormClosed += (s, e) => IdiomaManager_GV42.Instancia.Desuscribir(this);
             ActualizarIdioma();
@@ -112,6 +124,8 @@ namespace PROYECTO_ING_DE_SOFTWARE
                 ofd.Title = IdiomaManager_GV42.T("reinstalador.elegirArchivo");
                 ofd.Filter = IdiomaManager_GV42.T("reinstalador.filtroBak") + " (*.bak)|*.bak";
                 ofd.CheckFileExists = true;
+                if (System.IO.Directory.Exists(BLLIntegridad_GV42.CarpetaBackups))
+                    ofd.InitialDirectory = BLLIntegridad_GV42.CarpetaBackups;
                 if (ofd.ShowDialog(this) == DialogResult.OK) txtArchivo.Text = ofd.FileName;
             }
         }

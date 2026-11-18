@@ -205,6 +205,16 @@ namespace BLL
 
         public string ObtenerUltimoBackup()
         {
+            return UltimoBackupDisponible();
+        }
+
+        // Carpeta donde el sistema guarda los backups automáticos (cada 3 horas) y los manuales.
+        public static string CarpetaBackups => CARPETA_BACKUPS;
+
+        // El backup más reciente de la carpeta de backups, o null si no hay ninguno. No necesita
+        // conexión a la base: lo usan el instalador y la pantalla de reinstalación.
+        public static string UltimoBackupDisponible()
+        {
             if (!Directory.Exists(CARPETA_BACKUPS)) return null;
 
             var archivos = Directory.GetFiles(CARPETA_BACKUPS, "*.bak");

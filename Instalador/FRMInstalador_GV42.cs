@@ -42,6 +42,10 @@ namespace Instalador
 
         // Si la base existente es de una versión anterior: qué tablas o columnas le faltan (para explicarlo).
         private List<string> _faltantes = new List<string>();
+
+        // Backup más reciente de la carpeta de backups del sistema (null si no hay ninguno).
+        // "Restaurar un backup" solo se ofrece si existe alguno, y viene cargado con este.
+        private string _ultimoBackup;
         private string _carpetaInstalada; // dónde quedó instalado (para ejecutar el sistema al finalizar)
 
         #endregion
@@ -280,6 +284,9 @@ namespace Instalador
             const string SIN_DATOS = "Se instala sin datos: solo roles, permisos y el administrador. " +
                                      "\"Con datos de demostración\" agrega aerolíneas, aeropuertos y vuelos listos para reservar.";
 
+            _ultimoBackup = BLL.BLLIntegridad_GV42.UltimoBackupDisponible();
+            bool hayBackup = _ultimoBackup != null;
+
             var lista = new List<Opcion>();
             switch (_estado)
             {
@@ -293,13 +300,13 @@ namespace Instalador
                 case EstadoBase_GV42.SoloUsuarios:
                     lista.Add(Nueva(OpcionBase_GV42.AgregarNegocio, "Actualizar: agregar el negocio conservando los datos (recomendado)",
                         "Agrega " + DETALLE_NEGOCIO + ". No modifica los usuarios, roles ni la bitácora ya cargados."));
-                    AgregarReinstalaciones(lista);
+                    AgregarReinstalaciones(lista, _ultimoBackup);
                     break;
 
                 case EstadoBase_GV42.Completa:
                     lista.Add(Nueva(OpcionBase_GV42.Mantener, "Mantener la base actual (recomendado)",
                         "No se borra nada. Si la base es de una versión anterior, se actualiza conservando los datos."));
-                    AgregarReinstalaciones(lista);
+                    AgregarReinstalaciones(lista, _ultimoBackup);
                     break;
 
                 default: // Antigua: se creó con una versión anterior del sistema y no se puede actualizar.
@@ -308,7 +315,7 @@ namespace Instalador
                         "La base actual es de una versión anterior del sistema" +
                         (_faltantes.Count > 0 ? " (le falta: " + string.Join(", ", _faltantes) + ")" : "") +
                         ". Se borra y se crea la última versión con todo el negocio, sin datos (o con los de demostración)."));
-                    AgregarReinstalaciones(lista, false);
+                    AgregarReinstalaciones(lista, _ultimoBackup, false);
                     break;
             }
 
@@ -341,7 +348,7 @@ namespace Instalador
             // La autorización del administrador va debajo de las opciones (nunca encima).
             grpAdministrador.Top = Math.Max(300, y + 4);
 
-            txtBackup.Text = string.Empty;
+            txtBackup.Text = _ultimoBackup ?? string.Empty;
             chkDatosDemo.Checked = false;
             txtUsuario.Clear();
             txtContrasena.Clear();
@@ -355,15 +362,19 @@ namespace Instalador
         }
 
         // Reinstalar (con cualquiera de las dos bases) y restaurar un backup: las tres borran los datos actuales.
-        private static void AgregarReinstalaciones(List<Opcion> lista, bool incluirCompleta = true)
+        // "Restaurar un backup" solo aparece si el sistema ya generó alguno (automático o manual).
+        private static void AgregarReinstalaciones(List<Opcion> lista, string ultimoBackup, bool incluirCompleta = true)
         {
             lista.Add(Nueva(OpcionBase_GV42.ReinstalarSoloUsuarios, "Reinstalar solo con gestión de usuarios",
                 "Borra la base y la crea de nuevo, solo con la gestión de usuarios. Se pierden todos los datos cargados."));
             if (incluirCompleta)
                 lista.Add(Nueva(OpcionBase_GV42.ReinstalarCompleta, "Reinstalar la base completa",
                     "Borra la base y la crea de nuevo con todo el negocio, sin datos (o con los de demostración). Se pierde lo cargado."));
-            lista.Add(Nueva(OpcionBase_GV42.RestaurarBackup, "Restaurar un backup (.bak)",
-                "La base vuelve al estado del archivo que elijas. Se pierde lo cargado después de ese backup."));
+            if (ultimoBackup != null)
+                lista.Add(Nueva(OpcionBase_GV42.RestaurarBackup, "Restaurar un backup (.bak)",
+                    "La base vuelve al estado del backup elegido (ya está cargado el último: " +
+                    System.IO.File.GetCreationTime(ultimoBackup).ToString("dd/MM/yyyy HH:mm") +
+                    "). Se pierde lo cargado después de ese backup."));
         }
 
         private OpcionBase_GV42 OpcionElegida()
@@ -457,6 +468,8 @@ namespace Instalador
             {
                 dialogo.Title = "Backup a restaurar";
                 dialogo.Filter = "Backup de SQL Server (*.bak)|*.bak";
+                if (System.IO.Directory.Exists(BLL.BLLIntegridad_GV42.CarpetaBackups))
+                    dialogo.InitialDirectory = BLL.BLLIntegridad_GV42.CarpetaBackups;
                 if (dialogo.ShowDialog(this) == DialogResult.OK)
                     txtBackup.Text = dialogo.FileName;
             }
