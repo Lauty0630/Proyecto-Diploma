@@ -50,6 +50,7 @@
     <Compile Include="Seguridad\DALUsuario_GV42.cs" />
     <Compile Include="Integridad\DALIntegridad_GV42.cs" />
     <Compile Include="Instalacion\InstaladorBD_GV42.cs" />
+    <Compile Include="Vuelos\DALAerolinea_GV42.cs" />
     <Compile Include="Vuelos\DALAeropuerto_GV42.cs" />
     <Compile Include="Vuelos\DALAsiento_GV42.cs" />
     <Compile Include="Boletos\DALBoleto_GV42.cs" />

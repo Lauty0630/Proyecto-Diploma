@@ -49,6 +49,7 @@
             this.temasAyudaToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.ayudaPantallaToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.aeropuertosToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.aerolineasToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.reportesToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.reporteReservasToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.reporteCheckInToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
@@ -208,7 +209,8 @@
             this.gestionVuelosToolStripMenuItem,
             this.bitacoraVuelosToolStripMenuItem,
             this.clientesToolStripMenuItem,
-            this.aeropuertosToolStripMenuItem});
+            this.aeropuertosToolStripMenuItem,
+            this.aerolineasToolStripMenuItem});
             this.vuelosToolStripMenuItem.Name = "vuelosToolStripMenuItem";
             this.vuelosToolStripMenuItem.Padding = new System.Windows.Forms.Padding(8, 0, 8, 0);
             this.vuelosToolStripMenuItem.Size = new System.Drawing.Size(72, 23);
@@ -245,6 +247,14 @@
             this.aeropuertosToolStripMenuItem.Size = new System.Drawing.Size(220, 26);
             this.aeropuertosToolStripMenuItem.Text = "Aeropuertos";
             this.aeropuertosToolStripMenuItem.Click += new System.EventHandler(this.aeropuertosToolStripMenuItem_Click);
+            //
+            // aerolineasToolStripMenuItem
+            //
+            this.aerolineasToolStripMenuItem.Font = new System.Drawing.Font("Segoe UI", 10F);
+            this.aerolineasToolStripMenuItem.Name = "aerolineasToolStripMenuItem";
+            this.aerolineasToolStripMenuItem.Size = new System.Drawing.Size(220, 26);
+            this.aerolineasToolStripMenuItem.Text = "Aerolíneas";
+            this.aerolineasToolStripMenuItem.Click += new System.EventHandler(this.aerolineasToolStripMenuItem_Click);
             //
             // reportesToolStripMenuItem
             //
@@ -625,6 +635,7 @@
         private System.Windows.Forms.ToolStripMenuItem temasAyudaToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem ayudaPantallaToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem aeropuertosToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem aerolineasToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem reportesToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem reporteReservasToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem reporteCheckInToolStripMenuItem;

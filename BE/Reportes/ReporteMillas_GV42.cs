@@ -9,6 +9,12 @@ namespace BE
     // Categoría del pasajero en el programa de millas (según las millas de los últimos 12 meses).
     public enum CategoriaMillas_GV42 { Bronce = 0, Plata = 1, Oro = 2, Diamante = 3 }
 
+    // Cómo viene viajando el pasajero: últimos 3 meses comparados con los 9 meses anteriores.
+    public enum TendenciaMillas_GV42 { SinActividad = 0, EnBaja = 1, Estable = 2, EnAumento = 3 }
+
+    // Probabilidad de que el pasajero deje de volar con la aerolínea (según su propio ritmo de viaje).
+    public enum RiesgoAbandono_GV42 { Bajo = 0, Medio = 1, Alto = 2 }
+
     public class FiltroReporteMillas_GV42
     {
         #region Propiedades
@@ -71,6 +77,7 @@ namespace BE
 
         #region Acumulación de millas
 
+        // Millas vigentes: las de los vuelos que todavía no vencieron (MESES_VIGENCIA).
         public int MillasTotales { get; set; }
         public int MillasUltimoVuelo { get; set; }
         public int MillasPeriodo { get; set; }
@@ -101,6 +108,26 @@ namespace BE
         public DateTime? FechaEstimadaSiguiente { get; set; }
         public int MillasVencen30Dias { get; set; }
         public int MillasVencen60Dias { get; set; }
+
+        // Si no vuelve a volar: fecha en que baja de categoría porque sus vuelos salen de la ventana de
+        // 12 meses, y la categoría a la que baja. Null si ya está en Bronce.
+        public DateTime? FechaBajaCategoria { get; set; }
+        public CategoriaMillas_GV42? CategoriaTrasBaja { get; set; }
+
+        #endregion
+
+        #region Predicción de comportamiento
+
+        public TendenciaMillas_GV42 Tendencia { get; set; }
+
+        // Viajes (ida y vuelta cuentan como uno) y días promedio entre viaje y viaje. 0 si viajó una sola vez.
+        public int Viajes { get; set; }
+        public int IntervaloPromedioDias { get; set; }
+        public int DiasSinVolar { get; set; }
+
+        // Último viaje + intervalo promedio. Null si viajó una sola vez.
+        public DateTime? FechaProximoViaje { get; set; }
+        public RiesgoAbandono_GV42 Riesgo { get; set; }
 
         // Texto armado por la BLL en el idioma actual.
         public string Recomendacion { get; set; }

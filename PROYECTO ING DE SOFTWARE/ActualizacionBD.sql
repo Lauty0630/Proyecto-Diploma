@@ -24,6 +24,14 @@ IF OBJECT_ID('dbo.VersionBD_GV42', 'U') IS NULL
     );
 GO
 
+/* ---------- 0b) Generador automático de vuelos: encendido o apagado ----------
+   Propiedad de la base FLYSAFE_GenerarVuelos ('1' = encendido). Las bases que ya existían quedan
+   encendidas, como siempre. La instalación sin datos (LimpiarCatalogos.sql) la pone en '0': en esa
+   base los vuelos los crea el usuario en Maestros > Gestión de vuelos. */
+IF NOT EXISTS (SELECT 1 FROM sys.extended_properties WHERE class = 0 AND name = N'FLYSAFE_GenerarVuelos')
+    EXEC sys.sp_addextendedproperty @name = N'FLYSAFE_GenerarVuelos', @value = N'1';
+GO
+
 /* ---------- 1) Precio de lista de los servicios adicionales ---------- */
 IF COL_LENGTH('dbo.TipoAdicional', 'PrecioUnitario') IS NULL
     ALTER TABLE dbo.TipoAdicional ADD PrecioUnitario DECIMAL(12,2) NOT NULL
@@ -52,6 +60,11 @@ BEGIN
     SET XACT_ABORT ON;
     IF @Dias IS NULL OR @Dias < 1 SET @Dias = 30;
     IF @Dias > 120 SET @Dias = 120;
+
+    -- Apagado en las bases instaladas sin datos (ver 0b).
+    IF NOT EXISTS (SELECT 1 FROM sys.extended_properties
+                   WHERE class = 0 AND name = N'FLYSAFE_GenerarVuelos' AND CONVERT(NVARCHAR(10), value) = N'1')
+        RETURN;
 
     BEGIN TRANSACTION;
 
@@ -1500,6 +1513,55 @@ IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'UX_Usuario_Email' AND ob
 GO
 
 /* =====================================================================================
+   VERSIÓN 16 – Maestro de aerolíneas (ABM)
+   La tabla Aerolinea ya existe; se agregan la patente de la pantalla, sus eventos y un índice único
+   por nombre (el generador de vuelos busca la aerolínea por su nombre).
+   ===================================================================================== */
+
+/* ---------- 36) Patente del maestro de aerolíneas ---------- */
+IF NOT EXISTS (SELECT 1 FROM dbo.Patente WHERE DataKey = N'Aerolineas.Gestionar')
+    INSERT INTO dbo.Patente (Nombre, DataKey) VALUES (N'Aerolíneas - Gestionar', N'Aerolineas.Gestionar');
+GO
+
+IF NOT EXISTS (SELECT 1 FROM dbo.VersionBD_GV42 WHERE Version = 16)
+BEGIN
+    -- Lo usan los mismos roles que ya gestionan los vuelos (Admin y Supervisor). Se asigna una sola vez:
+    -- después se respeta lo que el administrador cambie en Gestión de permisos.
+    INSERT INTO dbo.RolPatente (IdRol, IdPatente)
+    SELECT DISTINCT RP.IdRol, N.Id
+    FROM dbo.RolPatente RP
+    INNER JOIN dbo.Patente P ON P.Id = RP.IdPatente AND P.DataKey = N'Vuelos.Gestionar'
+    INNER JOIN dbo.Patente N ON N.DataKey = N'Aerolineas.Gestionar'
+    WHERE NOT EXISTS (SELECT 1 FROM dbo.RolPatente X WHERE X.IdRol = RP.IdRol AND X.IdPatente = N.Id);
+END
+GO
+
+/* ---------- 37) Tipos de evento de bitácora del maestro de aerolíneas ---------- */
+INSERT INTO dbo.TipoEvento (Nombre)
+SELECT E.Nombre FROM (VALUES (N'Aerolínea creada'),
+                             (N'Aerolínea modificada'),
+                             (N'Aerolínea eliminada')) AS E(Nombre)
+WHERE NOT EXISTS (SELECT 1 FROM dbo.TipoEvento X WHERE X.Nombre = E.Nombre);
+GO
+
+-- Si ya hubiera dos aerolíneas con el mismo nombre, el índice no se crea (lo controla la aplicación igual).
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'UX_Aerolinea_Nombre' AND object_id = OBJECT_ID(N'dbo.Aerolinea'))
+   AND NOT EXISTS (SELECT Nombre FROM dbo.Aerolinea GROUP BY Nombre HAVING COUNT(1) > 1)
+    CREATE UNIQUE NONCLUSTERED INDEX UX_Aerolinea_Nombre ON dbo.Aerolinea (Nombre);
+GO
+
+IF NOT EXISTS (SELECT 1 FROM dbo.VersionBD_GV42 WHERE Version = 16)
+BEGIN
+    INSERT INTO dbo.TareaPendiente_GV42 (Nombre)
+    SELECT X.T FROM (VALUES (N'RecalcularDV:Patente'), (N'RecalcularDV:RolPatente'), (N'RecalcularDV:TipoEvento')) AS X(T)
+    WHERE NOT EXISTS (SELECT 1 FROM dbo.TareaPendiente_GV42 P WHERE P.Nombre = X.T);
+
+    INSERT INTO dbo.VersionBD_GV42 (Version, Descripcion)
+    VALUES (16, N'Maestro de aerolíneas: patente, eventos de bitácora e índice único por nombre');
+END
+GO
+
+/* =====================================================================================
    3ra ENTREGA (TODAVÍA NO SE APLICA) – Reporte de millas
    Este bloque está comentado a propósito: mientras siga así, la base no cambia y en Gestión de
    permisos no aparece nada nuevo. El reporte de millas, la ayuda y el reinstalador funcionan sin
@@ -1507,7 +1569,7 @@ GO
 
    Para la 3ra entrega, si se quiere que el reporte de millas tenga patentes y eventos propios:
      1) quitar los "--" del principio de cada línea de este bloque;
-     2) subir VERSION_ACTUAL a 16 en DAL/Instalacion/InstaladorBD_GV42.cs;
+     2) subir VERSION_ACTUAL a 17 en DAL/Instalacion/InstaladorBD_GV42.cs;
      3) en BLL/Reportes/BLLReporteMillas_GV42.cs cambiar PATENTE_VER por "Reportes.Millas" y
         PATENTE_EXPORTAR por "Reportes.MillasExportarPDF".
    ===================================================================================== */
@@ -1533,13 +1595,13 @@ GO
 -- WHERE NOT EXISTS (SELECT 1 FROM dbo.TipoEvento X WHERE X.Nombre = E.Nombre);
 -- GO
 --
--- IF NOT EXISTS (SELECT 1 FROM dbo.VersionBD_GV42 WHERE Version = 16)
+-- IF NOT EXISTS (SELECT 1 FROM dbo.VersionBD_GV42 WHERE Version = 17)
 -- BEGIN
 --     INSERT INTO dbo.TareaPendiente_GV42 (Nombre)
 --     SELECT X.T FROM (VALUES (N'RecalcularDV:Patente'), (N'RecalcularDV:RolPatente'), (N'RecalcularDV:TipoEvento')) AS X(T)
 --     WHERE NOT EXISTS (SELECT 1 FROM dbo.TareaPendiente_GV42 P WHERE P.Nombre = X.T);
 --
 --     INSERT INTO dbo.VersionBD_GV42 (Version, Descripcion)
---     VALUES (16, N'Reporte de millas: patentes y eventos de bitácora');
+--     VALUES (17, N'Reporte de millas: patentes y eventos de bitácora');
 -- END
 -- GO

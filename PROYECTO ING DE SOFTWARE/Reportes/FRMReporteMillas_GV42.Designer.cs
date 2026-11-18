@@ -53,6 +53,10 @@
             this.colFechaEstimada = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.colVencen30 = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.colVencen60 = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.colTendencia = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.colProximoViaje = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.colRiesgo = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.colBaja = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.lblSeccionLista = new System.Windows.Forms.Label();
             this.pnlSeparadorArriba = new System.Windows.Forms.Panel();
             this.pnlFiltros = new PROYECTO_ING_DE_SOFTWARE.PanelTarjeta_GV42();
@@ -159,7 +163,11 @@
             this.colProyeccion,
             this.colFechaEstimada,
             this.colVencen30,
-            this.colVencen60});
+            this.colVencen60,
+            this.colTendencia,
+            this.colProximoViaje,
+            this.colRiesgo,
+            this.colBaja});
             this.dgvReporte.Dock = System.Windows.Forms.DockStyle.Fill;
             this.dgvReporte.Location = new System.Drawing.Point(16, 40);
             this.dgvReporte.Name = "dgvReporte";
@@ -270,6 +278,34 @@
             this.colVencen60.HeaderText = "Vencen en 60 días";
             this.colVencen60.Name = "colVencen60";
             this.colVencen60.ReadOnly = true;
+            //
+            // colTendencia
+            //
+            this.colTendencia.DataPropertyName = "Tendencia";
+            this.colTendencia.HeaderText = "Tendencia";
+            this.colTendencia.Name = "colTendencia";
+            this.colTendencia.ReadOnly = true;
+            //
+            // colProximoViaje
+            //
+            this.colProximoViaje.DataPropertyName = "ProximoViaje";
+            this.colProximoViaje.HeaderText = "Próximo viaje estimado";
+            this.colProximoViaje.Name = "colProximoViaje";
+            this.colProximoViaje.ReadOnly = true;
+            //
+            // colRiesgo
+            //
+            this.colRiesgo.DataPropertyName = "Riesgo";
+            this.colRiesgo.HeaderText = "Riesgo de abandono";
+            this.colRiesgo.Name = "colRiesgo";
+            this.colRiesgo.ReadOnly = true;
+            //
+            // colBaja
+            //
+            this.colBaja.DataPropertyName = "Baja";
+            this.colBaja.HeaderText = "Si no vuela";
+            this.colBaja.Name = "colBaja";
+            this.colBaja.ReadOnly = true;
             //
             // lblSeccionLista
             //
@@ -580,6 +616,10 @@
         private System.Windows.Forms.DataGridViewTextBoxColumn colFechaEstimada;
         private System.Windows.Forms.DataGridViewTextBoxColumn colVencen30;
         private System.Windows.Forms.DataGridViewTextBoxColumn colVencen60;
+        private System.Windows.Forms.DataGridViewTextBoxColumn colTendencia;
+        private System.Windows.Forms.DataGridViewTextBoxColumn colProximoViaje;
+        private System.Windows.Forms.DataGridViewTextBoxColumn colRiesgo;
+        private System.Windows.Forms.DataGridViewTextBoxColumn colBaja;
         private System.Windows.Forms.Label lblSeccionLista;
         private System.Windows.Forms.Panel pnlSeparadorArriba;
         private PROYECTO_ING_DE_SOFTWARE.PanelTarjeta_GV42 pnlFiltros;

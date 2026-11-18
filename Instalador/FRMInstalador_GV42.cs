@@ -269,6 +269,8 @@ namespace Instalador
             string credenciales = "Usuario inicial: " + InstaladorSistema_GV42.USUARIO_INICIAL +
                                   "  -  Clave: " + InstaladorSistema_GV42.CLAVE_INICIAL + ".";
             const string DETALLE_NEGOCIO = "clientes, aeropuertos, vuelos, reservas, pagos, check-in y reportes";
+            const string SIN_DATOS = "Se instala sin datos: solo roles, permisos y el administrador. " +
+                                     "\"Con datos de demostración\" agrega aerolíneas, aeropuertos y vuelos listos para reservar.";
 
             var lista = new List<Opcion>();
             switch (_estado)
@@ -277,7 +279,7 @@ namespace Instalador
                     lista.Add(Nueva(OpcionBase_GV42.CrearSoloUsuarios, "Base solo con gestión de usuarios (recomendado)",
                         "Login, usuarios, roles y permisos, bitácora, backup/restore, integridad e idioma.\n" + credenciales));
                     lista.Add(Nueva(OpcionBase_GV42.CrearCompleta, "Base completa con todo el negocio",
-                        "Incluye lo anterior más " + DETALLE_NEGOCIO + ".\n" + credenciales));
+                        "Incluye lo anterior más " + DETALLE_NEGOCIO + ".\n" + SIN_DATOS + "\n" + credenciales));
                     break;
 
                 case EstadoBase_GV42.SoloUsuarios:
@@ -310,6 +312,10 @@ namespace Instalador
                 _opciones.Add(o);
                 y += 22 + alto + 8;
 
+                // "Con datos de demostración" va en el mismo renglón que la opción de base completa.
+                if (o.Valor == OpcionBase_GV42.CrearCompleta || o.Valor == OpcionBase_GV42.ReinstalarCompleta)
+                    chkDatosDemo.Location = new Point(360, o.Radio.Top + 2);
+
                 if (o.Valor == OpcionBase_GV42.RestaurarBackup)
                 {
                     // El archivo del backup se elige justo debajo de la opción "Restaurar".
@@ -319,7 +325,11 @@ namespace Instalador
                 }
             }
 
+            // La autorización del administrador va debajo de las opciones (nunca encima).
+            grpAdministrador.Top = Math.Max(300, y + 4);
+
             txtBackup.Text = string.Empty;
+            chkDatosDemo.Checked = false;
             txtUsuario.Clear();
             txtContrasena.Clear();
             _opciones[0].Radio.Checked = true;
@@ -336,8 +346,8 @@ namespace Instalador
         {
             lista.Add(Nueva(OpcionBase_GV42.ReinstalarSoloUsuarios, "Reinstalar solo con gestión de usuarios",
                 "Borra la base y la crea de nuevo, solo con la gestión de usuarios. Se pierden todos los datos cargados."));
-            lista.Add(Nueva(OpcionBase_GV42.ReinstalarCompleta, "Reinstalar la base completa con todo el negocio",
-                "Borra la base y la crea de nuevo, con la gestión de usuarios y el negocio. Se pierden todos los datos cargados."));
+            lista.Add(Nueva(OpcionBase_GV42.ReinstalarCompleta, "Reinstalar la base completa",
+                "Borra la base y la crea de nuevo con todo el negocio, sin datos (o con los de demostración). Se pierde lo cargado."));
             lista.Add(Nueva(OpcionBase_GV42.RestaurarBackup, "Restaurar un backup (.bak)",
                 "La base vuelve al estado del archivo que elijas. Se pierde lo cargado después de ese backup."));
         }
@@ -360,6 +370,11 @@ namespace Instalador
             btnBackup.Visible = txtBackup.Visible;
             txtBackup.Enabled = restaurar;
             btnBackup.Enabled = restaurar;
+
+            bool completa = elegida == OpcionBase_GV42.CrearCompleta || elegida == OpcionBase_GV42.ReinstalarCompleta;
+            chkDatosDemo.Visible = HayOpcion(OpcionBase_GV42.CrearCompleta) || HayOpcion(OpcionBase_GV42.ReinstalarCompleta);
+            chkDatosDemo.Enabled = completa;
+            if (!completa) chkDatosDemo.Checked = false;
             grpAdministrador.Visible = InstaladorSistema_GV42.BorraDatos(elegida);
         }
 
@@ -446,6 +461,7 @@ namespace Instalador
                 OpcionBase = OpcionElegida(),
                 RutaBackup = txtBackup.Text.Trim(),
                 CrearAccesoDirecto = chkAccesoDirecto.Checked,
+                DatosDemostracion = chkDatosDemo.Enabled && chkDatosDemo.Checked,
                 LoginAdministrador = txtUsuario.Text.Trim(),
                 ContrasenaAdministrador = txtContrasena.Text
             };
@@ -461,6 +477,10 @@ namespace Instalador
                              "      Servidor: " + p.Instancia + nl +
                              "      Base: Gestion Usuario" + nl +
                              "      Datos: " + InstaladorSistema_GV42.TextoOpcion(p.OpcionBase) + nl;
+            if (p.OpcionBase == OpcionBase_GV42.CrearCompleta || p.OpcionBase == OpcionBase_GV42.ReinstalarCompleta)
+                resumen += "      " + (p.DatosDemostracion
+                    ? "Con datos de demostración (aerolíneas, aeropuertos y vuelos de los próximos días)"
+                    : "Sin datos: solo roles, permisos y el usuario " + InstaladorSistema_GV42.USUARIO_INICIAL) + nl;
             if (p.OpcionBase == OpcionBase_GV42.RestaurarBackup)
                 resumen += "      Backup: " + p.RutaBackup + nl;
             resumen += nl + "Tareas adicionales:" + nl +

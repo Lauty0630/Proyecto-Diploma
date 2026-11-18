@@ -42,6 +42,7 @@ namespace Instalador
             this.pagDatos = new System.Windows.Forms.Panel();
             this.txtBackup = new System.Windows.Forms.TextBox();
             this.btnBackup = new System.Windows.Forms.Button();
+            this.chkDatosDemo = new System.Windows.Forms.CheckBox();
             this.grpAdministrador = new System.Windows.Forms.GroupBox();
             this.lblUsuario = new System.Windows.Forms.Label();
             this.txtUsuario = new System.Windows.Forms.TextBox();
@@ -257,6 +258,7 @@ namespace Instalador
             // 
             this.pagDatos.Controls.Add(this.txtBackup);
             this.pagDatos.Controls.Add(this.btnBackup);
+            this.pagDatos.Controls.Add(this.chkDatosDemo);
             this.pagDatos.Controls.Add(this.grpAdministrador);
             this.pagDatos.Location = new System.Drawing.Point(0, 0);
             this.pagDatos.Name = "pagDatos";
@@ -281,6 +283,17 @@ namespace Instalador
             this.btnBackup.Text = "Elegir...";
             this.btnBackup.UseVisualStyleBackColor = true;
             this.btnBackup.Click += new System.EventHandler(this.btnBackup_Click);
+            // 
+            // chkDatosDemo
+            // 
+            this.chkDatosDemo.AutoSize = true;
+            this.chkDatosDemo.Location = new System.Drawing.Point(360, 0);
+            this.chkDatosDemo.Name = "chkDatosDemo";
+            this.chkDatosDemo.Size = new System.Drawing.Size(178, 19);
+            this.chkDatosDemo.TabIndex = 3;
+            this.chkDatosDemo.Text = "Con datos de demostración";
+            this.chkDatosDemo.UseVisualStyleBackColor = true;
+            this.chkDatosDemo.Visible = false;
             // 
             // grpAdministrador
             // 
@@ -570,6 +583,7 @@ namespace Instalador
         private System.Windows.Forms.Label lblTareas;
         private System.Windows.Forms.Label lblAccesos;
         private System.Windows.Forms.CheckBox chkAccesoDirecto;
+        private System.Windows.Forms.CheckBox chkDatosDemo;
         private System.Windows.Forms.Panel pagListo;
         private System.Windows.Forms.Label lblListo;
         private System.Windows.Forms.TextBox txtResumen;

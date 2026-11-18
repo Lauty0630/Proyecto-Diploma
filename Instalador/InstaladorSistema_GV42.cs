@@ -39,6 +39,10 @@ namespace Instalador
         public OpcionBase_GV42 OpcionBase { get; set; }
         public string RutaBackup { get; set; }
         public bool CrearAccesoDirecto { get; set; }
+
+        // Solo para la base completa: además de roles, permisos y el administrador, carga aerolíneas,
+        // aeropuertos y los vuelos de los próximos días (para poder reservar enseguida).
+        public bool DatosDemostracion { get; set; }
         public string LoginAdministrador { get; set; }
         public string ContrasenaAdministrador { get; set; }
     }
@@ -288,9 +292,10 @@ namespace Instalador
                     return;
 
                 case OpcionBase_GV42.ReinstalarCompleta:
-                    avisar("Reinstalando la base de datos completa con los datos iniciales (puede tardar varios minutos)...");
+                    avisar("Reinstalando la base de datos completa " + (p.DatosDemostracion ? "con los datos de demostración" : "sin datos") +
+                           " (puede tardar varios minutos)...");
                     BLLInstalador_GV42.ConfigurarConexion(instancia);
-                    new BLLReinstalador_GV42().ReinstalarLimpia();
+                    new BLLReinstalador_GV42().ReinstalarLimpia(p.DatosDemostracion);
                     return;
 
                 case OpcionBase_GV42.ReinstalarSoloUsuarios:
@@ -306,8 +311,9 @@ namespace Instalador
                     break;
 
                 case OpcionBase_GV42.CrearCompleta:
-                    avisar("Creando la base de datos completa (puede tardar varios minutos)...");
-                    BLLInstalador_GV42.InstalarBaseDatos(instancia);
+                    avisar("Creando la base de datos completa " + (p.DatosDemostracion ? "con los datos de demostración" : "sin datos") +
+                           " (puede tardar varios minutos)...");
+                    BLLInstalador_GV42.InstalarBaseDatos(instancia, p.DatosDemostracion);
                     break;
 
                 case OpcionBase_GV42.AgregarNegocio:

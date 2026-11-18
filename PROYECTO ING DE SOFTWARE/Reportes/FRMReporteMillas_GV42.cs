@@ -82,6 +82,10 @@ namespace PROYECTO_ING_DE_SOFTWARE
             colFechaEstimada.HeaderText = IdiomaManager_GV42.T("repMillas.colFechaEstimada");
             colVencen30.HeaderText = IdiomaManager_GV42.T("repMillas.colVencen30");
             colVencen60.HeaderText = IdiomaManager_GV42.T("repMillas.colVencen60");
+            colTendencia.HeaderText = IdiomaManager_GV42.T("repMillas.colTendencia");
+            colProximoViaje.HeaderText = IdiomaManager_GV42.T("repMillas.colProximoViaje");
+            colRiesgo.HeaderText = IdiomaManager_GV42.T("repMillas.colRiesgo");
+            colBaja.HeaderText = IdiomaManager_GV42.T("repMillas.colBaja");
 
             CargarOpcionesFiltros();
 
@@ -175,6 +179,10 @@ namespace PROYECTO_ING_DE_SOFTWARE
                 FechaEstimada = BLLReporteMillas_GV42.TextoFechaEstimada(r),
                 Vencen30 = r.MillasVencen30Dias,
                 Vencen60 = r.MillasVencen60Dias,
+                Tendencia = BLLReporteMillas_GV42.TextoTendencia(r.Tendencia),
+                ProximoViaje = BLLReporteMillas_GV42.TextoProximoViaje(r),
+                Riesgo = BLLReporteMillas_GV42.TextoRiesgo(r.Riesgo),
+                Baja = BLLReporteMillas_GV42.TextoBaja(r),
                 Perfil = r
             }).ToList();
 
@@ -236,7 +244,8 @@ namespace PROYECTO_ING_DE_SOFTWARE
             MostrarPerfilSeleccionado();
         }
 
-        // La categoría en color; las millas por vencer en rojo.
+        // La categoría en color; en rojo las millas por vencer, el riesgo alto, la tendencia en baja y
+        // la baja de categoría de los próximos 90 días.
         private void dgvReporte_CellFormatting(object sender, DataGridViewCellFormattingEventArgs e)
         {
             if (e.RowIndex < 0) return;
@@ -250,6 +259,17 @@ namespace PROYECTO_ING_DE_SOFTWARE
                                       : Tema_GV42.Exito;
             else if ((columna == colVencen30 && fila.Vencen30 > 0) || (columna == colVencen60 && fila.Vencen60 > 0))
                 e.CellStyle.ForeColor = Tema_GV42.Error;
+            else if (columna == colRiesgo)
+                e.CellStyle.ForeColor = fila.Perfil.Riesgo == RiesgoAbandono_GV42.Alto ? Tema_GV42.Error
+                                      : fila.Perfil.Riesgo == RiesgoAbandono_GV42.Medio ? Tema_GV42.Advertencia
+                                      : Tema_GV42.Exito;
+            else if (columna == colTendencia)
+                e.CellStyle.ForeColor = fila.Perfil.Tendencia == TendenciaMillas_GV42.EnAumento ? Tema_GV42.Exito
+                                      : fila.Perfil.Tendencia == TendenciaMillas_GV42.Estable ? Tema_GV42.TextoSecundario
+                                      : Tema_GV42.Error;
+            else if (columna == colBaja && fila.Perfil.FechaBajaCategoria.HasValue
+                     && fila.Perfil.FechaBajaCategoria.Value <= DateTime.Today.AddDays(BLLReporteMillas_GV42.DIAS_PROYECCION))
+                e.CellStyle.ForeColor = Tema_GV42.Advertencia;
         }
 
         private void btnExportar_Click(object sender, EventArgs e)
@@ -307,6 +327,10 @@ namespace PROYECTO_ING_DE_SOFTWARE
             public string FechaEstimada { get; set; }
             public int Vencen30 { get; set; }
             public int Vencen60 { get; set; }
+            public string Tendencia { get; set; }
+            public string ProximoViaje { get; set; }
+            public string Riesgo { get; set; }
+            public string Baja { get; set; }
             public ReporteMillas_GV42 Perfil { get; set; }
         }
 

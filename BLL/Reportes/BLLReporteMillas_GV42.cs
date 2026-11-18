@@ -18,7 +18,15 @@ namespace BLL
     //  - Categoría: según las millas de los últimos 12 meses (Bronce / Plata / Oro / Diamante).
     //  - Vencimiento: las millas de un vuelo vencen a los MESES_VIGENCIA meses de volado.
     //  - Ingreso al programa: la fecha del primer vuelo volado. N° de cuenta: "FS-" + DNI.
-    //  - Proyección: frecuencia de los últimos 12 meses x promedio de millas por vuelo.
+    //  - Proyección: ritmo de millas por día, donde los últimos 3 meses pesan el doble que el año
+    //    completo (así pesa más cómo viene viajando ahora).
+    //
+    // Predicciones (lo que puede pasar con cada pasajero si sigue igual o si deja de volar):
+    //  - Cuándo sube de categoría: simula día a día las millas que suma a su ritmo y las que pierde
+    //    porque sus vuelos salen de la ventana de 12 meses.
+    //  - Cuándo baja de categoría si no vuelve a volar.
+    //  - Tendencia: últimos 3 meses contra los 9 anteriores (en aumento / estable / en baja).
+    //  - Próximo viaje y riesgo de abandono: según cada cuántos días suele viajar y cuántos lleva sin volar.
     //
     // La recomendación de cada pasajero también incluye los servicios adicionales que conviene ofrecerle
     // (BLLOfertasCliente_GV42): el mismo motor se le muestra al cliente en su pantalla de reserva.
@@ -36,6 +44,12 @@ namespace BLL
         public const int MILLAS_INTERNACIONAL = 1500;
         public const int MESES_VIGENCIA = 24;
         public const int DIAS_PROYECCION = 90;
+
+        // Dos vuelos a menos de esta cantidad de días son el mismo viaje (ida y vuelta).
+        public const int DIAS_MISMO_VIAJE = 15;
+
+        // Hasta dónde se busca la fecha estimada de la categoría siguiente.
+        private const int DIAS_MAX_ESTIMACION = 730;
 
         // Millas de los últimos 12 meses necesarias para cada categoría (Bronce, Plata, Oro, Diamante).
         private static readonly int[] UMBRALES = { 0, 2000, 5000, 10000 };
@@ -158,7 +172,9 @@ namespace BLL
                 IdiomaManager_GV42.T("pdfMillas.historial", f.VuelosPeriodo, string.Join("; ", f.RutasFrecuentes), f.ClaseHabitual.Texto(),
                     f.VuelosPorMes.ToString("0.##"), TextoUltimoVuelo(f)),
                 IdiomaManager_GV42.T("pdfMillas.proyeccion", Numero(f.ProyeccionMillas90Dias), TextoFechaEstimada(f),
-                    Numero(f.MillasVencen30Dias), Numero(f.MillasVencen60Dias)),
+                    Numero(f.MillasVencen30Dias), Numero(f.MillasVencen60Dias)) + "\n" +
+                IdiomaManager_GV42.T("pdfMillas.prediccion", TextoTendencia(f.Tendencia), TextoProximoViaje(f),
+                    TextoRiesgo(f.Riesgo), TextoBaja(f)),
                 f.Recomendacion
             }).ToList();
 
@@ -198,9 +214,13 @@ namespace BLL
             var porCategoria = Enum.GetValues(typeof(CategoriaMillas_GV42)).Cast<CategoriaMillas_GV42>()
                 .Select(c => TextoCategoria(c) + ": " + filas.Count(f => f.Categoria == c));
             int porVencer = filas.Count(f => f.MillasVencen60Dias > 0);
+            int enRiesgo = filas.Count(f => f.Riesgo == RiesgoAbandono_GV42.Alto);
+            DateTime limite = DateTime.Today.AddDays(DIAS_PROYECCION);
+            int bajan = filas.Count(f => f.FechaBajaCategoria.HasValue && f.FechaBajaCategoria.Value <= limite);
             return new List<string>
             {
                 IdiomaManager_GV42.T("pdfMillas.resumenTotales", filas.Count, string.Join(" | ", porCategoria), porVencer),
+                IdiomaManager_GV42.T("pdfMillas.resumenPrediccion", enRiesgo, bajan, DIAS_PROYECCION),
                 IdiomaManager_GV42.T("pdfMillas.resumenCriterio", MILLAS_NACIONAL, MILLAS_INTERNACIONAL, MESES_VIGENCIA)
             };
         }
@@ -230,6 +250,32 @@ namespace BLL
                 : IdiomaManager_GV42.T("millas.sinEstimacion");
         }
 
+        public static string TextoTendencia(TendenciaMillas_GV42 t)
+        {
+            return IdiomaManager_GV42.TConDefecto("millas.tendencia." + t, t.ToString());
+        }
+
+        public static string TextoRiesgo(RiesgoAbandono_GV42 r)
+        {
+            return IdiomaManager_GV42.TConDefecto("millas.riesgo." + r, r.ToString());
+        }
+
+        // "Pasa a Plata el dd/mm/aaaa si no vuela" o "Se mantiene" (ya en Bronce).
+        public static string TextoBaja(ReporteMillas_GV42 f)
+        {
+            return f.FechaBajaCategoria.HasValue
+                ? IdiomaManager_GV42.T("millas.baja", TextoCategoria(f.CategoriaTrasBaja.Value), f.FechaBajaCategoria.Value.ToString("dd/MM/yyyy"))
+                : IdiomaManager_GV42.T("millas.sinBaja");
+        }
+
+        // Fecha estimada del próximo viaje; si ya pasó, se aclara que está atrasado.
+        public static string TextoProximoViaje(ReporteMillas_GV42 f)
+        {
+            if (!f.FechaProximoViaje.HasValue) return IdiomaManager_GV42.T("millas.sinEstimacion");
+            string fecha = f.FechaProximoViaje.Value.ToString("dd/MM/yyyy");
+            return f.FechaProximoViaje.Value < DateTime.Today ? IdiomaManager_GV42.T("millas.proximoAtrasado", fecha) : fecha;
+        }
+
         public static string TextoUltimoVuelo(ReporteMillas_GV42 f)
         {
             return f.UltimoVuelo == null ? "-"
@@ -249,6 +295,8 @@ namespace BLL
                     f.VuelosPorMes.ToString("0.##"), TextoUltimoVuelo(f), Numero(f.MillasUltimoVuelo)),
                 IdiomaManager_GV42.T("millas.detProyeccion", Numero(f.ProyeccionMillas90Dias), TextoFechaEstimada(f),
                     Numero(f.MillasVencen30Dias), Numero(f.MillasVencen60Dias)),
+                IdiomaManager_GV42.T("millas.detPrediccion", TextoTendencia(f.Tendencia), TextoProximoViaje(f),
+                    f.DiasSinVolar, TextoRiesgo(f.Riesgo), TextoBaja(f)),
                 IdiomaManager_GV42.T("millas.detRecomendacion", f.Recomendacion)
             });
         }
@@ -273,7 +321,7 @@ namespace BLL
                 Email = ultimo.Email,
                 Telefono = ultimo.Telefono,
                 FechaIngreso = primero.Fecha.Date,
-                MillasTotales = vuelos.Sum(v => v.Millas),
+                MillasTotales = vuelos.Where(v => v.Fecha.AddMonths(MESES_VIGENCIA) > ahora).Sum(v => v.Millas),
                 MillasUltimoVuelo = ultimo.Millas,
                 MillasPeriodo = delPeriodo.Sum(v => v.Millas),
                 MillasUltimos12Meses = de12Meses.Sum(v => v.Millas),
@@ -293,14 +341,15 @@ namespace BLL
                 p.MillasParaSiguiente = UMBRALES[(int)p.Categoria + 1] - p.MillasUltimos12Meses;
             }
 
-            // Proyección: al ritmo de los últimos 12 meses, con el promedio de millas por vuelo.
-            decimal millasPorDia = p.MillasUltimos12Meses / 365m;
+            // Proyección: ritmo de millas por día, los últimos 3 meses pesan el doble que el año completo.
+            int millas3Meses = vuelos.Where(v => v.Fecha >= ahora.AddMonths(-3)).Sum(v => v.Millas);
+            decimal millasPorDia = (2m * millas3Meses / 91m + p.MillasUltimos12Meses / 365m) / 3m;
             p.ProyeccionMillas90Dias = (int)Math.Round(millasPorDia * DIAS_PROYECCION);
-            if (p.CategoriaSiguiente.HasValue && millasPorDia > 0)
-            {
-                double dias = (double)Math.Ceiling(p.MillasParaSiguiente / millasPorDia);
-                if (dias <= 3650) p.FechaEstimadaSiguiente = ahora.Date.AddDays(dias);
-            }
+            p.FechaEstimadaSiguiente = EstimarSubida(p, de12Meses, millasPorDia, ahora);
+            EstimarBaja(p, de12Meses, ahora);
+
+            p.Tendencia = Tendencia(vuelos, ahora);
+            EstimarProximoViaje(p, vuelos, ahora);
 
             // Vencimiento: cada vuelo vence a los MESES_VIGENCIA meses.
             p.MillasVencen30Dias = vuelos.Where(v => Vence(v, ahora, 30)).Sum(v => v.Millas);
@@ -308,6 +357,88 @@ namespace BLL
 
             p.Recomendacion = Recomendar(p, vuelos);
             return p;
+        }
+
+        // Millas que siguen contando para la categoría en la fecha "dia" (vuelos de los 12 meses anteriores).
+        private static int MillasEnVentana(List<VueloVolado_GV42> vuelos, DateTime dia)
+        {
+            DateTime desde = dia.AddMonths(-12);
+            return vuelos.Where(v => v.Fecha >= desde).Sum(v => v.Millas);
+        }
+
+        // Fecha en que llega a la categoría siguiente si sigue viajando a su ritmo. Día a día suma lo que
+        // vuela a ese ritmo y resta los vuelos que salen de la ventana de 12 meses.
+        private static DateTime? EstimarSubida(ReporteMillas_GV42 p, List<VueloVolado_GV42> de12Meses, decimal millasPorDia, DateTime ahora)
+        {
+            if (!p.CategoriaSiguiente.HasValue || millasPorDia <= 0) return null;
+            int objetivo = UMBRALES[(int)p.CategoriaSiguiente.Value];
+            for (int dia = 1; dia <= DIAS_MAX_ESTIMACION; dia++)
+            {
+                DateTime fecha = ahora.Date.AddDays(dia);
+                decimal futuras = millasPorDia * Math.Min(dia, 365);
+                if (MillasEnVentana(de12Meses, fecha) + futuras >= objetivo) return fecha;
+            }
+            return null;
+        }
+
+        // Si no vuelve a volar: el primer día en que, al salir vuelos de la ventana de 12 meses, le
+        // alcanza para una categoría más baja que la actual.
+        private static void EstimarBaja(ReporteMillas_GV42 p, List<VueloVolado_GV42> de12Meses, DateTime ahora)
+        {
+            if (p.Categoria == CategoriaMillas_GV42.Bronce) return;
+            foreach (VueloVolado_GV42 v in de12Meses.OrderBy(x => x.Fecha))
+            {
+                DateTime sale = v.Fecha.AddMonths(12).Date.AddDays(1);
+                if (sale <= ahora.Date) continue;
+                CategoriaMillas_GV42 despues = CategoriaPara(MillasEnVentana(de12Meses, sale));
+                if (despues < p.Categoria)
+                {
+                    p.FechaBajaCategoria = sale;
+                    p.CategoriaTrasBaja = despues;
+                    return;
+                }
+            }
+        }
+
+        // Vuelos por mes de los últimos 3 meses contra los 9 meses anteriores.
+        private static TendenciaMillas_GV42 Tendencia(List<VueloVolado_GV42> vuelos, DateTime ahora)
+        {
+            DateTime hace3 = ahora.AddMonths(-3), hace12 = ahora.AddMonths(-12);
+            decimal recientes = vuelos.Count(v => v.Fecha >= hace3) / 3m;
+            decimal anteriores = vuelos.Count(v => v.Fecha >= hace12 && v.Fecha < hace3) / 9m;
+            if (recientes == 0 && anteriores == 0) return TendenciaMillas_GV42.SinActividad;
+            if (recientes > anteriores * 1.25m) return TendenciaMillas_GV42.EnAumento;
+            if (recientes < anteriores * 0.75m) return TendenciaMillas_GV42.EnBaja;
+            return TendenciaMillas_GV42.Estable;
+        }
+
+        // Próximo viaje = último viaje + días promedio entre viajes. El riesgo de abandono compara los
+        // días que lleva sin volar con su propio ritmo (o, si viajó una sola vez, con 6 y 12 meses).
+        private static void EstimarProximoViaje(ReporteMillas_GV42 p, List<VueloVolado_GV42> vuelos, DateTime ahora)
+        {
+            var viajes = new List<DateTime>();
+            foreach (VueloVolado_GV42 v in vuelos.OrderBy(x => x.Fecha))
+                if (viajes.Count == 0 || (v.Fecha.Date - viajes[viajes.Count - 1]).TotalDays > DIAS_MISMO_VIAJE)
+                    viajes.Add(v.Fecha.Date);
+
+            DateTime ultimoViaje = vuelos.Max(v => v.Fecha).Date;
+            p.Viajes = viajes.Count;
+            p.DiasSinVolar = Math.Max(0, (int)(ahora.Date - ultimoViaje).TotalDays);
+
+            if (viajes.Count >= 2)
+            {
+                p.IntervaloPromedioDias = (int)Math.Round((viajes[viajes.Count - 1] - viajes[0]).TotalDays / (viajes.Count - 1));
+                p.FechaProximoViaje = ultimoViaje.AddDays(p.IntervaloPromedioDias);
+                p.Riesgo = p.DiasSinVolar > Math.Max(60, 2 * p.IntervaloPromedioDias) ? RiesgoAbandono_GV42.Alto
+                         : p.DiasSinVolar > Math.Max(30, 1.5 * p.IntervaloPromedioDias) ? RiesgoAbandono_GV42.Medio
+                         : RiesgoAbandono_GV42.Bajo;
+            }
+            else
+            {
+                p.Riesgo = p.DiasSinVolar > 365 ? RiesgoAbandono_GV42.Alto
+                         : p.DiasSinVolar > 180 ? RiesgoAbandono_GV42.Medio
+                         : RiesgoAbandono_GV42.Bajo;
+            }
         }
 
         private static bool Vence(VueloVolado_GV42 v, DateTime ahora, int dias)
@@ -338,9 +469,16 @@ namespace BLL
                     : IdiomaManager_GV42.T("millas.recVariosVuelos", Numero(p.MillasUltimos12Meses), Numero(p.MillasParaSiguiente), siguiente, vuelosNecesarios, clase, ruta);
             }
 
+            if (p.Riesgo == RiesgoAbandono_GV42.Alto)
+                texto += " " + (p.IntervaloPromedioDias > 0
+                    ? IdiomaManager_GV42.T("millas.recRiesgo", p.DiasSinVolar, p.IntervaloPromedioDias)
+                    : IdiomaManager_GV42.T("millas.recRiesgoUnViaje", p.DiasSinVolar));
+            if (p.FechaBajaCategoria.HasValue && p.FechaBajaCategoria.Value <= DateTime.Today.AddDays(DIAS_PROYECCION))
+                texto += " " + IdiomaManager_GV42.T("millas.recBaja", p.FechaBajaCategoria.Value.ToString("dd/MM/yyyy"),
+                    TextoCategoria(p.CategoriaTrasBaja.Value));
             if (p.MillasVencen60Dias > 0)
                 texto += " " + IdiomaManager_GV42.T("millas.recVencen", Numero(p.MillasVencen60Dias));
-            if (p.VuelosPeriodo == 0)
+            if (p.VuelosPeriodo == 0 && p.Riesgo != RiesgoAbandono_GV42.Alto)
                 texto += " " + IdiomaManager_GV42.T("millas.recInactivo");
             return texto;
         }

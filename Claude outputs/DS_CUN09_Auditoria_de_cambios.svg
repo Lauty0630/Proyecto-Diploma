@@ -1,0 +1,134 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1610" height="1572" viewBox="0 0 1610 1572" xmlns:c2pa="http://c2pa.org/manifest">
+<defs><marker id="f" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto"><path d="M0,0 L10,4 L0,8 z" fill="#000"/></marker><marker id="o" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto"><path d="M0,0 L10,4 L0,8" fill="none" stroke="#000"/></marker></defs>
+<style>text{font-family:"Liberation Sans",Arial,sans-serif;font-size:12px;fill:#000}.t{font-weight:bold}</style>
+<rect width="1610" height="1572" fill="#fff"/>
+<text x="12" y="18" class="t">sd CUN09 “Auditoría de cambios”</text>
+<line x1="80" y1="70" x2="80" y2="1532" stroke="#555" stroke-dasharray="6,4"/>
+<circle cx="80" cy="39" r="5" fill="#FFFFE1" stroke="#000"/>
+<line x1="80" y1="44" x2="80" y2="56" stroke="#000"/>
+<line x1="71" y1="48" x2="89" y2="48" stroke="#000"/>
+<line x1="80" y1="56" x2="72" y2="66" stroke="#000"/>
+<line x1="80" y1="56" x2="88" y2="66" stroke="#000"/>
+<text x="80" y="82" text-anchor="middle">Administrador</text>
+<line x1="285" y1="70" x2="285" y2="1532" stroke="#555" stroke-dasharray="6,4"/>
+<rect x="206.1953125" y="33" width="163.609375" height="32" fill="#C8C8C8"/>
+<rect x="203.1953125" y="30" width="163.609375" height="32" fill="#FFFFE1" stroke="#7F1F1F"/>
+<text x="285" y="51" text-anchor="middle">FRMBitacoraVuelos_GV42</text>
+<line x1="490" y1="70" x2="490" y2="1532" stroke="#555" stroke-dasharray="6,4"/>
+<rect x="417.296875" y="33" width="151.40625" height="32" fill="#C8C8C8"/>
+<rect x="414.296875" y="30" width="151.40625" height="32" fill="#FFFFE1" stroke="#7F1F1F"/>
+<text x="490" y="51" text-anchor="middle">BLLVueloHistorial_GV42</text>
+<line x1="695" y1="70" x2="695" y2="1532" stroke="#555" stroke-dasharray="6,4"/>
+<rect x="627.96875" y="33" width="140.0625" height="32" fill="#C8C8C8"/>
+<rect x="624.96875" y="30" width="140.0625" height="32" fill="#FFFFE1" stroke="#7F1F1F"/>
+<text x="695" y="51" text-anchor="middle">BLLNegocioUtil_GV42</text>
+<line x1="900" y1="70" x2="900" y2="1532" stroke="#555" stroke-dasharray="6,4"/>
+<rect x="843.0" y="33" width="120" height="32" fill="#C8C8C8"/>
+<rect x="840.0" y="30" width="120" height="32" fill="#FFFFE1" stroke="#7F1F1F"/>
+<text x="900" y="51" text-anchor="middle">BLLVuelo_GV42</text>
+<line x1="1105" y1="70" x2="1105" y2="1532" stroke="#555" stroke-dasharray="6,4"/>
+<rect x="1031.296875" y="33" width="153.40625" height="32" fill="#C8C8C8"/>
+<rect x="1028.296875" y="30" width="153.40625" height="32" fill="#FFFFE1" stroke="#7F1F1F"/>
+<text x="1105" y="51" text-anchor="middle">DALVueloHistorial_GV42</text>
+<line x1="1310" y1="70" x2="1310" y2="1532" stroke="#555" stroke-dasharray="6,4"/>
+<rect x="1253.0" y="33" width="120" height="32" fill="#C8C8C8"/>
+<rect x="1250.0" y="30" width="120" height="32" fill="#FFFFE1" stroke="#7F1F1F"/>
+<text x="1310" y="51" text-anchor="middle">Base de datos</text>
+<rect x="25" y="892" width="1565" height="592" fill="none" stroke="#000"/>
+<path d="M25,892 h46 v12 l-8,8 h-38 z" fill="#fff" stroke="#000"/>
+<text x="31" y="906" class="t">opt</text>
+<text x="90" y="906">[el administrador activa un registro anterior]</text>
+<rect x="280" y="106" width="10" height="386" fill="#FFFFE1" stroke="#7F1F1F"/>
+<rect x="280" y="528" width="10" height="332" fill="#FFFFE1" stroke="#7F1F1F"/>
+<rect x="280" y="934" width="10" height="536" fill="#FFFFE1" stroke="#7F1F1F"/>
+<rect x="485" y="140" width="10" height="114" fill="#FFFFE1" stroke="#7F1F1F"/>
+<rect x="485" y="276" width="10" height="182" fill="#FFFFE1" stroke="#7F1F1F"/>
+<rect x="485" y="562" width="10" height="264" fill="#FFFFE1" stroke="#7F1F1F"/>
+<rect x="485" y="1036" width="10" height="400" fill="#FFFFE1" stroke="#7F1F1F"/>
+<rect x="690" y="174" width="10" height="46" fill="#FFFFE1" stroke="#7F1F1F"/>
+<rect x="690" y="596" width="10" height="12" fill="#FFFFE1" stroke="#7F1F1F"/>
+<rect x="690" y="1070" width="10" height="12" fill="#FFFFE1" stroke="#7F1F1F"/>
+<rect x="690" y="1390" width="10" height="12" fill="#FFFFE1" stroke="#7F1F1F"/>
+<rect x="895" y="1104" width="10" height="80" fill="#FFFFE1" stroke="#7F1F1F"/>
+<rect x="1100" y="310" width="10" height="114" fill="#FFFFE1" stroke="#7F1F1F"/>
+<rect x="1100" y="678" width="10" height="114" fill="#FFFFE1" stroke="#7F1F1F"/>
+<rect x="1100" y="1206" width="10" height="162" fill="#FFFFE1" stroke="#7F1F1F"/>
+<rect x="1305" y="344" width="10" height="46" fill="#FFFFE1" stroke="#7F1F1F"/>
+<rect x="1305" y="712" width="10" height="46" fill="#FFFFE1" stroke="#7F1F1F"/>
+<rect x="1305" y="1240" width="10" height="94" fill="#FFFFE1" stroke="#7F1F1F"/>
+<line x1="85" y1="110" x2="280" y2="110" stroke="#000" marker-end="url(#f)"/>
+<text x="93" y="105">1: Ingresa a “Bitácora de cambios”</text>
+<line x1="290" y1="144" x2="485" y2="144" stroke="#000" marker-end="url(#f)"/>
+<text x="298" y="139">2: PuedeActivar()</text>
+<line x1="495" y1="178" x2="690" y2="178" stroke="#000" marker-end="url(#f)"/>
+<text x="503" y="173">3: TienePatente("Vuelos.Activar")</text>
+<line x1="690" y1="212" x2="495" y2="212" stroke="#000" stroke-dasharray="5,3" marker-end="url(#o)"/>
+<text x="503" y="207">bool</text>
+<line x1="485" y1="246" x2="290" y2="246" stroke="#000" stroke-dasharray="5,3" marker-end="url(#o)"/>
+<text x="298" y="241">bool</text>
+<line x1="290" y1="280" x2="485" y2="280" stroke="#000" marker-end="url(#f)"/>
+<text x="298" y="275">4: ListarCodigos() / ListarNombres()</text>
+<line x1="495" y1="314" x2="1100" y2="314" stroke="#000" marker-end="url(#f)"/>
+<text x="503" y="309">5: ListarCodigos() / ListarNombres()</text>
+<line x1="1110" y1="348" x2="1305" y2="348" stroke="#000" marker-end="url(#f)"/>
+<text x="1118" y="343">6: SELECT DISTINCT ... FROM Vuelo_C</text>
+<line x1="1305" y1="382" x2="1110" y2="382" stroke="#000" stroke-dasharray="5,3" marker-end="url(#o)"/>
+<text x="1118" y="377">códigos y rutas</text>
+<line x1="1100" y1="416" x2="495" y2="416" stroke="#000" stroke-dasharray="5,3" marker-end="url(#o)"/>
+<text x="503" y="411">List&lt;string&gt;</text>
+<line x1="485" y1="450" x2="290" y2="450" stroke="#000" stroke-dasharray="5,3" marker-end="url(#o)"/>
+<text x="298" y="445">List&lt;string&gt;</text>
+<path d="M290,484 h34 v14 h-29" fill="none" stroke="#000" marker-end="url(#f)"/>
+<text x="330" y="488">7: FiltrosDeArranque() (último mes)</text>
+<line x1="85" y1="532" x2="280" y2="532" stroke="#000" marker-end="url(#f)"/>
+<text x="93" y="527">8: Carga la consulta y presiona “Aplicar”</text>
+<line x1="290" y1="566" x2="485" y2="566" stroke="#000" marker-end="url(#f)"/>
+<text x="298" y="561">9: Consultar(codigo, nombre, fechaIni, fechaFin, soloConCambios)</text>
+<line x1="495" y1="600" x2="690" y2="600" stroke="#000" marker-end="url(#f)"/>
+<text x="503" y="595">10: ExigirPatente("Vuelos.Bitacora")</text>
+<path d="M495,634 h34 v14 h-29" fill="none" stroke="#000" marker-end="url(#f)"/>
+<text x="535" y="638">11: Valida fechaIni &lt;= fechaFin</text>
+<line x1="495" y1="682" x2="1100" y2="682" stroke="#000" marker-end="url(#f)"/>
+<text x="503" y="677">12: Listar(codigo, nombre, fechaIni, fechaFin, soloConCambios)</text>
+<line x1="1110" y1="716" x2="1305" y2="716" stroke="#000" marker-end="url(#f)"/>
+<text x="1118" y="711">13: SELECT ... FROM Vuelo_C</text>
+<line x1="1305" y1="750" x2="1110" y2="750" stroke="#000" stroke-dasharray="5,3" marker-end="url(#o)"/>
+<text x="1118" y="745">registros</text>
+<line x1="1100" y1="784" x2="495" y2="784" stroke="#000" stroke-dasharray="5,3" marker-end="url(#o)"/>
+<text x="503" y="779">List&lt;VueloCambio_GV42&gt;</text>
+<line x1="485" y1="818" x2="290" y2="818" stroke="#000" stroke-dasharray="5,3" marker-end="url(#o)"/>
+<text x="298" y="813">List&lt;VueloCambio_GV42&gt;</text>
+<line x1="280" y1="852" x2="85" y2="852" stroke="#000" stroke-dasharray="5,3" marker-end="url(#o)"/>
+<text x="93" y="847">Muestra la grilla con el registro activo resaltado</text>
+<line x1="85" y1="938" x2="280" y2="938" stroke="#000" marker-end="url(#f)"/>
+<text x="93" y="933">14: Selecciona un registro anterior y presiona “Activar”</text>
+<line x1="280" y1="972" x2="85" y2="972" stroke="#000" stroke-dasharray="5,3" marker-end="url(#o)"/>
+<text x="93" y="967">Pide confirmación</text>
+<line x1="85" y1="1006" x2="280" y2="1006" stroke="#000" marker-end="url(#f)"/>
+<text x="93" y="1001">15: Acepta</text>
+<line x1="290" y1="1040" x2="485" y2="1040" stroke="#000" marker-end="url(#f)"/>
+<text x="298" y="1035">16: ActivarVersion(cambio)</text>
+<line x1="495" y1="1074" x2="690" y2="1074" stroke="#000" marker-end="url(#f)"/>
+<text x="503" y="1069">17: ExigirPatente("Vuelos.Activar")</text>
+<line x1="495" y1="1108" x2="895" y2="1108" stroke="#000" marker-end="url(#f)"/>
+<text x="503" y="1103">18: BuscarActual(idVuelo)</text>
+<line x1="495" y1="1142" x2="895" y2="1142" stroke="#000" marker-end="url(#f)"/>
+<text x="503" y="1137">19: ContarReservasVigentes(idVuelo)</text>
+<line x1="495" y1="1176" x2="895" y2="1176" stroke="#000" marker-end="url(#f)"/>
+<text x="503" y="1171">20: ValidarReprogramacion(actual, salida, llegada)</text>
+<line x1="495" y1="1210" x2="1100" y2="1210" stroke="#000" marker-end="url(#f)"/>
+<text x="503" y="1205">21: ActivarVersion(idCambio)</text>
+<line x1="1110" y1="1244" x2="1305" y2="1244" stroke="#000" marker-end="url(#f)"/>
+<text x="1118" y="1239">22: UPDATE Vuelo_C SET Act ... (transacción)</text>
+<path d="M1315,1278 h34 v14 h-29" fill="none" stroke="#000" marker-end="url(#f)"/>
+<text x="1355" y="1282">23: TR_Vuelo_C_Activar actualiza Vuelo</text>
+<line x1="1305" y1="1326" x2="1110" y2="1326" stroke="#000" stroke-dasharray="5,3" marker-end="url(#o)"/>
+<text x="1118" y="1321">OK</text>
+<line x1="1100" y1="1360" x2="495" y2="1360" stroke="#000" stroke-dasharray="5,3" marker-end="url(#o)"/>
+<text x="503" y="1355">codigoVuelo</text>
+<line x1="495" y1="1394" x2="690" y2="1394" stroke="#000" marker-end="url(#f)"/>
+<text x="503" y="1389">24: Auditar("Version de vuelo activada")</text>
+<line x1="485" y1="1428" x2="290" y2="1428" stroke="#000" stroke-dasharray="5,3" marker-end="url(#o)"/>
+<line x1="280" y1="1462" x2="85" y2="1462" stroke="#000" stroke-dasharray="5,3" marker-end="url(#o)"/>
+<text x="93" y="1457">“Registro activado” y recarga la grilla</text>
+<metadata><c2pa:manifest>AAAWgmp1bWIAAAAeanVtZGMycGEAEQAQgAAAqgA4m3EDYzJwYQAAABZcanVtYgAAAEdqdW1kYzJtYQARABCAAACqADibcQN1cm46YzJwYTo4YTAzZjJlNS1kMTg2LTQ5MDgtYjRiYi1mNjcyMzdhZDk2MDgAAAADl2p1bWIAAAApanVtZGMyYXMAEQAQgAAAqgA4m3EDYzJwYS5hc3NlcnRpb25zAAAAALxqdW1iAAAARGp1bWRjYm9yABEAEIAAAKoAOJtxE2MycGEuaW5ncmVkaWVudC52MwAAAAAYYzJzaN94EyCOW1w/9lJtT5FW160AAABwY2JvcqNpZGM6Zm9ybWF0bWltYWdlL3N2Zyt4bWxqaW5zdGFuY2VJRHgseG1wOmlpZDplYTk3YzhhOS04MzRhLTQ4YjYtOTRmNC03YTFmODBhMjM1YzZscmVsYXRpb25zaGlwaHBhcmVudE9mAAAB4mp1bWIAAABBanVtZGNib3IAEQAQgAAAqgA4m3ETYzJwYS5hY3Rpb25zLnYyAAAAABhjMnNoY3niqTUr4uqk+B0Y1b9y/gAAAZljYm9yomdhY3Rpb25zgqJmYWN0aW9ua2MycGEub3BlbmVkanBhcmFtZXRlcnOha2luZ3JlZGllbnRzgaJjdXJseC1zZWxmI2p1bWJmPWMycGEuYXNzZXJ0aW9ucy9jMnBhLmluZ3JlZGllbnQudjNkaGFzaFgg5ZwFAh2X8WhZRXbeJYgnvEWLcIogQ86fz28otYAnUwGkZmFjdGlvbngdY29tLmFudGhyb3BpYy5jbGF1ZGUucHJvdmlkZWRqcGFyYW1ldGVyc6F4H2NvbS5hbnRocm9waWMub3JpZ2luLWNvbmZpZGVuY2VndW5rbm93bmtkZXNjcmlwdGlvbnhmQ2xhdWRlIHByb3ZpZGVkIHRoaXMgZmlsZSBhdCB0aGUgcmVxdWVzdCBvZiBhIHVzZXIgYW5kIG1heSBoYXZlIGNyZWF0ZWQgb3IgbW9kaWZpZWQgdGhlIGZpbGUgY29udGVudHMubXNvZnR3YXJlQWdlbnShZG5hbWVmQ2xhdWRlcmFsbEFjdGlvbnNJbmNsdWRlZPUAAADIanVtYgAAAEBqdW1kY2JvcgARABCAAACqADibcRNjMnBhLmhhc2guZGF0YQAAAAAYYzJzaMLILEUMRY7IsEPB2tRs69EAAACAY2JvcqVjYWxnZnNoYTI1NmNwYWRMAAAAAAAAAAAAAAAAZGhhc2hYIFoyAjo/rII+lhA4SLDRn/+VVtJMS5FxZYNgL/ijx1deZG5hbWVuanVtYmYgbWFuaWZlc3RqZXhjbHVzaW9uc4GiZXN0YXJ0GSg4Zmxlbmd0aBkeBAAAAj5qdW1iAAAAJ2p1bWRjMmNsABEAEIAAAKoAOJtxA2MycGEuY2xhaW0udjIAAAACD2Nib3KlY2FsZ2ZzaGEyNTZpc2lnbmF0dXJleE1zZWxmI2p1bWJmPS9jMnBhL3VybjpjMnBhOjhhMDNmMmU1LWQxODYtNDkwOC1iNGJiLWY2NzIzN2FkOTYwOC9jMnBhLnNpZ25hdHVyZWppbnN0YW5jZUlEeCx4bXA6aWlkOjk3YTBhNWRkLTVmMzctNDA5Yy05ZDA0LTdkODNmNjc5Y2EzMnJjcmVhdGVkX2Fzc2VydGlvbnODomN1cmx4LXNlbGYjanVtYmY9YzJwYS5hc3NlcnRpb25zL2MycGEuaW5ncmVkaWVudC52M2RoYXNoWCDlnAUCHZfxaFlFdt4liCe8RYtwiiBDzp/Pbyi1gCdTAaJjdXJseCpzZWxmI2p1bWJmPWMycGEuYXNzZXJ0aW9ucy9jMnBhLmFjdGlvbnMudjJkaGFzaFggWBQ4mb3w+tC/gCFmQPgeCU20p7XPMheiIby16oATwLyiY3VybHgpc2VsZiNqdW1iZj1jMnBhLmFzc2VydGlvbnMvYzJwYS5oYXNoLmRhdGFkaGFzaFgglyqle8YkV/7kIzzLVZj3KHHLvSvhPKxE12U9De3roHp0Y2xhaW1fZ2VuZXJhdG9yX2luZm+jZG5hbWVvQW50aHJvcGljIEZpbGVzZ3ZlcnNpb25lMS4wLjBrc3BlY1ZlcnNpb25lMi40LjAAABA4anVtYgAAAChqdW1kYzJjcwARABCAAACqADibcQNjMnBhLnNpZ25hdHVyZQAAABAIY2JvctKEWQISogEmGCFZAgowggIGMIIBjaADAgECAhRA5aAK7sI50L64g/oGQgU9Z1UTADAKBggqhkjOPQQDAzBJMRcwFQYDVQQKEw5BbnRocm9waWMsIFBCQzEuMCwGA1UEAxMlQW50aHJvcGljIENvbnRlbnQgQ3JlZGVudGlhbHMgUm9vdCBDQTAeFw0yNjA4MDcxODQzNTZaFw0yODA4MDYxOTQzNTZaMEQxFzAVBgNVBAoTDkFudGhyb3BpYywgUEJDMSkwJwYDVQQDEyBBbnRocm9waWMgQ2xhdWRlIENvbnRlbnQgU2lnbmluZzBZMBMGByqGSM49AgEGCCqGSM49AwEHA0IABJh6CmvLUBgFFNU0vUKlOVtE6djd17L5SuwX0LemFisBM3dkd/3cyjxFA3Qo5S46fX0/ihY0VZ7mfb9KF703t5OjWDBWMA4GA1UdDwEB/wQEAwIHgDAVBgNVHSUEDjAMBgorBgEEAYPoXgIBMAwGA1UdEwEB/wQCMAAwHwYDVR0jBBgwFoAUzlHiBIFOZFsj+OPEz5o+nMHXXMIwCgYIKoZIzj0EAwMDZwAwZAIwMXMdFJ4BetLLVY7ORuE9noqbbAZOZn/aArXyTwFAZfKrPzxF2vPoJNf1+UCdg1XGAjBwX1zd9WGqYkqmL5SFqw1QySjr1zJfpJM9+1rdDwSPLMOPOjKuiXjoU/pUUeG9RwmhY3BhZFkNngAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAPZYQDHopZKUkIh8LWsByDnCWRKjRCjZbProo5icVofMMpnjs4DVoIdsjF/euw/OcBVmCiah1u/ERYvVJ9dM7wYU0qQ=</c2pa:manifest></metadata></svg>

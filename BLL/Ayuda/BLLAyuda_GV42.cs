@@ -42,6 +42,7 @@ namespace BLL
             Tema("bitacoraVuelos", "maestros", "FRMBitacoraVuelos_GV42"),
             Tema("clientes", "maestros", "FRMMaestroClientes_GV42"),
             Tema("aeropuertos", "maestros", "FRMMaestroAeropuertos_GV42"),
+            Tema("aerolineas", "maestros", "FRMMaestroAerolineas_GV42"),
 
             Tema("reservas", null),
             Tema("nuevaReserva", "reservas", "FRMReservarVuelo_GV42"),

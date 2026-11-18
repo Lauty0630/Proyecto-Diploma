@@ -26,8 +26,16 @@ namespace DAL
         private const string NOMBRE_SCRIPT_BASE = "EsquemaBase.sql";
         private const string NOMBRE_SCRIPT_NEGOCIO = "ActualizacionNegocio.sql";
 
+        // Instalación nueva sin datos de prueba (ver InstalarBaseDatos):
+        //  - LimpiarDatos.sql deja solo la seguridad (roles, permisos y un administrador) y las tablas
+        //    que necesita el sistema; borra vuelos, clientes, reservas y la bitácora.
+        //  - LimpiarCatalogos.sql borra también las aerolíneas y los aeropuertos y apaga el generador
+        //    de vuelos. No se ejecuta si se eligen los datos de demostración.
+        private const string NOMBRE_SCRIPT_LIMPIAR = "LimpiarDatos.sql";
+        private const string NOMBRE_SCRIPT_LIMPIAR_CATALOGOS = "LimpiarCatalogos.sql";
+
         // Subir este número cuando se agregue un bloque nuevo al final de ActualizacionBD.sql.
-        public const int VERSION_ACTUAL = 15;
+        public const int VERSION_ACTUAL = 16;
 
         // Lo que tiene que existir en una base de gestión de usuarios (sin negocio).
         private static readonly string[] OBJETOS_BASE =
@@ -68,12 +76,18 @@ namespace DAL
 
         // Instalación desde cero. Si algo falla a mitad de camino se borra la base incompleta,
         // así el próximo intento vuelve a instalar en lugar de encontrar una base "a medias".
-        public static void InstalarBaseDatos(string instancia)
+        // Sin datos de demostración queda solo lo necesario para ingresar: roles, permisos y un
+        // administrador. Con datos de demostración quedan además las aerolíneas y los aeropuertos, y el
+        // sistema genera los vuelos de los próximos días (listos para reservar).
+        public static void InstalarBaseDatos(string instancia, bool datosDemostracion = false)
         {
             try
             {
                 EjecutarScript(instancia, NOMBRE_SCRIPT);
                 EjecutarScript(instancia, NOMBRE_SCRIPT_ACTUALIZACION);
+                EjecutarScript(instancia, NOMBRE_SCRIPT_LIMPIAR);
+                if (!datosDemostracion)
+                    EjecutarScript(instancia, NOMBRE_SCRIPT_LIMPIAR_CATALOGOS);
             }
             catch
             {
@@ -184,10 +198,10 @@ namespace DAL
         }
 
         // Borra la base (cierra antes las conexiones abiertas) y la instala de nuevo.
-        public static void ReinstalarBaseDatos(string instancia)
+        public static void ReinstalarBaseDatos(string instancia, bool datosDemostracion = false)
         {
             EliminarBaseDatos(instancia);
-            InstalarBaseDatos(instancia);
+            InstalarBaseDatos(instancia, datosDemostracion);
         }
 
         // Genera los vuelos (con clases y asientos) que falten para los próximos días.

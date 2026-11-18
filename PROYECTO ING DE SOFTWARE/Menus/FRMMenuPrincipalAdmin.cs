@@ -62,6 +62,7 @@ namespace PROYECTO_ING_DE_SOFTWARE
             bitacoraVuelosToolStripMenuItem.Text = IdiomaManager_GV42.T("menu.bitacoraVuelos");
             clientesToolStripMenuItem.Text = IdiomaManager_GV42.T("menu.clientes");
             aeropuertosToolStripMenuItem.Text = IdiomaManager_GV42.T("menu.aeropuertos");
+            aerolineasToolStripMenuItem.Text = IdiomaManager_GV42.T("menu.aerolineas");
 
             reportesToolStripMenuItem.Text = IdiomaManager_GV42.T("menu.reportes");
             reporteReservasToolStripMenuItem.Text = IdiomaManager_GV42.T("menu.reporteReservas");
@@ -202,7 +203,10 @@ namespace PROYECTO_ING_DE_SOFTWARE
             clientesToolStripMenuItem.Visible = puedeVerClientes;
             bool puedeGestionarAeropuertos = dataKeys.Contains("Aeropuertos.Gestionar");
             aeropuertosToolStripMenuItem.Visible = puedeGestionarAeropuertos;
-            vuelosToolStripMenuItem.Visible = puedeGestionarVuelos || puedeVerBitacoraVuelos || puedeVerClientes || puedeGestionarAeropuertos;
+            bool puedeGestionarAerolineas = dataKeys.Contains("Aerolineas.Gestionar");
+            aerolineasToolStripMenuItem.Visible = puedeGestionarAerolineas;
+            vuelosToolStripMenuItem.Visible = puedeGestionarVuelos || puedeVerBitacoraVuelos || puedeVerClientes || puedeGestionarAeropuertos
+                                              || puedeGestionarAerolineas;
 
             bool puedeVerReporteReservas = dataKeys.Contains("Reportes.Reservas");
             reporteReservasToolStripMenuItem.Visible = puedeVerReporteReservas;
@@ -355,6 +359,12 @@ namespace PROYECTO_ING_DE_SOFTWARE
         private void aeropuertosToolStripMenuItem_Click(object sender, EventArgs e)
         {
             AbrirFormularioHijo(new FRMMaestroAeropuertos_GV42());
+        }
+
+        // Maestros: maestro de aerolíneas (ABM). Patente Aerolineas.Gestionar.
+        private void aerolineasToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            AbrirFormularioHijo(new FRMMaestroAerolineas_GV42());
         }
 
         // Reportes: el de reservas (RFN 1, rol Gerente) y el de check-in (RFN 2, mostrador y Gerente).

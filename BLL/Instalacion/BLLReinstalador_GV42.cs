@@ -78,10 +78,11 @@ namespace BLL
             DejarLista();
         }
 
-        // Borra la base y la instala de nuevo con los datos iniciales.
-        public void ReinstalarLimpia()
+        // Borra la base y la instala de nuevo: sin datos (solo roles, permisos y el administrador) o,
+        // si se pide, con los datos de demostración.
+        public void ReinstalarLimpia(bool datosDemostracion = false)
         {
-            BLLInstalador_GV42.ReinstalarBaseDatos(Instancia);
+            BLLInstalador_GV42.ReinstalarBaseDatos(Instancia, datosDemostracion);
             DejarLista();
         }
 

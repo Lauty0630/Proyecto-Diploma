@@ -30,9 +30,11 @@ namespace BLL
             return InstaladorBD_GV42.ExisteBaseDatos(instancia);
         }
 
-        public static void InstalarBaseDatos(string instancia)
+        // Sin datos de demostración: solo roles, permisos y el administrador. Con datos de demostración:
+        // también aerolíneas y aeropuertos, y vuelos de los próximos días para poder reservar enseguida.
+        public static void InstalarBaseDatos(string instancia, bool datosDemostracion = false)
         {
-            InstaladorBD_GV42.InstalarBaseDatos(instancia);
+            InstaladorBD_GV42.InstalarBaseDatos(instancia, datosDemostracion);
         }
 
         // Instalación por etapas: crea solo la gestión de usuarios (sin el negocio).
@@ -78,9 +80,9 @@ namespace BLL
             InstaladorBD_GV42.ActualizarBaseDatos(instancia);
         }
 
-        public static void ReinstalarBaseDatos(string instancia)
+        public static void ReinstalarBaseDatos(string instancia, bool datosDemostracion = false)
         {
-            InstaladorBD_GV42.ReinstalarBaseDatos(instancia);
+            InstaladorBD_GV42.ReinstalarBaseDatos(instancia, datosDemostracion);
         }
 
         #endregion
