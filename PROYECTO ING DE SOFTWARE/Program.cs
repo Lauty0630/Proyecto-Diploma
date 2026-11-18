@@ -114,8 +114,10 @@ namespace PROYECTO_ING_DE_SOFTWARE
 #if DEBUG
                     try
                     {
+                        string errorDatos;
                         using (var aviso = CrearAviso("instalacion.avisoInstalando"))
-                            BLLInstalador_GV42.InstalarBaseDatos(instancia);
+                            errorDatos = BLLInstalador_GV42.InstalarBaseDatosConDatosDePrueba(instancia);
+                        AvisarErrorDatosDemostracion(errorDatos);
                         if (!PrepararBaseDatos(instancia)) return false;
                         BLLInstalador_GV42.ConfigurarConexion(instancia);
                         return true;
@@ -143,6 +145,15 @@ namespace PROYECTO_ING_DE_SOFTWARE
                 BLLInstalador_GV42.ConfigurarConexion(frm.InstanciaElegida);
                 return true;
             }
+        }
+
+        // La base se creó pero los datos de demostración no se pudieron cargar: se avisa y se sigue.
+        internal static void AvisarErrorDatosDemostracion(string error)
+        {
+            if (string.IsNullOrEmpty(error)) return;
+            MessageBox.Show(IdiomaManager_GV42.T("instalacion.errorDatosDemo", error),
+                            IdiomaManager_GV42.T("instalacion.tituloInstalacion"),
+                            MessageBoxButtons.OK, MessageBoxIcon.Warning);
         }
 
         // Deja la base lista para esta versión del sistema, en cualquier computadora:

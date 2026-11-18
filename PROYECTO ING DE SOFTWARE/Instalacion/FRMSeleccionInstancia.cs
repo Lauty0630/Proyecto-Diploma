@@ -106,7 +106,9 @@ namespace PROYECTO_ING_DE_SOFTWARE
                     lblEstado.Text = IdiomaManager_GV42.T("instalacion.instalando");
                     Application.DoEvents();
 
-                    BLLInstalador_GV42.InstalarBaseDatos(instancia);
+                    // Ejecutado desde el código: la base se crea con los datos de demostración.
+                    string errorDatos = BLLInstalador_GV42.InstalarBaseDatosConDatosDePrueba(instancia);
+                    Program.AvisarErrorDatosDemostracion(errorDatos);
 
                     MessageBox.Show(
                         IdiomaManager_GV42.T("instalacion.exitoMensaje"),

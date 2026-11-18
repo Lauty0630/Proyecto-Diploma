@@ -598,6 +598,7 @@
     "instalacion.avisoActualizando": "Actualizando la base de datos a la versión actual...\nLos datos existentes se conservan.",
     "instalacion.avisoVuelos": "Actualizando los vuelos disponibles...",
     "instalacion.tituloInstalacion": "Instalación",
+    "instalacion.errorDatosDemo": "La base de datos se creó, pero no se pudieron cargar los datos de demostración:\n\n{0}\n\nPodés cargarlos después ejecutando DatosDemostracion.sql en SQL Server Management Studio.",
     "instalacion.tituloActualizacion": "Actualización",
     "instalacion.tituloVuelos": "Vuelos",
     "instalacion.errorInstalarEn": "No se pudo instalar la base de datos en {0}.\n\n{1}\n\nElegí la instancia de SQL Server en la siguiente pantalla.",

@@ -598,6 +598,7 @@
     "instalacion.avisoActualizando": "Updating the database to the current version...\nExisting data is kept.",
     "instalacion.avisoVuelos": "Updating the available flights...",
     "instalacion.tituloInstalacion": "Installation",
+    "instalacion.errorDatosDemo": "The database was created, but the demo data could not be loaded:\n\n{0}\n\nYou can load it later by running DatosDemostracion.sql in SQL Server Management Studio.",
     "instalacion.tituloActualizacion": "Update",
     "instalacion.tituloVuelos": "Flights",
     "instalacion.errorInstalarEn": "The database could not be installed on {0}.\n\n{1}\n\nChoose the SQL Server instance on the next screen.",

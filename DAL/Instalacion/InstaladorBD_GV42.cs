@@ -34,6 +34,11 @@ namespace DAL
         private const string NOMBRE_SCRIPT_LIMPIAR = "LimpiarDatos.sql";
         private const string NOMBRE_SCRIPT_LIMPIAR_CATALOGOS = "LimpiarCatalogos.sql";
 
+        // Datos completos de prueba (clientes, vuelos, reservas, pagos, check-in, usuarios por rol).
+        // Solo se cargan cuando el sistema crea la base al ejecutarse desde el código (zip de Git);
+        // el instalador no los usa.
+        private const string NOMBRE_SCRIPT_DEMOSTRACION = "DatosDemostracion.sql";
+
         // Subir este número cuando se agregue un bloque nuevo al final de ActualizacionBD.sql.
         public const int VERSION_ACTUAL = 16;
 
@@ -94,6 +99,17 @@ namespace DAL
                 try { EliminarBaseDatos(instancia); } catch { }
                 throw;
             }
+        }
+
+        // Carga DatosDemostracion.sql sobre una base recién creada. Devuelve false si el archivo no está
+        // junto al .exe (por ejemplo, en el sistema instalado). El script tiene su propia transacción:
+        // si falla no deja nada a medias, y no hace nada si la base ya tiene reservas.
+        public static bool CargarDatosDemostracion(string instancia)
+        {
+            string ruta = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, NOMBRE_SCRIPT_DEMOSTRACION);
+            if (!File.Exists(ruta)) return false;
+            EjecutarScript(instancia, NOMBRE_SCRIPT_DEMOSTRACION);
+            return true;
         }
 
         // Instalación inicial por etapas: crea solo la gestión de usuarios (sin el negocio). Igual que

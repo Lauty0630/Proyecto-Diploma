@@ -130,6 +130,10 @@
             this.pnlContenido.Controls.Add(this.pnlFiltros);
             this.pnlContenido.Controls.Add(this.pnlSeparadorAbajo);
             this.pnlContenido.Controls.Add(this.pnlResumen);
+            // Si la ventana es baja (por ejemplo, dentro del menú), el contenido se desplaza con una barra
+            // vertical en vez de achicar la grilla hasta que no se ve ningún pasajero.
+            this.pnlContenido.AutoScroll = true;
+            this.pnlContenido.AutoScrollMinSize = new System.Drawing.Size(0, 700);
             this.pnlContenido.Dock = System.Windows.Forms.DockStyle.Fill;
             this.pnlContenido.Location = new System.Drawing.Point(0, 80);
             this.pnlContenido.Name = "pnlContenido";

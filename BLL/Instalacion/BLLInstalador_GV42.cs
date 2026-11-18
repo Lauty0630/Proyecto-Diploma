@@ -1,5 +1,6 @@
 ﻿using DAL;
 using Servicios.Instalacion;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -35,6 +36,23 @@ namespace BLL
         public static void InstalarBaseDatos(string instancia, bool datosDemostracion = false)
         {
             InstaladorBD_GV42.InstalarBaseDatos(instancia, datosDemostracion);
+        }
+
+        // Sistema ejecutado desde el código (zip de Git): crea la base completa y la llena con los datos de
+        // DatosDemostracion.sql, para poder probar todo apenas se abre. Si los datos no se pueden cargar,
+        // la base queda creada (vacía) y se devuelve el motivo para avisarlo; si todo salió bien, null.
+        public static string InstalarBaseDatosConDatosDePrueba(string instancia)
+        {
+            InstalarBaseDatos(instancia);
+            try
+            {
+                InstaladorBD_GV42.CargarDatosDemostracion(instancia);
+                return null;
+            }
+            catch (Exception ex)
+            {
+                return ex.Message;
+            }
         }
 
         // Instalación por etapas: crea solo la gestión de usuarios (sin el negocio).
