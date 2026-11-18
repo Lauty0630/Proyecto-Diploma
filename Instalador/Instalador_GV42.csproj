@@ -61,6 +61,14 @@
       <Link>EsquemaCompleto.sql</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
+    <Content Include="..\PROYECTO ING DE SOFTWARE\EsquemaBase.sql">
+      <Link>EsquemaBase.sql</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\PROYECTO ING DE SOFTWARE\ActualizacionNegocio.sql">
+      <Link>ActualizacionNegocio.sql</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
     <Content Include="..\PROYECTO ING DE SOFTWARE\ActualizacionBD.sql">
       <Link>ActualizacionBD.sql</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>

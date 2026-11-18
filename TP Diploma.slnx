@@ -5,8 +5,5 @@
   <Project Path="Instalador/Instalador_GV42.csproj" Id="7c1f0a52-3b64-4e0e-9a41-5d2b8f6c1e37" />
   <Project Path="InstaladorUnico/InstaladorUnico_GV42.csproj" Id="9a3d5e71-4c28-4b6f-8e15-2f7b0c9d4a63" />
   <Project Path="PROYECTO ING DE SOFTWARE/UI_GV42.csproj" Id="4312ec5d-0c95-4837-96db-871e3ec4bd68" />
-  <Project Path="PROYECTO_ING_DE_SOFTWARE_Setup/PROYECTO_ING_DE_SOFTWARE_Setup.vdproj" Type="Installer">
-    <Build />
-  </Project>
   <Project Path="Servicios/Servicios_GV42.csproj" Id="662e6a38-a516-4610-ae55-4a12fc4f0fcb" />
 </Solution>

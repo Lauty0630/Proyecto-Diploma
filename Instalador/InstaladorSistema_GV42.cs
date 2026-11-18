@@ -130,6 +130,12 @@ namespace Instalador
             return BLLInstalador_GV42.ObjetosFaltantes(instancia).Count > 0 ? EstadoBase_GV42.Antigua : EstadoBase_GV42.Completa;
         }
 
+        // Tablas o columnas que le faltan a una base de una versión anterior (para explicar por qué no se actualiza).
+        public List<string> ObjetosFaltantes(string instancia)
+        {
+            return BLLInstalador_GV42.ObjetosFaltantes(instancia);
+        }
+
         // Botón "Probar conexión": devuelve un texto para mostrar (o lanza una excepción si no conecta).
         public string ProbarConexion(string instancia)
         {
@@ -142,7 +148,8 @@ namespace Instalador
                 case EstadoBase_GV42.Completa:
                     return "Conexión correcta. Ya existe la base completa del sistema.";
                 default:
-                    return "Conexión correcta. Existe una base de una versión muy anterior.";
+                    return "Conexión correcta. Existe una base de una versión anterior que no se puede actualizar " +
+                           "(le falta: " + string.Join(", ", ObjetosFaltantes(instancia)) + "): hay que reinstalarla.";
             }
         }
 

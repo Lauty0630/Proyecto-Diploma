@@ -39,6 +39,9 @@ namespace Instalador
         private bool _ejecutando;
         private bool _terminado;
         private int _pagina;
+
+        // Si la base existente es de una versión anterior: qué tablas o columnas le faltan (para explicarlo).
+        private List<string> _faltantes = new List<string>();
         private string _carpetaInstalada; // dónde quedó instalado (para ejecutar el sistema al finalizar)
 
         #endregion
@@ -123,7 +126,9 @@ namespace Instalador
                     titulo = "Datos iniciales";
                     subtitulo = _estado == EstadoBase_GV42.SinBase
                         ? "Elegí con qué datos se crea la base."
-                        : "Ya existe una base de datos en esa instancia: elegí qué hacer con ella.";
+                        : _estado == EstadoBase_GV42.Antigua
+                            ? "La base que hay en esa instancia es de una versión anterior y no se puede actualizar: reinstalala."
+                            : "Ya existe una base de datos en esa instancia: elegí qué hacer con ella.";
                     break;
                 case PAG_TAREAS:
                     titulo = "Seleccione las Tareas Adicionales";
@@ -215,6 +220,9 @@ namespace Instalador
             try
             {
                 _estado = _instalador.EstadoBase(instancia);
+                _faltantes = _estado == EstadoBase_GV42.Antigua
+                    ? _instalador.ObjetosFaltantes(instancia)
+                    : new List<string>();
             }
             catch (Exception ex)
             {
@@ -294,8 +302,13 @@ namespace Instalador
                     AgregarReinstalaciones(lista);
                     break;
 
-                default: // Antigua
-                    AgregarReinstalaciones(lista);
+                default: // Antigua: se creó con una versión anterior del sistema y no se puede actualizar.
+                    // Se recomienda (y queda elegida) la reinstalación completa, que crea la última versión.
+                    lista.Add(Nueva(OpcionBase_GV42.ReinstalarCompleta, "Reinstalar la base completa (recomendado)",
+                        "La base actual es de una versión anterior del sistema" +
+                        (_faltantes.Count > 0 ? " (le falta: " + string.Join(", ", _faltantes) + ")" : "") +
+                        ". Se borra y se crea la última versión con todo el negocio, sin datos (o con los de demostración)."));
+                    AgregarReinstalaciones(lista, false);
                     break;
             }
 
@@ -342,12 +355,13 @@ namespace Instalador
         }
 
         // Reinstalar (con cualquiera de las dos bases) y restaurar un backup: las tres borran los datos actuales.
-        private static void AgregarReinstalaciones(List<Opcion> lista)
+        private static void AgregarReinstalaciones(List<Opcion> lista, bool incluirCompleta = true)
         {
             lista.Add(Nueva(OpcionBase_GV42.ReinstalarSoloUsuarios, "Reinstalar solo con gestión de usuarios",
                 "Borra la base y la crea de nuevo, solo con la gestión de usuarios. Se pierden todos los datos cargados."));
-            lista.Add(Nueva(OpcionBase_GV42.ReinstalarCompleta, "Reinstalar la base completa",
-                "Borra la base y la crea de nuevo con todo el negocio, sin datos (o con los de demostración). Se pierde lo cargado."));
+            if (incluirCompleta)
+                lista.Add(Nueva(OpcionBase_GV42.ReinstalarCompleta, "Reinstalar la base completa",
+                    "Borra la base y la crea de nuevo con todo el negocio, sin datos (o con los de demostración). Se pierde lo cargado."));
             lista.Add(Nueva(OpcionBase_GV42.RestaurarBackup, "Restaurar un backup (.bak)",
                 "La base vuelve al estado del archivo que elijas. Se pierde lo cargado después de ese backup."));
         }
