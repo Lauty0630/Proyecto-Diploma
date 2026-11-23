@@ -84,11 +84,6 @@ namespace Servicios.Instalacion
             return $"Data Source={instancia};Initial Catalog=\"{nombreBd}\";Integrated Security=True";
         }
 
-        public static string ArmarConnectionStringMaster(string instancia)
-        {
-            return $"Data Source={instancia};Initial Catalog=master;Integrated Security=True";
-        }
-
         #endregion
     }
 }

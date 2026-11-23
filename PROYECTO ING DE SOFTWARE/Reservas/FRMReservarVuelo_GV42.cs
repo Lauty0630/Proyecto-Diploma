@@ -97,7 +97,7 @@ namespace PROYECTO_ING_DE_SOFTWARE
             { new List<CtrlEquipajePasajero_GV42>(), new List<CtrlEquipajePasajero_GV42>() };
         private TipoAdicional_GV42 _servicioEquipaje;
 
-        // Ofertas para el cliente (reporte inteligente, 3ra entrega): solo existen con ENTREGA_3_ACTIVA.
+        // Ofertas para el cliente (reporte inteligente).
         private CtrlOfertasCliente_GV42 _ctrlOfertas;
         private readonly BLLOfertasCliente_GV42 _ofertas = new BLLOfertasCliente_GV42();
 
@@ -1075,12 +1075,9 @@ namespace PROYECTO_ING_DE_SOFTWARE
 
         #region Ofertas para el cliente (reporte inteligente)
 
-        // Panel "Ofertas para vos" arriba de la lista de servicios. Es de la 3ra entrega: con
-        // ENTREGA_3_ACTIVA = false no se crea y el paso se ve igual que antes.
+        // Panel "Ofertas para vos" arriba de la lista de servicios.
         private void ConfigurarOfertas()
         {
-            if (!Entregas_GV42.ENTREGA_3_ACTIVA) return;
-
             _ctrlOfertas = new CtrlOfertasCliente_GV42();
             _ctrlOfertas.AgregarSolicitado += OfertaAgregada;
             pnlPasoAdicionales.Controls.Add(_ctrlOfertas);

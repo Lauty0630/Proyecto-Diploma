@@ -85,12 +85,6 @@
     <Compile Include="Menus\FRMMenuPrincipalAdmin.Designer.cs">
       <DependentUpon>FRMMenuPrincipalAdmin.cs</DependentUpon>
     </Compile>
-    <Compile Include="Menus\FRMMenuPrincipalUsuario.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="Menus\FRMMenuPrincipalUsuario.Designer.cs">
-      <DependentUpon>FRMMenuPrincipalUsuario.cs</DependentUpon>
-    </Compile>
     <Compile Include="Seguridad\FRMGestionUsuariosAdmin.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -243,12 +237,6 @@
     <Compile Include="Ayuda\FRMAyuda_GV42.Designer.cs">
       <DependentUpon>FRMAyuda_GV42.cs</DependentUpon>
     </Compile>
-    <Compile Include="Instalacion\FRMReinstalador_GV42.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="Instalacion\FRMReinstalador_GV42.Designer.cs">
-      <DependentUpon>FRMReinstalador_GV42.cs</DependentUpon>
-    </Compile>
     <Compile Include="Reportes\FRMReporteMillas_GV42.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -328,9 +316,6 @@
     </EmbeddedResource>
     <EmbeddedResource Include="Menus\FRMMenuPrincipalAdmin.resx">
       <DependentUpon>FRMMenuPrincipalAdmin.cs</DependentUpon>
-    </EmbeddedResource>
-    <EmbeddedResource Include="Menus\FRMMenuPrincipalUsuario.resx">
-      <DependentUpon>FRMMenuPrincipalUsuario.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Properties\Resources.resx">
       <Generator>ResXFileCodeGenerator</Generator>

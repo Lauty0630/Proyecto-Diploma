@@ -301,7 +301,6 @@
             this.ayudaToolStripMenuItem.Padding = new System.Windows.Forms.Padding(8, 0, 8, 0);
             this.ayudaToolStripMenuItem.Size = new System.Drawing.Size(66, 23);
             this.ayudaToolStripMenuItem.Text = "Ayuda";
-            this.ayudaToolStripMenuItem.Visible = false;
             //
             // temasAyudaToolStripMenuItem
             //

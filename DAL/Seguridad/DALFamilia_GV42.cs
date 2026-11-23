@@ -91,20 +91,6 @@ namespace DAL
             });
         }
 
-        public int CantidadRolesQueUsan(int idFamilia)
-        {
-            string q = "SELECT COUNT(*) FROM RolFamilia WHERE IdFamilia = @Id";
-            object res = _acceso.leerEscalar(q, new[] { new SqlParameter("@Id", idFamilia) });
-            return res == null || res == DBNull.Value ? 0 : Convert.ToInt32(res);
-        }
-
-        public int CantidadFamiliasQueLaContienen(int idFamilia)
-        {
-            string q = "SELECT COUNT(*) FROM FamiliaIntegrada WHERE IdFamiliaHija = @Id";
-            object res = _acceso.leerEscalar(q, new[] { new SqlParameter("@Id", idFamilia) });
-            return res == null || res == DBNull.Value ? 0 : Convert.ToInt32(res);
-        }
-
         public List<string> NombresRolesQueUsan(int idFamilia)
         {
             string q = "SELECT R.Nombre FROM RolFamilia RF " +

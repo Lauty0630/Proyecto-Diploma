@@ -242,30 +242,6 @@ namespace BLL
             }
         }
 
-        public void RestaurarUltimoBackup()
-        {
-            BLLNegocioUtil_GV42.ExigirPatente("Integridad.Restore", IdiomaManager_GV42.T("neg.integridad.sinPermisoRestore"));
-            string ruta = ObtenerUltimoBackup();
-            if (string.IsNullOrEmpty(ruta))
-                throw new Exception(IdiomaManager_GV42.T("err.backupSinDisponibles"));
-            RestaurarBackupDesdeRuta(ruta);
-        }
-
-        public void HacerBackupEnRuta(string rutaArchivoBak)
-        {
-            BLLNegocioUtil_GV42.ExigirPatente("Backup.Crear", IdiomaManager_GV42.T("neg.integridad.sinPermisoBackup"));
-            if (string.IsNullOrWhiteSpace(rutaArchivoBak))
-                throw new Exception(IdiomaManager_GV42.T("err.backupRutaObligatoria"));
-
-            string carpeta = Path.GetDirectoryName(rutaArchivoBak);
-            if (!string.IsNullOrEmpty(carpeta) && !Directory.Exists(carpeta))
-                Directory.CreateDirectory(carpeta);
-
-            _dal.HacerBackupSQL(CONN_MASTER, NOMBRE_BD, rutaArchivoBak);
-
-            BLLNegocioUtil_GV42.Auditar("Admin", "Backup manual generado", $"Ruta: {rutaArchivoBak}", "Media");
-        }
-
         // Sin control de permisos: solo para RestaurarBackupManual (que exige la patente) y para el
         // reinstalador (que antes valida las credenciales de un administrador). Antes era público y
         // cualquier pantalla podía restaurar sin permiso.
@@ -297,15 +273,6 @@ namespace BLL
 
                 TimeSpan intervalo = TimeSpan.FromHours(INTERVALO_BACKUP_HORAS);
                 _timerBackup = new Timer(EjecutarBackupProgramado, null, intervalo, intervalo);
-            }
-        }
-
-        public void DetenerBackupsProgramados()
-        {
-            lock (_lockTimer)
-            {
-                _timerBackup?.Dispose();
-                _timerBackup = null;
             }
         }
 

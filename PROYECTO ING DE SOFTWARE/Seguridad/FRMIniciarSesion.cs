@@ -272,10 +272,10 @@ namespace PROYECTO_ING_DE_SOFTWARE
 
         #endregion
 
-        // F1: ayuda de esta pantalla (3ra entrega; no hace nada mientras ENTREGA_3_ACTIVA sea false).
+        // F1: ayuda de esta pantalla.
         protected override bool ProcessCmdKey(ref Message msg, Keys keyData)
         {
-            if (keyData == Keys.F1 && Servicios.Entregas_GV42.ENTREGA_3_ACTIVA)
+            if (keyData == Keys.F1)
             {
                 FRMAyuda_GV42.AbrirComoDialogo(this, new BLL.BLLAyuda_GV42().TemaDeFormulario(GetType().Name));
                 return true;

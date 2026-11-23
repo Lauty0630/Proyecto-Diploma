@@ -106,13 +106,6 @@ namespace DAL
             });
         }
 
-        public bool EstaEnUso(int idRol)
-        {
-            string q = "SELECT COUNT(1) FROM Usuario WHERE IdRol = @Id";
-            object res = _acceso.leerEscalar(q, new[] { new SqlParameter("@Id", idRol) });
-            return Convert.ToInt32(res) > 0;
-        }
-
         public int CantidadUsuariosConRol(int idRol)
         {
             string q = "SELECT COUNT(1) FROM Usuario WHERE IdRol = @Id";

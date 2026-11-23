@@ -31,8 +31,7 @@ namespace BLL
     // La recomendación de cada pasajero también incluye los servicios adicionales que conviene ofrecerle
     // (BLLOfertasCliente_GV42): el mismo motor se le muestra al cliente en su pantalla de reserva.
     //
-    // Por ahora usa las patentes del reporte de reservas (Gerente). En la 3ra entrega se le pueden
-    // dar patentes propias: el bloque está preparado (comentado) al final de ActualizacionBD.sql.
+    // Usa las patentes del reporte de reservas (Gerente).
     public class BLLReporteMillas_GV42
     {
         #region Constantes

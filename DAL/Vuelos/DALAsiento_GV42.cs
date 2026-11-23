@@ -28,25 +28,6 @@ namespace DAL
 
         #region Métodos públicos
 
-        // Asientos de la clase que todavía no fueron asignados a ningún check-in.
-        public List<Asiento_GV42> ListarLibres(int idVuelo, ClaseVuelo_GV42 clase)
-        {
-            string query = SELECT_BASE +
-                " WHERE A.IdVuelo = @IdVuelo AND A.IdClase = @IdClase" +
-                "   AND NOT EXISTS (SELECT 1 FROM CheckIn CI WHERE CI.IdAsiento = A.Id)" +
-                "   AND NOT EXISTS (SELECT 1 FROM ReservaPasajero RP WHERE RP.IdAsiento = A.Id)" +
-                " ORDER BY A.Fila, A.Letra";
-
-            DataTable dt = _acceso.leer(query, new[] {
-                new SqlParameter("@IdVuelo", idVuelo),
-                new SqlParameter("@IdClase", (int)clase)
-            });
-
-            var lista = new List<Asiento_GV42>();
-            foreach (DataRow r in dt.Rows) lista.Add(Mapear(r));
-            return lista;
-        }
-
         // Asiento libre de la clase elegido al azar, para asignar automáticamente (tarifa sin asiento
         // elegido). Se sortea entre las butacas comunes; las preferenciales solo si no queda otra.
         public Asiento_GV42 BuscarLibreAlAzar(int idVuelo, ClaseVuelo_GV42 clase)

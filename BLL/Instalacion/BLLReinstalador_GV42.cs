@@ -6,8 +6,8 @@ using System.IO;
 
 namespace BLL
 {
-    // Reinstalador (3ra entrega): se usa desde el login cuando el sistema ya está instalado y hay que
-    // recuperar la base. Ofrece dos caminos:
+    // Reinstalador: lo usa el instalador cuando el sistema ya está instalado y hay que recuperar la
+    // base. Ofrece dos caminos:
     //  - Restaurar un backup (.bak): la base vuelve al estado de ese backup.
     //  - Reinstalar la base limpia: se borra y se instala de nuevo con los datos iniciales.
     // Si la base se puede leer, exige un usuario con la patente Integridad.Restore (administrador).

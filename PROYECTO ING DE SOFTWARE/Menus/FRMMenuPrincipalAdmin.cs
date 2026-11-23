@@ -68,7 +68,6 @@ namespace PROYECTO_ING_DE_SOFTWARE
             reporteReservasToolStripMenuItem.Text = IdiomaManager_GV42.T("menu.reporteReservas");
             reporteCheckInToolStripMenuItem.Text = IdiomaManager_GV42.T("menu.reporteCheckIn");
 
-            // 3ra entrega (ocultos mientras Entregas_GV42.ENTREGA_3_ACTIVA sea false).
             reporteMillasToolStripMenuItem.Text = IdiomaManager_GV42.T("menu.reporteMillas");
             ayudaToolStripMenuItem.Text = IdiomaManager_GV42.T("menu.ayuda");
             temasAyudaToolStripMenuItem.Text = IdiomaManager_GV42.T("menu.temasAyuda");
@@ -216,10 +215,8 @@ namespace PROYECTO_ING_DE_SOFTWARE
             reporteReservasToolStripMenuItem.Visible = puedeVerReporteReservas;
             bool puedeVerReporteCheckIn = dataKeys.Contains("Reportes.CheckIn");
             reporteCheckInToolStripMenuItem.Visible = puedeVerReporteCheckIn;
-            // 3ra entrega: el reporte de millas y la ayuda solo se muestran con el interruptor activo.
-            bool puedeVerReporteMillas = Entregas_GV42.ENTREGA_3_ACTIVA && dataKeys.Contains(BLLReporteMillas_GV42.PATENTE_VER);
+            bool puedeVerReporteMillas = dataKeys.Contains(BLLReporteMillas_GV42.PATENTE_VER);
             reporteMillasToolStripMenuItem.Visible = puedeVerReporteMillas;
-            ayudaToolStripMenuItem.Visible = Entregas_GV42.ENTREGA_3_ACTIVA;
             reportesToolStripMenuItem.Visible = puedeVerReporteReservas || puedeVerReporteCheckIn || puedeVerReporteMillas;
 
             bool puedeCambiarIdioma = dataKeys.Contains("Sesion.CambiarIdioma");
@@ -382,9 +379,7 @@ namespace PROYECTO_ING_DE_SOFTWARE
             AbrirFormularioHijo(new FRMReporteCheckIn_GV42());
         }
 
-        // ---------------------------------------------------------------- 3ra entrega
-        // Reporte inteligente de millas y ayuda en línea. Los ítems del menú están ocultos (y F1 no
-        // hace nada) mientras Entregas_GV42.ENTREGA_3_ACTIVA sea false.
+        // Reporte inteligente de millas y ayuda en línea.
         private void reporteMillasToolStripMenuItem_Click(object sender, EventArgs e)
         {
             AbrirFormularioHijo(new FRMReporteMillas_GV42());
@@ -403,7 +398,7 @@ namespace PROYECTO_ING_DE_SOFTWARE
         // F1 abre la ayuda en el tema de la pantalla que está abierta.
         protected override bool ProcessCmdKey(ref Message msg, Keys keyData)
         {
-            if (keyData == Keys.F1 && Entregas_GV42.ENTREGA_3_ACTIVA)
+            if (keyData == Keys.F1)
             {
                 MostrarAyudaDeLaPantalla();
                 return true;
