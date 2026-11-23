@@ -1562,6 +1562,27 @@ END
 GO
 
 /* =====================================================================================
+   VERSIÓN 17 – Nombre del administrador inicial
+   El administrador que traen los datos iniciales (lautaro212) tenía el nombre "Lautaro111". Ese
+   nombre no cumple el formato de una persona (solo letras), así que al usar su DNI en una reserva
+   los datos precargados de la cuenta no se podían registrar como cliente. Se corrige a "Lautaro"
+   y el sistema recalcula el dígito verificador de Usuario al iniciar.
+   ===================================================================================== */
+IF NOT EXISTS (SELECT 1 FROM dbo.VersionBD_GV42 WHERE Version = 17)
+BEGIN
+    UPDATE dbo.Usuario SET Nombre = N'Lautaro'
+     WHERE UserName = N'lautaro212' AND Nombre = N'Lautaro111';
+
+    INSERT INTO dbo.TareaPendiente_GV42 (Nombre)
+    SELECT X.T FROM (VALUES (N'RecalcularDV:Usuario')) AS X(T)
+    WHERE NOT EXISTS (SELECT 1 FROM dbo.TareaPendiente_GV42 P WHERE P.Nombre = X.T);
+
+    INSERT INTO dbo.VersionBD_GV42 (Version, Descripcion)
+    VALUES (17, N'Nombre del administrador inicial corregido (solo letras)');
+END
+GO
+
+/* =====================================================================================
    3ra ENTREGA (TODAVÍA NO SE APLICA) – Reporte de millas
    Este bloque está comentado a propósito: mientras siga así, la base no cambia y en Gestión de
    permisos no aparece nada nuevo. El reporte de millas, la ayuda y el reinstalador funcionan sin
@@ -1569,7 +1590,7 @@ GO
 
    Para la 3ra entrega, si se quiere que el reporte de millas tenga patentes y eventos propios:
      1) quitar los "--" del principio de cada línea de este bloque;
-     2) subir VERSION_ACTUAL a 17 en DAL/Instalacion/InstaladorBD_GV42.cs;
+     2) subir VERSION_ACTUAL a 18 en DAL/Instalacion/InstaladorBD_GV42.cs;
      3) en BLL/Reportes/BLLReporteMillas_GV42.cs cambiar PATENTE_VER por "Reportes.Millas" y
         PATENTE_EXPORTAR por "Reportes.MillasExportarPDF".
    ===================================================================================== */
@@ -1595,13 +1616,13 @@ GO
 -- WHERE NOT EXISTS (SELECT 1 FROM dbo.TipoEvento X WHERE X.Nombre = E.Nombre);
 -- GO
 --
--- IF NOT EXISTS (SELECT 1 FROM dbo.VersionBD_GV42 WHERE Version = 17)
+-- IF NOT EXISTS (SELECT 1 FROM dbo.VersionBD_GV42 WHERE Version = 18)
 -- BEGIN
 --     INSERT INTO dbo.TareaPendiente_GV42 (Nombre)
 --     SELECT X.T FROM (VALUES (N'RecalcularDV:Patente'), (N'RecalcularDV:RolPatente'), (N'RecalcularDV:TipoEvento')) AS X(T)
 --     WHERE NOT EXISTS (SELECT 1 FROM dbo.TareaPendiente_GV42 P WHERE P.Nombre = X.T);
 --
 --     INSERT INTO dbo.VersionBD_GV42 (Version, Descripcion)
---     VALUES (17, N'Reporte de millas: patentes y eventos de bitácora');
+--     VALUES (18, N'Reporte de millas: patentes y eventos de bitácora');
 -- END
 -- GO

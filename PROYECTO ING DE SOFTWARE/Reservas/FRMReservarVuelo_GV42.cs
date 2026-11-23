@@ -30,6 +30,13 @@ namespace PROYECTO_ING_DE_SOFTWARE
         private readonly BLLReserva_GV42 _bll = new BLLReserva_GV42();
         private readonly bool _esVendedor;
 
+        // Cliente autogestionado: puede reservar para él o para otras personas ("Viajo yo en esta reserva").
+        private FlowLayoutPanel pnlViajoYo;
+        private CheckBox chkViajoYo;
+        private Label lblTelefonoTitular;
+        private TextBox txtTelefonoTitular;
+        private Pasajero_GV42 _titularSesion;
+
         // Asistente: tarjetas de cada paso (la última es el resultado), su "chip" del indicador y su clave.
         // En ida y vuelta se agregan pasos: elegir el vuelo de regreso y, después de completar la ida
         // (asientos y adicionales), repetir asientos y adicionales para la vuelta. Esos pasos usan las
@@ -115,6 +122,7 @@ namespace PROYECTO_ING_DE_SOFTWARE
             ConfigurarPasos(false);
             ConfigurarControles();
             ConfigurarOfertas();
+            CrearOpcionViajoYo();
 
             IdiomaManager_GV42.Instancia.Suscribir(this);
             FormClosed += (s, e) => IdiomaManager_GV42.Instancia.Desuscribir(this);
@@ -276,6 +284,11 @@ namespace PROYECTO_ING_DE_SOFTWARE
                 // Paso pasajeros
                 lblTituloPasajeros.Text = IdiomaManager_GV42.T("reservar.pasajeros.titulo");
                 lblAyudaPasajeros.Text = IdiomaManager_GV42.T(_esVendedor ? "reservar.pasajeros.ayudaVendedor" : "reservar.pasajeros.ayudaCliente");
+                if (chkViajoYo != null)
+                {
+                    chkViajoYo.Text = IdiomaManager_GV42.T("reservar.viajoYo");
+                    lblTelefonoTitular.Text = IdiomaManager_GV42.T("reservar.telefonoTitular");
+                }
                 for (int i = 0; i < _pasajeros.Count; i++)
                 {
                     _pasajeros[i].Control.ActualizarIdioma();
@@ -633,6 +646,102 @@ namespace PROYECTO_ING_DE_SOFTWARE
             txt.BackColor = bloquear ? Tema_GV42.Fondo : System.Drawing.Color.White;
         }
 
+        private Pasajero_GV42 TitularSesion
+        {
+            get { return _titularSesion ?? (_titularSesion = _bll.ObtenerTitularDeSesion()); }
+        }
+
+        // El titular no viaja y nunca dejó un teléfono: se le pide uno de contacto para la reserva.
+        private bool PideTelefonoTitular
+        {
+            get { return !_esVendedor && !chkViajoYo.Checked && string.IsNullOrWhiteSpace(TitularSesion.Telefono); }
+        }
+
+        // Casilla "Viajo yo en esta reserva" (solo cliente autogestionado), debajo de la ayuda del paso.
+        private void CrearOpcionViajoYo()
+        {
+            if (_esVendedor) return;
+
+            chkViajoYo = new CheckBox
+            {
+                AutoSize = true,
+                Checked = true,
+                Font = new System.Drawing.Font("Segoe UI Semibold", 9F, System.Drawing.FontStyle.Bold),
+                ForeColor = Tema_GV42.Acento,
+                Margin = new Padding(0, 6, 24, 0)
+            };
+            lblTelefonoTitular = new Label
+            {
+                AutoSize = true,
+                ForeColor = Tema_GV42.Acento,
+                Margin = new Padding(0, 8, 6, 0),
+                Visible = false
+            };
+            txtTelefonoTitular = new TextBox { Width = 180, Margin = new Padding(0, 4, 0, 0), Visible = false };
+            txtTelefonoTitular.MaxLength = Validaciones_GV42.MAX_TELEFONO;
+
+            pnlViajoYo = new FlowLayoutPanel
+            {
+                Dock = DockStyle.Top,
+                Height = 34,
+                WrapContents = false,
+                BackColor = System.Drawing.Color.Transparent
+            };
+            pnlViajoYo.Controls.Add(chkViajoYo);
+            pnlViajoYo.Controls.Add(lblTelefonoTitular);
+            pnlViajoYo.Controls.Add(txtTelefonoTitular);
+
+            // Orden de acoplado: título, ayuda, esta casilla y la lista de pasajeros (Fill).
+            pnlPasoPasajeros.Controls.Add(pnlViajoYo);
+            pnlPasoPasajeros.Controls.SetChildIndex(pnlViajoYo, pnlPasoPasajeros.Controls.GetChildIndex(pnlListaPasajeros) + 1);
+
+            chkViajoYo.CheckedChanged += chkViajoYo_CheckedChanged;
+        }
+
+        private void chkViajoYo_CheckedChanged(object sender, EventArgs e)
+        {
+            if (_pasajeros.Count > 0)
+            {
+                DatosPasajero dp = _pasajeros[0];
+                if (chkViajoYo.Checked)
+                {
+                    LlenarConTitular(dp);
+                }
+                else
+                {
+                    foreach (var txt in new[] { dp.Dni, dp.Nombre, dp.Apellido, dp.Email, dp.Telefono })
+                    {
+                        txt.Clear();
+                        Bloquear(txt, false);
+                    }
+                    dp.Control.FechaNacimiento = null;
+                    dp.Control.NacimientoBloqueado = false;
+                    dp.EsTitular = false;
+                    dp.Control.Titulo = TituloPasajero(0, false);
+                }
+            }
+            bool pideTelefono = PideTelefonoTitular;
+            lblTelefonoTitular.Visible = pideTelefono;
+            txtTelefonoTitular.Visible = pideTelefono;
+        }
+
+        private void LlenarConTitular(DatosPasajero dp)
+        {
+            Pasajero_GV42 titular = TitularSesion;
+            dp.Dni.Text = titular.DNI; dp.Nombre.Text = titular.Nombre; dp.Apellido.Text = titular.Apellido;
+            dp.Email.Text = titular.Email; dp.Telefono.Text = titular.Telefono;
+
+            foreach (var txt in new[] { dp.Dni, dp.Nombre, dp.Apellido, dp.Email })
+                Bloquear(txt, true);
+            // Usuario no guarda teléfono: solo se pide si nunca reservó antes.
+            Bloquear(dp.Telefono, !string.IsNullOrWhiteSpace(titular.Telefono));
+            // La fecha de nacimiento tampoco está en Usuario: se pide la primera vez que reserva.
+            dp.Control.FechaNacimiento = titular.FechaNacimiento;
+            dp.Control.NacimientoBloqueado = titular.FechaNacimiento.HasValue;
+            dp.EsTitular = true;
+            dp.Control.Titulo = TituloPasajero(0, true);
+        }
+
         private void ReconstruirFilasPasajeros()
         {
             // Las tarjetas anteriores se liberan (no quedan suscriptas ni ocupando memoria).
@@ -660,26 +769,11 @@ namespace PROYECTO_ING_DE_SOFTWARE
                     dp.Dni.Leave += (s, e) => AutocompletarPasajero(fila);
                 }
 
-                // El titular de la cuenta ya está identificado por su sesión: sus datos salen de ahí y no
-                // se le pide que los vuelva a tipear (ni que se "registre"). Para pasajeros adicionales sí se
-                // piden datos completos (pueden ser personas distintas del titular).
-                if (i == 0 && !_esVendedor)
-                {
-                    Pasajero_GV42 titular = _bll.ObtenerTitularDeSesion();
-                    dp.Dni.Text = titular.DNI; dp.Nombre.Text = titular.Nombre; dp.Apellido.Text = titular.Apellido;
-                    dp.Email.Text = titular.Email; dp.Telefono.Text = titular.Telefono;
-
-                    foreach (var txt in new[] { dp.Dni, dp.Nombre, dp.Apellido, dp.Email })
-                        Bloquear(txt, true);
-                    // Usuario no guarda teléfono: solo se pide si nunca reservó antes.
-                    if (!string.IsNullOrWhiteSpace(titular.Telefono))
-                        Bloquear(dp.Telefono, true);
-                    // La fecha de nacimiento tampoco está en Usuario: se pide la primera vez que reserva.
-                    dp.Control.FechaNacimiento = titular.FechaNacimiento;
-                    dp.Control.NacimientoBloqueado = titular.FechaNacimiento.HasValue;
-                    dp.EsTitular = true;
-                    dp.Control.Titulo = TituloPasajero(i, true);
-                }
+                // El titular de la cuenta ya está identificado por su sesión: si viaja, sus datos salen de ahí y
+                // no se le pide que los vuelva a tipear. Si saca el pasaje para otra persona (desmarca "Viajo
+                // yo"), el pasajero 1 queda libre como los demás.
+                if (i == 0 && !_esVendedor && chkViajoYo.Checked)
+                    LlenarConTitular(dp);
 
                 _pasajeros.Add(dp);
                 // Dock Top apilado: cada tarjeta nueva va debajo de la anterior.
@@ -757,6 +851,10 @@ namespace PROYECTO_ING_DE_SOFTWARE
 
         private void ValidarYAvanzarPasajeros()
         {
+            // El titular que no viaja sigue siendo el cliente de la reserva: necesita un teléfono de contacto.
+            if (PideTelefonoTitular && !Validaciones_GV42.EsTelefonoValido(txtTelefonoTitular.Text.Trim()))
+                throw new NegocioException_GV42(IdiomaManager_GV42.T("reservar.telefonoTitularFalta"));
+
             for (int i = 0; i < _pasajeros.Count; i++)
             {
                 var p = _pasajeros[i];
@@ -1181,11 +1279,19 @@ namespace PROYECTO_ING_DE_SOFTWARE
                 : IdiomaManager_GV42.T("reservar.resumen.asientoEnCheckIn");
         }
 
+        // El cliente autogestionado es siempre el de la sesión (la BLL lo vuelve a tomar de ahí). Si no viaja,
+        // se manda solo el teléfono de contacto que cargó, por si su cuenta todavía no tiene uno.
+        private Pasajero_GV42 ClienteAutogestionado()
+        {
+            if (chkViajoYo == null || chkViajoYo.Checked) return null;
+            return new Pasajero_GV42 { DNI = TitularSesion.DNI, Telefono = txtTelefonoTitular.Text.Trim() };
+        }
+
         private void ConfirmarReserva()
         {
             var borrador = new Reserva_GV42
             {
-                Cliente = _clienteElegido,
+                Cliente = _esVendedor ? _clienteElegido : ClienteAutogestionado(),
                 VueloClase = _vuelos[IDA],
                 VueloClaseVuelta = _idaYVuelta ? _vuelos[VUELTA] : null,
                 Tarifa = _tarifaElegida,

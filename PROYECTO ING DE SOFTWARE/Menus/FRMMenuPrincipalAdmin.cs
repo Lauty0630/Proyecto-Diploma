@@ -157,12 +157,16 @@ namespace PROYECTO_ING_DE_SOFTWARE
                 .Select(p => p.DataKey ?? string.Empty)
                 .ToList();
 
-            usuariosToolStripMenuItem.Visible = dataKeys.Any(k => k.StartsWith("Usuarios."));
-            bitacoraToolStripMenuItem.Visible = dataKeys.Any(k => k.StartsWith("Bitacora."));
-            gestionDePermisosToolStripMenuItem.Visible = dataKeys.Any(k => k.StartsWith("Permisos."));
-            backupToolStripMenuItem.Visible =
-                dataKeys.Contains("Backup.Crear") ||
-                dataKeys.Contains("Integridad.Restore");
+            bool verUsuarios = dataKeys.Any(k => k.StartsWith("Usuarios."));
+            bool verBitacora = dataKeys.Any(k => k.StartsWith("Bitacora."));
+            bool verPermisos = dataKeys.Any(k => k.StartsWith("Permisos."));
+            bool verBackup = dataKeys.Contains("Backup.Crear") || dataKeys.Contains("Integridad.Restore");
+            usuariosToolStripMenuItem.Visible = verUsuarios;
+            bitacoraToolStripMenuItem.Visible = verBitacora;
+            gestionDePermisosToolStripMenuItem.Visible = verPermisos;
+            backupToolStripMenuItem.Visible = verBackup;
+            // El menú Admin solo aparece si tiene al menos una opción (un cliente no ve ninguna).
+            adminToolStripMenuItem.Visible = verUsuarios || verBitacora || verPermisos || verBackup;
 
             bool puedeCambiarClave = dataKeys.Contains("Sesion.CambiarClave");
             bool puedeReLogin = dataKeys.Contains("Sesion.ReLogin");

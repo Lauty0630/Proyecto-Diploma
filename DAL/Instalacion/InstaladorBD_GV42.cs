@@ -40,7 +40,7 @@ namespace DAL
         private const string NOMBRE_SCRIPT_DEMOSTRACION = "DatosDemostracion.sql";
 
         // Subir este número cuando se agregue un bloque nuevo al final de ActualizacionBD.sql.
-        public const int VERSION_ACTUAL = 16;
+        public const int VERSION_ACTUAL = 17;
 
         // Lo que tiene que existir en una base de gestión de usuarios (sin negocio).
         private static readonly string[] OBJETOS_BASE =

@@ -512,14 +512,20 @@ namespace BLL
 
             if (canal == CanalVenta_GV42.Autogestion)
             {
-                // El cliente reserva para sí mismo: el cliente de la reserva sale siempre de su sesión,
-                // nunca de lo que venga (o no) de la pantalla, para que nadie reserve "a nombre de" otro DNI.
+                // El cliente de la reserva (el que la saca y la paga) sale siempre de su sesión, nunca de lo que
+                // venga de la pantalla, para que nadie reserve "a nombre de" otro DNI. Puede viajar él o no:
+                // los pasajeros pueden ser otras personas.
                 Pasajero_GV42 titular = ObtenerTitularDeSesion();
                 Pasajero_GV42 enPantalla = (borrador.Pasajeros ?? new List<Pasajero_GV42>())
                     .FirstOrDefault(x => x != null && string.Equals((x.DNI ?? string.Empty).Trim(), titular.DNI, StringComparison.OrdinalIgnoreCase));
                 // Primera reserva: lo que la sesión no tiene (teléfono y fecha de nacimiento) se pide en pantalla.
                 if (enPantalla != null && string.IsNullOrWhiteSpace(titular.Telefono)) titular.Telefono = enPantalla.Telefono;
                 if (enPantalla != null && !titular.FechaNacimiento.HasValue) titular.FechaNacimiento = enPantalla.FechaNacimiento;
+                // Si saca el pasaje para otras personas y no viaja, el teléfono de contacto viene en el cliente
+                // del borrador (solo se toma el teléfono, y solo si es su propio DNI).
+                if (enPantalla == null && string.IsNullOrWhiteSpace(titular.Telefono) && borrador.Cliente != null &&
+                    string.Equals((borrador.Cliente.DNI ?? string.Empty).Trim(), titular.DNI, StringComparison.OrdinalIgnoreCase))
+                    titular.Telefono = borrador.Cliente.Telefono;
                 BLLNegocioUtil_GV42.ValidarPersona(titular, IdiomaManager_GV42.T("neg.rol.pasajero"));
                 if (!_dalPasajero.ExisteDni(titular.DNI))
                     _dalPasajero.Insertar(titular);
