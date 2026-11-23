@@ -55,6 +55,22 @@ namespace BLL
             }
         }
 
+        // Igual que InstalarBaseDatosConDatosDePrueba, pero sobre una base que ya existe (por ejemplo, una
+        // base de gestión de usuarios que dejó el instalador): la borra y la crea completa con los datos.
+        public static string ReinstalarBaseDatosConDatosDePrueba(string instancia)
+        {
+            ReinstalarBaseDatos(instancia);
+            try
+            {
+                InstaladorBD_GV42.CargarDatosDemostracion(instancia);
+                return null;
+            }
+            catch (Exception ex)
+            {
+                return ex.Message;
+            }
+        }
+
         // Instalación por etapas: crea solo la gestión de usuarios (sin el negocio).
         public static void InstalarBaseUsuarios(string instancia)
         {

@@ -1730,7 +1730,7 @@
     "ayuda.acceso.titulo": "Acceso al sistema",
     "ayuda.acceso.texto": "Estas pantallas se usan antes de iniciar sesión: el inicio de sesión, el registro de un cliente nuevo y el reinstalador. En todas, F1 abre esta ayuda.",
     "ayuda.login.titulo": "Iniciar sesión",
-    "ayuda.login.texto": "Se ingresa el usuario y la contraseña. Si la contraseña se ingresa mal varias veces seguidas, el usuario queda bloqueado y lo tiene que desbloquear un administrador.\n\nUn cliente que todavía no tiene cuenta puede crearla desde esta misma pantalla.\n\nEl enlace Reinstalador sirve para recuperar la base de datos cuando el sistema no puede usarla.",
+    "ayuda.login.texto": "Se ingresa el usuario y la contraseña. Si la contraseña se ingresa mal varias veces seguidas, el usuario queda bloqueado y lo tiene que desbloquear un administrador.\n\nUn cliente que todavía no tiene cuenta puede crearla desde esta misma pantalla.",
     "ayuda.registro.titulo": "Crear cuenta de cliente",
     "ayuda.registro.texto": "Un cliente crea su propia cuenta para reservar sus vuelos sin pasar por un vendedor.\n\nSe cargan DNI, nombre, apellido, email, teléfono, un nombre de usuario y la contraseña dos veces. El DNI y el usuario no pueden estar ya registrados.\n\nLa cuenta queda con el rol Cliente: solo puede operar sobre sus propias reservas.",
     "ayuda.reinstalador.titulo": "Reinstalador",

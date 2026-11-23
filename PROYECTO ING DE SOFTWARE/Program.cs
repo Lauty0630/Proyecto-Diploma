@@ -157,6 +157,9 @@ namespace PROYECTO_ING_DE_SOFTWARE
         }
 
         // Deja la base lista para esta versión del sistema, en cualquier computadora:
+        //  0) Solo desde el código (zip de Git): si la base es de gestión de usuarios (la dejó el
+        //     instalador por etapas), se reemplaza por la base completa con los datos de demostración.
+        //     El sistema descargado de Git siempre funciona completo, sin depender del instalador.
         //  1) Si es demasiado vieja (le faltan tablas del negocio) ofrece reinstalarla.
         //  2) Si es de una versión anterior, la actualiza conservando los datos.
         //  3) Genera los vuelos que falten para los próximos días (nunca queda sin vuelos).
@@ -164,6 +167,15 @@ namespace PROYECTO_ING_DE_SOFTWARE
         {
             try
             {
+#if DEBUG
+                if (BLLInstalador_GV42.EsBaseUsuarios(instancia))
+                {
+                    string errorDatos;
+                    using (CrearAviso("instalacion.avisoInstalando"))
+                        errorDatos = BLLInstalador_GV42.ReinstalarBaseDatosConDatosDePrueba(instancia);
+                    AvisarErrorDatosDemostracion(errorDatos);
+                }
+#endif
                 List<string> faltan = BLLInstalador_GV42.ObjetosFaltantes(instancia);
                 if (faltan.Count > 0)
                 {

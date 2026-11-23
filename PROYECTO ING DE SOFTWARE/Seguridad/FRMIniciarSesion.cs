@@ -53,10 +53,6 @@ namespace PROYECTO_ING_DE_SOFTWARE
             try { tlpRegistro.Visible = BLLInstalador_GV42.NegocioInstalado(); }
             catch { tlpRegistro.Visible = true; }
 
-            // 3ra entrega: el acceso al reinstalador solo se muestra con el interruptor activo.
-            lnkReinstalador.Text = IdiomaManager_GV42.T("reinstalador.titulo");
-            lnkReinstalador.Visible = Entregas_GV42.ENTREGA_3_ACTIVA;
-
             // El idioma activo se muestra resaltado (link deshabilitado); el otro queda para hacer clic.
             bool ingles = IdiomaManager_GV42.Instancia.EsIngles;
             if (lnkEspanol.Links.Count > 0) lnkEspanol.Links[0].Enabled = ingles;
@@ -272,14 +268,6 @@ namespace PROYECTO_ING_DE_SOFTWARE
         private void lnkIngles_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
         {
             IdiomaManager_GV42.Instancia.CambiarIdioma(IdiomaManager_GV42.EN);
-        }
-
-        // 3ra entrega: reinstalador (restaurar un backup o reinstalar la base).
-        private void lnkReinstalador_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
-        {
-            if (!Entregas_GV42.ENTREGA_3_ACTIVA) return;
-            using (var frm = new FRMReinstalador_GV42())
-                frm.ShowDialog(this);
         }
 
         #endregion

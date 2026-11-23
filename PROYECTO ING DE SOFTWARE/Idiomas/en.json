@@ -1730,7 +1730,7 @@
     "ayuda.acceso.titulo": "Signing in",
     "ayuda.acceso.texto": "These screens are used before signing in: the login, new customer registration and the reinstaller. F1 opens this help in all of them.",
     "ayuda.login.titulo": "Log in",
-    "ayuda.login.texto": "Enter your username and password. If the password is entered wrong several times in a row, the user is locked and an administrator has to unlock it.\n\nA customer without an account can create one from this same screen.\n\nThe Reinstaller link recovers the database when the system cannot use it.",
+    "ayuda.login.texto": "Enter your username and password. If the password is entered wrong several times in a row, the user is locked and an administrator has to unlock it.\n\nA customer without an account can create one from this same screen.",
     "ayuda.registro.titulo": "Create customer account",
     "ayuda.registro.texto": "A customer creates their own account to book flights without a sales agent.\n\nEnter ID number, first name, last name, email, phone, a username and the password twice. The ID number and the username must not be registered already.\n\nThe account gets the Customer role: it can only work on its own bookings.",
     "ayuda.reinstalador.titulo": "Reinstaller",
