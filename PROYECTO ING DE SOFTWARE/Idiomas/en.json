@@ -1731,7 +1731,7 @@
     "neg.vuelo.reprogramarRompeViaje": "With that schedule, {0} round-trip booking(s) would have the return departing before the outbound arrives.",
     "neg.aeropuerto.nombreDuplicado": "There is already an airport named \"{0}\" in {1}.",
     "ayuda.acceso.titulo": "Signing in",
-    "ayuda.acceso.texto": "These screens are used before signing in: the login, new customer registration and the reinstaller. F1 opens this help in all of them.",
+    "ayuda.acceso.texto": "These screens are used before signing in: the login and new customer registration. F1 opens this help in both.",
     "ayuda.login.titulo": "Log in",
     "ayuda.login.texto": "Enter your username and password. If the password is entered wrong several times in a row, the user is locked and an administrator has to unlock it.\n\nA customer without an account can create one from this same screen.",
     "ayuda.registro.titulo": "Create customer account",
